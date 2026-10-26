@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-gray-950 text-gray-100">
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lechuza Común (Tyto alba) - Control de Nidificación y Biometría</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Monitoreo Lechuza Común (Tyto alba)</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -12,1082 +13,1049 @@
             theme: {
                 extend: {
                     colors: {
-                        tyto: {
-                            base: '#0B0F17',
-                            card: '#111827',
-                            border: '#1F2937',
-                            green: '#4E9F3D',
-                            darkgreen: '#1E5128',
-                            lightgreen: '#D8E9A8',
-                            accent: '#10B981'
+                        emerald: {
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                        },
+                        lime: {
+                            400: '#a3e635',
+                            500: '#84cc16',
                         }
                     }
                 }
             }
         }
     </script>
-    <!-- Leaflet CSS y JS -->
+    
+    <!-- Google Fonts: Inter & Playfair Display -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- FontAwesome icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
     <style>
-        #map {
-            height: 100%;
-            width: 100%;
-            border-radius: 0.75rem;
-            z-index: 10;
+        body { font-family: 'Inter', sans-serif; }
+        .font-serif-title { font-family: 'Playfair Display', Georgia, serif; }
+
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+        /* Custom Leaflet Map styling */
+        .leaflet-container {
+            background-color: #020617 !important;
+            font-family: 'Inter', sans-serif !important;
         }
-        .custom-scroll::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background: #0f172a !important;
+            color: #f8fafc !important;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
         }
-        .custom-scroll::-webkit-scrollbar-track {
-            background: #0B0F17;
+
+        /* Hero Background with multiple fallbacks */
+        .hero-bg {
+            background-image: 
+                linear-gradient(to bottom, rgba(2, 6, 23, 0.65), rgba(2, 6, 23, 0.90)),
+                url('fondo.jpg'),
+                url('https://images.unsplash.com/photo-1579380656108-f98e2fb9a28e?q=80&w=2000&auto=format&fit=crop'),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 800 600"><rect width="800" height="600" fill="%23020617"/><circle cx="400" cy="200" r="120" fill="%231e293b"/><path d="M380,300 L420,300 L400,340 Z" fill="%23a3e635"/><text x="50%" y="85%" text-anchor="middle" fill="%2364748b" font-family="sans-serif" font-size="20">Tyto alba - Lechuza Común</text></svg>');
+            background-size: cover;
+            background-position: center 30%;
+            background-repeat: no-repeat;
         }
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background: #1F2937;
-            border-radius: 3px;
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .custom-scroll::-webkit-scrollbar-thumb:hover {
-            background: #10B981;
+
+        .glass-panel-glow {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.15);
         }
-        .page-transition {
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-        }
-        .leaflet-pane { z-index: 10 !important; }
-        .leaflet-top, .leaflet-bottom { z-index: 20 !important; }
     </style>
 </head>
-<body class="h-full flex flex-col font-sans antialiased overflow-x-hidden custom-scroll bg-gray-950 text-gray-100">
+<body class="h-full flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-950">
 
-    <!-- ================= 1. PORTADA / LANDING PAGE ================= -->
-    <section id="landing-page" class="fixed inset-0 z-50 flex flex-col justify-between bg-cover bg-center page-transition" 
-             style="background-image: url('https://images.unsplash.com/photo-1579380656108-f98e4df8ea9f?auto=format&fit=crop&w=1920&q=80');">
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-40 w-full bg-slate-950/90 border-b border-slate-800/80 backdrop-blur-md px-4 lg:px-8 py-3 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Logo & Title -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="showLanding()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-lime-500 flex items-center justify-center shadow-lg shadow-emerald-950/50">
+                    <i data-lucide="bird" class="w-6 h-6 text-slate-950 font-bold"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold tracking-tight text-slate-100 flex items-center gap-2">
+                        Tyto alba <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">Lechuza Común</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Plataforma de Monitoreo & Registro EURING</p>
+                </div>
+            </div>
+
+            <!-- Navigation actions -->
+            <div class="flex items-center space-x-3">
+                <button id="navHomeBtn" onclick="showLanding()" class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition-all">
+                    <i data-lucide="home" class="w-4 h-4 text-emerald-400"></i>
+                    <span class="hidden sm:inline">Portada</span>
+                </button>
+                <button id="navDashboardBtn" onclick="showDashboard()" class="flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-gradient-to-r from-emerald-400 to-lime-400 hover:from-emerald-300 hover:to-lime-300 rounded-lg shadow-md shadow-emerald-500/10 transition-all">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>Panel de Control</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENT CONTAINER -->
+    <main class="flex-1 flex flex-col">
         
-        <!-- Overlay oscuro degradado -->
-        <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/85 to-gray-950/60"></div>
-
-        <!-- Encabezado minimalista -->
-        <header class="relative z-10 p-6 max-w-7xl mx-auto w-full flex justify-end">
-            <span class="text-xs tracking-widest text-emerald-400 uppercase bg-gray-900/80 px-3 py-1.5 rounded-full border border-emerald-500/30 font-semibold backdrop-blur">
-                <i class="fa-solid fa-feather mr-1.5"></i> Registro de Campo
-            </span>
-        </header>
-
-        <!-- Contenido Central -->
-        <main class="relative z-10 px-4 sm:px-6 max-w-5xl mx-auto text-center flex flex-col items-center justify-center my-auto py-10">
+        <!-- SECTION 1: LANDING / PORTADA PAGE -->
+        <section id="landingPage" class="relative flex-1 flex flex-col justify-center items-center hero-bg px-4 py-12 text-center transition-all duration-500">
             
-            <!-- Título Principal -->
-            <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight mb-4 leading-tight">
-                Lechuza Común <br/>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-lime-300 italic font-serif">
-                    (Tyto alba)
-                </span>
-            </h1>
+            <!-- Dark Overlay for High Legibility -->
+            <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] pointer-events-none"></div>
 
-            <!-- Subtítulo -->
-            <p class="text-base sm:text-xl text-gray-300 mb-10 max-w-3xl leading-relaxed font-normal">
-                Plataforma de monitoreo reproductor, biometría y seguimiento de cajas nido
-            </p>
-
-            <!-- Puntos Clave / Tarjetas Minimalistas -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 w-full mb-10 text-left">
-                <div class="bg-gray-900/70 backdrop-blur border border-emerald-500/20 p-3.5 sm:p-4 rounded-xl hover:border-emerald-500/50 transition duration-300">
-                    <div class="text-emerald-400 text-lg mb-1"><i class="fa-solid fa-location-dot"></i></div>
-                    <h3 class="font-bold text-white text-xs sm:text-sm">Geolocalización GPS</h3>
-                    <p class="text-[11px] sm:text-xs text-gray-400 mt-1">Ubicación exacta y control de territorios.</p>
-                </div>
-                
-                <div class="bg-gray-900/70 backdrop-blur border border-emerald-500/20 p-3.5 sm:p-4 rounded-xl hover:border-emerald-500/50 transition duration-300">
-                    <div class="text-amber-400 text-lg mb-1"><i class="fa-solid fa-egg"></i></div>
-                    <h3 class="font-bold text-white text-xs sm:text-sm">Fenología y Puestas</h3>
-                    <p class="text-[11px] sm:text-xs text-gray-400 mt-1">Recuento de huevos y evolución de pollos.</p>
+            <div class="relative z-10 max-w-4xl mx-auto space-y-8 animate-fade-in">
+                <!-- Badge -->
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider shadow-xl">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Conservación & Seguimiento Ornitológico
                 </div>
 
-                <div class="bg-gray-900/70 backdrop-blur border border-emerald-500/20 p-3.5 sm:p-4 rounded-xl hover:border-emerald-500/50 transition duration-300">
-                    <div class="text-sky-400 text-lg mb-1"><i class="fa-solid fa-ring"></i></div>
-                    <h3 class="font-bold text-white text-xs sm:text-sm">Anillamiento EURING</h3>
-                    <p class="text-[11px] sm:text-xs text-gray-400 mt-1">Masa, plumas, ala y moteado de pecho.</p>
+                <!-- Main Title -->
+                <h1 class="text-4xl sm:text-6xl md:text-7xl font-bold font-serif-title tracking-tight text-white drop-shadow-md">
+                    Lechuza Común <br/>
+                    <span class="italic font-light text-emerald-400">(Tyto alba)</span>
+                </h1>
+
+                <!-- Subtitle -->
+                <p class="max-w-2xl mx-auto text-base sm:text-lg md:text-xl text-slate-200 font-normal leading-relaxed drop-shadow-sm">
+                    Plataforma integral para la gestión de cajas nido, registro biológico de parejas, biometría de pollos, anillamiento EURING e incidencias de campo.
+                </p>
+
+                <!-- Action Button -->
+                <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <button onclick="showDashboard()" class="w-full sm:w-auto px-8 py-4 text-sm sm:text-base font-bold text-slate-950 bg-gradient-to-r from-emerald-400 via-emerald-300 to-lime-400 hover:from-emerald-300 hover:to-lime-300 rounded-xl shadow-xl shadow-emerald-500/20 transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 group">
+                        <i data-lucide="folder-plus" class="w-5 h-5 text-slate-950 group-hover:scale-110 transition-transform"></i>
+                        <span>Entrar al Registro / Introducir Datos</span>
+                        <i data-lucide="arrow-right" class="w-5 h-5 text-slate-950 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
                 </div>
 
-                <div class="bg-gray-900/70 backdrop-blur border border-emerald-500/20 p-3.5 sm:p-4 rounded-xl hover:border-emerald-500/50 transition duration-300">
-                    <div class="text-rose-400 text-lg mb-1"><i class="fa-solid fa-book-bookmark"></i></div>
-                    <h3 class="font-bold text-white text-xs sm:text-sm">Bitácora e Incidencias</h3>
-                    <p class="text-[11px] sm:text-xs text-gray-400 mt-1">Control de parejas, recambios y bajas.</p>
+                <!-- Features list cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left pt-12">
+                    <div class="glass-panel p-5 rounded-xl border border-slate-800/80">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-white mb-1">Geolocalización Satellite</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">Mapas satelitales interactivos ESRI World Imagery para localización precisa de nidos.</p>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-xl border border-slate-800/80">
+                        <div class="w-8 h-8 rounded-lg bg-lime-500/20 text-lime-400 flex items-center justify-center mb-3">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-white mb-1">Estándar Biométrico EURING</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">Formatos oficiales de mediciones (P8, R5, Feomelanina, Masa, Edad EURING).</p>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-xl border border-slate-800/80">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-3">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-white mb-1">Exportación R & Excel</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">Descarga de registros en CSV estructurado para análisis de datos y JSON de backup.</p>
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Botón Principal Glow -->
-            <button id="btn-enter-app" onclick="enterApp()" class="group relative inline-flex items-center justify-center px-8 py-4 text-base sm:text-lg font-bold text-gray-950 transition-all duration-300 bg-emerald-400 hover:bg-emerald-300 rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.4)] hover:shadow-[0_0_35px_rgba(16,185,129,0.6)] hover:-translate-y-0.5 active:translate-y-0 focus:outline-none">
-                <i class="fa-solid fa-clipboard-user mr-3 text-gray-950"></i>
-                Entrar al Registro / Introducir Datos
-                <i class="fa-solid fa-arrow-right ml-3 group-hover:translate-x-1 transition-transform"></i>
-            </button>
-
-        </main>
-
-        <!-- Pie de página minimalista -->
-        <footer class="relative z-10 p-4 text-center text-xs text-gray-500">
-            Control y seguimiento reproductor de <i>Tyto alba</i>
-        </footer>
-    </section>
-
-
-    <!-- ================= 2. APLICACIÓN PRINCIPAL ================= -->
-    <div id="main-app" class="hidden min-h-screen flex-col">
-        
-        <!-- BARRA DE NAVEGACIÓN -->
-        <header class="bg-gray-900/90 backdrop-blur border-b border-gray-800 sticky top-0 z-40 px-4 py-3">
-            <div class="max-w-7xl mx-auto flex justify-between items-center gap-2">
-                
-                <div class="flex items-center space-x-3">
-                    <button onclick="returnToLanding()" class="p-2 text-gray-400 hover:text-emerald-400 hover:bg-gray-800 rounded-lg transition" title="Volver a la portada">
-                        <i class="fa-solid fa-house text-base"></i>
-                    </button>
-                    <div class="h-5 w-px bg-gray-700"></div>
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-feather text-emerald-400"></i>
-                        <h1 class="font-bold text-sm sm:text-base text-white tracking-wide">Tyto<span class="text-emerald-400 font-normal">Monitor</span></h1>
-                    </div>
-                </div>
-
-                <!-- Selector de Nido Activo -->
-                <div class="flex items-center gap-2">
-                    <select id="global-nest-select" onchange="changeActiveNest(this.value)" class="bg-gray-800 border border-gray-700 text-emerald-300 font-medium rounded-lg px-2.5 py-1.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none max-w-[150px] sm:max-w-xs">
-                        <!-- Opciones dinámicas -->
-                    </select>
-
-                    <button onclick="openModal('modal-new-nest')" class="bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1">
-                        <i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">Nuevo Nido</span>
-                    </button>
-                </div>
-
-                <!-- Botones Exportación -->
-                <div class="flex items-center gap-1.5 sm:gap-2">
-                    <button onclick="exportCSV()" class="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs transition border border-gray-700 flex items-center gap-1" title="Exportar CSV">
-                        <i class="fa-solid fa-file-csv text-emerald-400 text-base"></i> <span class="hidden md:inline">CSV</span>
-                    </button>
-                    <button onclick="exportJSON()" class="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs transition border border-gray-700 flex items-center gap-1" title="Backup JSON">
-                        <i class="fa-solid fa-file-code text-sky-400 text-base"></i> <span class="hidden md:inline">JSON</span>
-                    </button>
-                </div>
-
-            </div>
-        </header>
-
-        <!-- CONTENIDO PRINCIPAL -->
-        <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-            <!-- COLUMNA IZQUIERDA: INFORMACIÓN NIDO Y MAPA GPS -->
-            <div class="lg:col-span-5 flex flex-col gap-6">
-                
-                <!-- Card Nido / Pareja Actual -->
-                <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg relative overflow-hidden">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <span class="text-xs font-mono uppercase tracking-widest text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-700/50" id="current-nest-code">NIDO-01</span>
-                            <h2 class="text-xl sm:text-2xl font-extrabold text-white mt-1" id="current-nest-name">Caja Nido Masía El Roble</h2>
-                            <p class="text-xs text-gray-400 mt-1" id="current-nest-location"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i> Lat: 40.416, Lng: -3.703</p>
-                        </div>
-                        <span id="current-pair-status" class="px-2 py-1 rounded-full text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700/50">
-                            Reproductora Activa
-                        </span>
-                    </div>
-
-                    <!-- Datos Pareja -->
-                    <div class="bg-gray-950/70 border border-gray-800 rounded-lg p-3.5 mb-4 grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                            <span class="text-gray-500 block">ID Pareja</span>
-                            <span class="font-bold text-gray-200 text-sm" id="pair-id">PAR-2026-04</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500 block">Especie</span>
-                            <span class="font-bold text-emerald-400 text-sm"><i>Tyto alba</i></span>
-                        </div>
-                        <div class="border-t border-gray-800 pt-2">
-                            <span class="text-gray-500 block">Anilla EURING ♂ (Macho)</span>
-                            <span class="font-mono text-gray-200" id="male-ring">E-984210</span>
-                        </div>
-                        <div class="border-t border-gray-800 pt-2">
-                            <span class="text-gray-500 block">Anilla EURING ♀ (Hembra)</span>
-                            <span class="font-mono text-gray-200" id="female-ring">E-984211</span>
-                        </div>
-                    </div>
-
-                    <button onclick="openModal('modal-change-pair')" class="w-full text-xs bg-gray-800 hover:bg-gray-750 text-gray-200 font-medium py-2 px-3 rounded-lg border border-gray-700 transition flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-arrows-rotate text-emerald-400"></i> Cambiar / Reemplazar Pareja
-                    </button>
-                </div>
-
-                <!-- Mapa GPS Leaflet -->
-                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 shadow-lg flex flex-col flex-1 min-h-[300px]">
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="text-xs sm:text-sm font-bold text-gray-200 flex items-center gap-2">
-                            <i class="fa-solid fa-map-location-dot text-emerald-400"></i> Ubicación GPS Satelital
-                        </h3>
-                        <span class="text-[11px] text-gray-400">Arrastra el marcador para fijar</span>
-                    </div>
-                    <div class="flex-1 w-full rounded-lg overflow-hidden border border-gray-800 min-h-[220px]" id="map"></div>
-                </div>
-
-            </div>
-
-            <!-- COLUMNA DERECHA: PESTAÑAS Y FORMULARIOS BIOLÓGICOS -->
-            <div class="lg:col-span-7 flex flex-col gap-6">
-
-                <!-- Botones de Acción de Campo -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <button onclick="openModal('modal-inspection')" class="p-3.5 bg-gray-900 hover:bg-gray-850 border border-gray-800 hover:border-emerald-500/50 rounded-xl shadow transition text-left group">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="p-2 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800/50 group-hover:bg-emerald-400 group-hover:text-gray-950 transition">
-                                <i class="fa-solid fa-clipboard-check text-lg"></i>
-                            </div>
-                            <i class="fa-solid fa-plus text-gray-600 group-hover:text-emerald-400"></i>
-                        </div>
-                        <h4 class="font-bold text-white text-xs sm:text-sm">Nueva Visita</h4>
-                        <p class="text-[11px] text-gray-400 mt-0.5">Huevos y pollos vivos/muertos</p>
-                    </button>
-
-                    <button onclick="openModal('modal-ringing')" class="p-3.5 bg-gray-900 hover:bg-gray-850 border border-gray-800 hover:border-sky-500/50 rounded-xl shadow transition text-left group">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="p-2 rounded-lg bg-sky-950 text-sky-400 border border-sky-800/50 group-hover:bg-sky-400 group-hover:text-gray-950 transition">
-                                <i class="fa-solid fa-ring text-lg"></i>
-                            </div>
-                            <i class="fa-solid fa-plus text-gray-600 group-hover:text-sky-400"></i>
-                        </div>
-                        <h4 class="font-bold text-white text-xs sm:text-sm">Anillamiento EURING</h4>
-                        <p class="text-[11px] text-gray-400 mt-0.5">Biometría y plumaje</p>
-                    </button>
-
-                    <button onclick="openModal('modal-incident')" class="p-3.5 bg-gray-900 hover:bg-gray-850 border border-gray-800 hover:border-rose-500/50 rounded-xl shadow transition text-left group">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="p-2 rounded-lg bg-rose-950 text-rose-400 border border-rose-800/50 group-hover:bg-rose-500 group-hover:text-white transition">
-                                <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-                            </div>
-                            <i class="fa-solid fa-plus text-gray-600 group-hover:text-rose-400"></i>
-                        </div>
-                        <h4 class="font-bold text-white text-xs sm:text-sm">Incidencia / Baja</h4>
-                        <p class="text-[11px] text-gray-400 mt-0.5">Mortalidad y causas</p>
-                    </button>
-                </div>
-
-                <!-- BITÁCORA Y HISTORIAL -->
-                <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg flex-1 flex flex-col">
-                    
-                    <div class="flex items-center justify-between border-b border-gray-800 pb-3 mb-4 flex-wrap gap-2">
-                        <h3 class="font-bold text-gray-200 text-sm sm:text-base flex items-center gap-2">
-                            <i class="fa-solid fa-book-bookmark text-emerald-400"></i> Bitácora del Nido
-                        </h3>
-                        
-                        <div class="flex bg-gray-950 p-1 rounded-lg border border-gray-800 text-xs font-semibold">
-                            <button onclick="switchTab('inspections')" id="tab-btn-inspections" class="px-2.5 py-1 rounded text-emerald-300 bg-gray-800 transition">
-                                Visitas (<span id="count-inspections">0</span>)
-                            </button>
-                            <button onclick="switchTab('ringings')" id="tab-btn-ringings" class="px-2.5 py-1 rounded text-gray-400 hover:text-gray-200 transition">
-                                Anillamientos (<span id="count-ringings">0</span>)
-                            </button>
-                            <button onclick="switchTab('incidents')" id="tab-btn-incidents" class="px-2.5 py-1 rounded text-gray-400 hover:text-gray-200 transition">
-                                Incidencias (<span id="count-incidents">0</span>)
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- TABLA: VISITAS / INSPECCIONES -->
-                    <div id="tab-content-inspections" class="space-y-3 overflow-y-auto max-h-[400px] custom-scroll pr-1"></div>
-
-                    <!-- TABLA: ANILLAMIENTOS EURING -->
-                    <div id="tab-content-ringings" class="hidden space-y-3 overflow-y-auto max-h-[400px] custom-scroll pr-1"></div>
-
-                    <!-- TABLA: INCIDENCIAS -->
-                    <div id="tab-content-incidents" class="hidden space-y-3 overflow-y-auto max-h-[400px] custom-scroll pr-1"></div>
-
-                </div>
-
-            </div>
-
-        </main>
-    </div>
-
-
-    <!-- ================= MODALES DE FORMULARIO ================= -->
-
-    <!-- MODAL 1: NUEVO NIDO -->
-    <div id="modal-new-nest" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-xl max-w-md w-full p-5 shadow-2xl">
-            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-box text-emerald-400"></i> Registrar Nuevo Nido / Territorio
-            </h3>
-            <form id="form-new-nest" onsubmit="handleSaveNest(event)" class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-gray-400 mb-1">Código ID Nido *</label>
-                    <input type="text" id="nest-code-input" required placeholder="Ej. NIDO-05" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Nombre / Ubicación *</label>
-                    <input type="text" id="nest-name-input" required placeholder="Ej. Finca La Dehesa - Caja 2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-gray-400 mb-1">Latitud GPS *</label>
-                        <input type="number" step="any" id="nest-lat-input" required placeholder="40.4168" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Longitud GPS *</label>
-                        <input type="number" step="any" id="nest-lng-input" required placeholder="-3.7038" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">ID Pareja (Opcional)</label>
-                    <input type="text" id="nest-pair-input" placeholder="Ej. PAR-2026-09" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none">
-                </div>
-                <div class="flex justify-end gap-2 pt-3 border-t border-gray-800">
-                    <button type="button" onclick="closeModal('modal-new-nest')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-semibold">Cancelar</button>
-                    <button type="submit" class="px-4 py-1.5 bg-emerald-400 hover:bg-emerald-300 text-gray-950 font-bold rounded-lg">Guardar Nido</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-
-    <!-- MODAL 2: INSPECCIÓN / VISITA -->
-    <div id="modal-inspection" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-xl max-w-lg w-full p-5 shadow-2xl">
-            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-clipboard-check text-emerald-400"></i> Nueva Visita al Nido
-            </h3>
-            <form id="form-inspection" onsubmit="handleSaveInspection(event)" class="space-y-3 text-xs">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-gray-400 mb-1">Fecha *</label>
-                        <input type="date" id="insp-date" required class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Hora</label>
-                        <input type="time" id="insp-time" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-3 bg-gray-950 p-3 rounded-lg border border-gray-800">
-                    <div>
-                        <label class="block text-amber-400 font-medium mb-1"><i class="fa-solid fa-egg"></i> Huevos</label>
-                        <input type="number" min="0" value="0" id="insp-eggs" required class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-center text-white font-bold focus:border-emerald-400 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-emerald-400 font-medium mb-1"><i class="fa-solid fa-kiwi-bird"></i> Pollos Vivos</label>
-                        <input type="number" min="0" value="0" id="insp-chicks-alive" required class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-center text-white font-bold focus:border-emerald-400 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-rose-400 font-medium mb-1"><i class="fa-solid fa-skull"></i> Pollos Muertos</label>
-                        <input type="number" min="0" value="0" id="insp-chicks-dead" required class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-center text-white font-bold focus:border-emerald-400 focus:outline-none">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-gray-400 mb-1">Presencia Adultos</label>
-                    <select id="insp-adults" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none">
-                        <option value="Ninguno detectado">Ninguno detectado en caja</option>
-                        <option value="Macho presente">Macho presente</option>
-                        <option value="Hembra presente">Hembra incubando / presente</option>
-                        <option value="Ambos adultos">Ambos adultos presentes</option>
+        <!-- SECTION 2: MAIN DASHBOARD / APP -->
+        <section id="dashboardPage" class="hidden flex-1 p-4 lg:p-8 space-y-8 bg-slate-950 max-w-7xl mx-auto w-full">
+            
+            <!-- CONTROLS BAR: Nest Selector & New Nest Button -->
+            <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border border-slate-800">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <label for="nestSelect" class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="archive" class="w-4 h-4 text-emerald-400"></i> Seleccionar Caja Nido:
+                    </label>
+                    <select id="nestSelect" onchange="loadSelectedNest()" class="w-full sm:w-64 bg-slate-900 border border-slate-700 text-slate-100 text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none font-medium">
+                        <!-- Dynamic Options -->
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-gray-400 mb-1">Notas / Presas observadas</label>
-                    <textarea id="insp-notes" rows="2" placeholder="Ej. Presencia de 2 egagrópilas frescas y presas de Microtus arvalis." class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none"></textarea>
+                <div class="flex items-center gap-3 justify-end">
+                    <button onclick="createNewNest()" class="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Nuevo Nido</span>
+                    </button>
+                    <button onclick="exportCSV()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all">
+                        <i data-lucide="file-output" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Exportar CSV</span>
+                    </button>
+                    <button onclick="exportJSON()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all">
+                        <i data-lucide="database" class="w-4 h-4 text-lime-400"></i>
+                        <span>Backup JSON</span>
+                    </button>
                 </div>
+            </div>
 
-                <div class="flex justify-end gap-2 pt-3 border-t border-gray-800">
-                    <button type="button" onclick="closeModal('modal-inspection')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-semibold">Cancelar</button>
-                    <button type="submit" class="px-4 py-1.5 bg-emerald-400 hover:bg-emerald-300 text-gray-950 font-bold rounded-lg">Guardar Visita</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-
-    <!-- MODAL 3: ANILLAMIENTO EURING -->
-    <div id="modal-ringing" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-xl max-w-xl w-full p-5 shadow-2xl max-h-[90vh] overflow-y-auto custom-scroll">
-            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-ring text-sky-400"></i> Registro Biométrico y Anillamiento
-            </h3>
-            <form id="form-ringing" onsubmit="handleSaveRinging(event)" class="space-y-3 text-xs">
+            <!-- GRID SECTION 1: MAP + NEST PAIR GENERAL INFO -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-gray-400 mb-1">Código Anilla EURING *</label>
-                        <input type="text" id="ring-code" required placeholder="Ej. E-984215" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 font-mono focus:border-sky-400 focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Tipo de Registro *</label>
-                        <select id="ring-type" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-sky-400 focus:outline-none">
-                            <option value="Pollo en Nido">Pollo en Nido</option>
-                            <option value="Adulto Macho">Adulto Macho</option>
-                            <option value="Adulto Hembra">Adulto Hembra</option>
-                            <option value="Recaptura">Recaptura / Control</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Fecha *</label>
-                        <input type="date" id="ring-date" required class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-sky-400 focus:outline-none">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-3 bg-gray-950 p-3 rounded-lg border border-gray-800">
-                    <div>
-                        <label class="block text-gray-400 mb-1">Edad EURING</label>
-                        <select id="ring-euring-age" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-gray-200 focus:border-sky-400 focus:outline-none">
-                            <option value="1 (Pullus)">1 - Pullus</option>
-                            <option value="3 (Nacido año)">3 - Nacido año</option>
-                            <option value="5 (2º año)">5 - 2º año</option>
-                            <option value="8 (Adulto +2a)">8 - Adulto +2a</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Sexo Biológico</label>
-                        <select id="ring-sex" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-gray-200 focus:border-sky-400 focus:outline-none">
-                            <option value="Indeterminado">Indeterminado</option>
-                            <option value="Macho (♂)">Macho (♂)</option>
-                            <option value="Hembra (♀)">Hembra (♀)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Masa / Peso (g)</label>
-                        <input type="number" step="0.1" id="ring-weight" placeholder="320.5" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-gray-200 focus:border-sky-400 focus:outline-none">
-                    </div>
-                </div>
-
-                <div class="border border-gray-800 rounded-lg p-3 space-y-3">
-                    <span class="font-bold text-sky-400 block border-b border-gray-800 pb-1">Biometría y Plumaje</span>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div>
-                            <label class="block text-gray-400 mb-1">Long. Ala (mm)</label>
-                            <input type="number" step="0.1" id="bio-wing" placeholder="285" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-gray-200">
-                        </div>
-                        <div>
-                            <label class="block text-gray-400 mb-1">P8 (mm)</label>
-                            <input type="number" step="0.1" id="bio-p8" placeholder="190" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-gray-200">
-                        </div>
-                        <div>
-                            <label class="block text-gray-400 mb-1">Tarso (mm)</label>
-                            <input type="number" step="0.1" id="bio-tarsus" placeholder="58.2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-gray-200">
-                        </div>
-                        <div>
-                            <label class="block text-gray-400 mb-1">Rectriz R5 (mm)</label>
-                            <input type="number" step="0.1" id="bio-r5" placeholder="120" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-gray-200">
-                        </div>
+                <!-- Interactive Map Box (7 cols) -->
+                <div class="lg:col-span-7 glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i>
+                            Ubicación GPS (ESRI Satellite World Imagery)
+                        </h2>
+                        <span class="text-xs text-slate-400">Arrastra el marcador para fijar coordenadas</span>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-3 pt-1">
-                        <div>
-                            <label class="block text-gray-400 mb-1">Feomelanina Pecho (1-5)</label>
-                            <input type="number" min="1" max="5" id="bio-feomelanin" placeholder="1 (Blanco) a 5 (Oscuro)" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-gray-200">
+                    <div id="map" class="w-full h-80 rounded-xl overflow-hidden border border-slate-800 shadow-inner"></div>
+
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-400 block text-[10px] font-semibold uppercase">Latitud</span>
+                            <span id="displayLat" class="font-mono text-emerald-400 text-sm">39.8942</span>
                         </div>
-                        <div>
-                            <label class="block text-gray-400 mb-1">Moteado Pecho (0-10)</label>
-                            <input type="number" min="0" max="10" id="bio-spots" placeholder="0 (Sin motas) a 10" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-gray-200">
+                        <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-400 block text-[10px] font-semibold uppercase">Longitud</span>
+                            <span id="displayLng" class="font-mono text-emerald-400 text-sm">-0.0631</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-3 border-t border-gray-800">
-                    <button type="button" onclick="closeModal('modal-ringing')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-semibold">Cancelar</button>
-                    <button type="submit" class="px-4 py-1.5 bg-sky-400 hover:bg-sky-300 text-gray-950 font-bold rounded-lg">Guardar Anillamiento</button>
+                <!-- Nest Details & Pair Info (5 cols) -->
+                <div class="lg:col-span-5 glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i data-lucide="info" class="w-4 h-4 text-emerald-400"></i>
+                                Datos del Nido y Pareja
+                            </h2>
+                            <span id="nestBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">NIDO-01</span>
+                        </div>
+
+                        <form id="nestForm" onchange="saveNestDetails()" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Especie</label>
+                                <input type="text" value="Tyto alba (Lechuza Común)" readonly class="w-full bg-slate-900/50 border border-slate-800 text-slate-400 text-xs rounded-lg px-3 py-2 cursor-not-allowed">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Nombre / ID Nido</label>
+                                    <input type="text" id="nestNameInput" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">ID Pareja</label>
+                                    <input type="text" id="pairIdInput" placeholder="Ej. P-2026-03" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 outline-none">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Anilla Macho (♂)</label>
+                                    <input type="text" id="maleRingInput" placeholder="Ej. EUR-98123" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 outline-none font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Anilla Hembra (♀)</label>
+                                    <input type="text" id="femaleRingInput" placeholder="Ej. EUR-98124" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 outline-none font-mono">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Ubicación / Hábitat</label>
+                                <input type="text" id="habitatInput" placeholder="Ej. Casetón agrícola, Masía abandonada" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 outline-none">
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- SEASON TIMELINE SUMMARY CARD -->
+                    <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                        <h4 class="text-xs font-bold text-slate-300 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5 text-lime-400"></i> Resumen de Temporada</span>
+                            <span id="seasonStatusBadge" class="text-[10px] text-emerald-400 font-normal">En curso</span>
+                        </h4>
+                        <div class="grid grid-cols-4 gap-1 text-center text-[10px]">
+                            <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                                <span class="text-slate-500 block">Puesta</span>
+                                <span id="estLayingDate" class="font-semibold text-slate-200">--/--</span>
+                            </div>
+                            <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                                <span class="text-slate-500 block">Eclosión</span>
+                                <span id="estHatchDate" class="font-semibold text-slate-200">--/--</span>
+                            </div>
+                            <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                                <span class="text-slate-500 block">Anillamiento</span>
+                                <span id="estRingDate" class="font-semibold text-emerald-400">--/--</span>
+                            </div>
+                            <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                                <span class="text-slate-500 block">Vuelo</span>
+                                <span id="estFledgeDate" class="font-semibold text-lime-400">--/--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: FIELD VISITS LOG & OBSERVATIONS -->
+            <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i data-lucide="clipboard-list" class="w-5 h-5 text-emerald-400"></i>
+                            Observaciones de Campo & Control de Visitas
+                        </h2>
+                        <p class="text-xs text-slate-400">Histórico de inspecciones en la caja nido</p>
+                    </div>
+                    <button onclick="openVisitModal()" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-emerald-950 flex items-center gap-2 transition-all">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Agregar Visita</span>
+                    </button>
+                </div>
+
+                <!-- Visits Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900/90 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
+                            <tr>
+                                <th class="py-3 px-4">Fecha</th>
+                                <th class="py-3 px-4 text-center">Huevos</th>
+                                <th class="py-3 px-4 text-center">Pollos Vivos</th>
+                                <th class="py-3 px-4 text-center">Pollos Muertos</th>
+                                <th class="py-3 px-4">Notas / Estado</th>
+                                <th class="py-3 px-4 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="visitsTableBody" class="divide-y divide-slate-800/60 font-medium">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECTION 3: EURING RINGING & BIOMETRICS MODULE -->
+            <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i data-lucide="microscope" class="w-5 h-5 text-lime-400"></i>
+                            Registro Biométrico de Pollos & Anillamiento EURING
+                        </h2>
+                        <p class="text-xs text-slate-400">Parámetros morfológicos según estándar europeo EURING</p>
+                    </div>
+                    <button onclick="openRingingModal()" class="px-4 py-2 bg-lime-500/10 hover:bg-lime-500/20 text-lime-400 border border-lime-500/30 text-xs font-bold rounded-xl flex items-center gap-2 transition-all">
+                        <i data-lucide="tag" class="w-4 h-4"></i>
+                        <span>Anillar Nuevo Pollo</span>
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900/90 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
+                            <tr>
+                                <th class="py-3 px-4">Anilla EURING</th>
+                                <th class="py-3 px-4">Edad</th>
+                                <th class="py-3 px-4">Masa (g)</th>
+                                <th class="py-3 px-4">Ala (mm)</th>
+                                <th class="py-3 px-4">P8 (mm)</th>
+                                <th class="py-3 px-4">Tarso (mm)</th>
+                                <th class="py-3 px-4">R5 (mm)</th>
+                                <th class="py-3 px-4">Moteado / Feomelanina</th>
+                                <th class="py-3 px-4 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ringingTableBody" class="divide-y divide-slate-800/60">
+                            <!-- Dynamic EURING Records -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECTION 4: INCIDENTS LOG -->
+            <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400"></i>
+                            Módulo de Incidencias de Campo
+                        </h2>
+                        <p class="text-xs text-slate-400">Registro de mortalidad, causas antrópicas, depredación o fracaso reproductor</p>
+                    </div>
+                    <button onclick="openIncidentModal()" class="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold rounded-xl flex items-center gap-2 transition-all">
+                        <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                        <span>Registrar Incidencia</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="incidentsGrid">
+                    <!-- Dynamic Incidents Cards -->
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- MODAL 1: ADD VISIT -->
+    <div id="visitModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass-panel-glow w-full max-w-md rounded-2xl p-6 space-y-4 text-slate-100">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold flex items-center gap-2">
+                    <i data-lucide="calendar-plus" class="w-4 h-4 text-emerald-400"></i> Nueva Visita de Campo
+                </h3>
+                <button onclick="closeVisitModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="visitForm" onsubmit="saveVisit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Fecha de la Visita</label>
+                    <input type="date" id="visitDate" required class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Nº Huevos</label>
+                        <input type="number" min="0" id="visitEggs" value="0" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Pollos Vivos</label>
+                        <input type="number" min="0" id="visitChicksAlive" value="0" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Pollos Muertos</label>
+                        <input type="number" min="0" id="visitChicksDead" value="0" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Notas / Observaciones</label>
+                    <textarea id="visitNotes" rows="3" placeholder="Ej. Incubación activa. Hembra presente en la caja..." class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeVisitModal()" class="px-4 py-2 bg-slate-900 text-slate-300 text-xs rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-lg">Guardar Visita</button>
                 </div>
             </form>
         </div>
     </div>
 
-
-    <!-- MODAL 4: INCIDENCIA / MORTALIDAD -->
-    <div id="modal-incident" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-xl max-w-lg w-full p-5 shadow-2xl">
-            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Registrar Incidencia o Baja
-            </h3>
-            <form id="form-incident" onsubmit="handleSaveIncident(event)" class="space-y-3 text-xs">
-                
+    <!-- MODAL 2: EURING RINGING -->
+    <div id="ringingModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass-panel-glow w-full max-w-lg rounded-2xl p-6 space-y-4 text-slate-100">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold flex items-center gap-2">
+                    <i data-lucide="tag" class="w-4 h-4 text-lime-400"></i> Registro Biométrico EURING
+                </h3>
+                <button onclick="closeRingingModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="ringingForm" onsubmit="saveRinging(event)" class="space-y-3">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-gray-400 mb-1">Fecha *</label>
-                        <input type="date" id="inc-date" required class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-rose-500 focus:outline-none">
+                        <label class="block text-xs text-slate-300 mb-1">Código Anilla EURING</label>
+                        <input type="text" id="ringCode" placeholder="Ej. 1309821" required class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white font-mono">
                     </div>
                     <div>
-                        <label class="block text-gray-400 mb-1">Tipo de Evento *</label>
-                        <select id="inc-type" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-rose-500 focus:outline-none">
-                            <option value="Mortalidad / Baja">Mortalidad / Baja individuo</option>
-                            <option value="Abandono de Nidada">Abandono de Nidada</option>
-                            <option value="Pérdida por Depredación">Pérdida por Depredación</option>
-                            <option value="Caída de Caja">Caída / Rotura de Caja</option>
-                            <option value="Desaparición Pareja">Desaparición de Pareja</option>
+                        <label class="block text-xs text-slate-300 mb-1">Edad EURING</label>
+                        <select id="ringAge" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                            <option value="1">1 - Pullus (Pollo de nido)</option>
+                            <option value="3">3 - Nacido este año calendario</option>
+                            <option value="5">5 - Nacido año anterior</option>
+                            <option value="8">8 - Adulto (+2 años)</option>
                         </select>
                     </div>
                 </div>
-
-                <div>
-                    <label class="block text-gray-400 mb-1">Causa de la Incidencia</label>
-                    <select id="inc-cause" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-rose-500 focus:outline-none">
-                        <option value="Desconocida">Causa Desconocida</option>
-                        <option value="Atropello en carretera">Atropello en carretera</option>
-                        <option value="Electrocución">Electrocución en tendido</option>
-                        <option value="Depredación">Depredación por otro animal</option>
-                        <option value="Inanición">Desnutrición / Inanición</option>
-                        <option value="Rodenticidas">Sospecha de rodenticida/veneno</option>
-                        <option value="Clima">Ola de calor / Golpe de agua</option>
-                    </select>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Masa (g)</label>
+                        <input type="number" step="0.1" id="ringMass" placeholder="320.5" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Ala (mm)</label>
+                        <input type="number" step="0.5" id="ringWing" placeholder="285" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">P8 (mm)</label>
+                        <input type="number" step="0.5" id="ringP8" placeholder="190" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                    </div>
                 </div>
-
-                <div>
-                    <label class="block text-gray-400 mb-1">Anilla EURING Afectada (opcional)</label>
-                    <input type="text" id="inc-ring" placeholder="Ej. E-984210" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 font-mono focus:border-rose-500 focus:outline-none">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Tarso (mm)</label>
+                        <input type="number" step="0.1" id="ringTarsus" placeholder="62.3" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">R5 (mm)</label>
+                        <input type="number" step="0.5" id="ringR5" placeholder="115" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Feomelanina / Moteado</label>
+                        <input type="text" id="ringPattern" placeholder="Ej. Ligeramente moteado" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                    </div>
                 </div>
-
-                <div>
-                    <label class="block text-gray-400 mb-1">Detalles de campo</label>
-                    <textarea id="inc-details" rows="2" placeholder="Descripción de las observaciones encontradas." class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-rose-500 focus:outline-none"></textarea>
-                </div>
-
-                <div class="flex justify-end gap-2 pt-3 border-t border-gray-800">
-                    <button type="button" onclick="closeModal('modal-incident')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-semibold">Cancelar</button>
-                    <button type="submit" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg">Guardar Incidencia</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-
-    <!-- MODAL 5: REEMPLAZO DE PAREJA -->
-    <div id="modal-change-pair" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-xl max-w-md w-full p-5 shadow-2xl">
-            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-arrows-rotate text-emerald-400"></i> Actualizar Datos de Pareja
-            </h3>
-            <form id="form-change-pair" onsubmit="handleSavePairChange(event)" class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-gray-400 mb-1">ID Código Pareja *</label>
-                    <input type="text" id="pair-new-id" required placeholder="Ej. PAR-2026-08" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Anilla Macho (♂)</label>
-                    <input type="text" id="pair-male-ring" placeholder="Ej. E-984210" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 font-mono focus:border-emerald-400 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Anilla Hembra (♀)</label>
-                    <input type="text" id="pair-female-ring" placeholder="Ej. E-984211" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 font-mono focus:border-emerald-400 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Estatus Reproductor</label>
-                    <select id="pair-status" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-200 focus:border-emerald-400 focus:outline-none">
-                        <option value="Reproductora Activa">Reproductora Activa</option>
-                        <option value="En Formación">En Formación</option>
-                        <option value="Inactiva / Sin Puesta">Inactiva / Sin Puesta</option>
-                        <option value="Desaparecida">Pareja Desaparecida</option>
-                    </select>
-                </div>
-                <div class="flex justify-end gap-2 pt-3 border-t border-gray-800">
-                    <button type="button" onclick="closeModal('modal-change-pair')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-semibold">Cancelar</button>
-                    <button type="submit" class="px-4 py-1.5 bg-emerald-400 hover:bg-emerald-300 text-gray-950 font-bold rounded-lg">Actualizar Pareja</button>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeRingingModal()" class="px-4 py-2 bg-slate-900 text-slate-300 text-xs rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold text-xs rounded-lg">Registrar Anillamiento</button>
                 </div>
             </form>
         </div>
     </div>
 
-
-    <!-- TOAST NOTIFICACIÓN -->
-    <div id="toast-msg" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-gray-900 border border-emerald-500 text-gray-100 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
-        <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
-        <span id="toast-text" class="text-xs font-semibold">Mensaje de actualización</span>
+    <!-- MODAL 3: INCIDENT -->
+    <div id="incidentModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass-panel-glow w-full max-w-md rounded-2xl p-6 space-y-4 text-slate-100">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold flex items-center gap-2">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Registrar Incidencia
+                </h3>
+                <button onclick="closeIncidentModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="incidentForm" onsubmit="saveIncident(event)" class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Tipo de Incidencia</label>
+                        <select id="incidentType" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                            <option value="Atropello">Atropello</option>
+                            <option value="Electrocución">Electrocución</option>
+                            <option value="Depredación">Depredación</option>
+                            <option value="Muerte Natural/Hambre">Muerte Natural / Fracaso</option>
+                            <option value="Cambio de Pareja">Cambio de Pareja</option>
+                            <option value="Abandono de Nido">Abandono de Nido</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Fecha</label>
+                        <input type="date" id="incidentDate" required class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Descripción / Detalles de la Incidencia</label>
+                    <textarea id="incidentDescription" rows="3" placeholder="Detalles de lo acontecido..." class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg px-3 py-2 text-white"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeIncidentModal()" class="px-4 py-2 bg-slate-900 text-slate-300 text-xs rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg">Guardar Incidencia</button>
+                </div>
+            </form>
+        </div>
     </div>
 
+    <!-- FOOTER -->
+    <footer class="bg-slate-950 border-t border-slate-900 py-6 px-4 text-center text-xs text-slate-300">
+        <p>© 2026 Programa de Monitoreo de Tyto alba • Sistema de Registro Ornitológico y Biometría EURING</p>
+    </footer>
 
-    <!-- JAVASCRIPT LOGIC -->
+    <!-- MAIN JAVASCRIPT LOGIC -->
     <script>
-        const STORAGE_KEY = 'tyto_alba_monitoring_db_v2';
-        
-        const initialData = {
-            activeNestId: 'NIDO-01',
-            nests: [
-                {
-                    id: 'NIDO-01',
-                    code: 'NIDO-01',
-                    name: 'Caja Nido Masía El Roble',
-                    lat: 40.4168,
-                    lng: -3.7038,
-                    pairId: 'PAR-2026-04',
-                    maleRing: 'E-984210',
-                    femaleRing: 'E-984211',
-                    status: 'Reproductora Activa'
-                },
-                {
-                    id: 'NIDO-02',
-                    code: 'NIDO-02',
-                    name: 'Campanario Iglesia San Pedro',
-                    lat: 40.4200,
-                    lng: -3.7100,
-                    pairId: 'PAR-2026-02',
-                    maleRing: 'E-984105',
-                    femaleRing: 'E-984106',
-                    status: 'En Formación'
-                }
-            ],
-            inspections: [
-                {
-                    id: 1,
-                    nestId: 'NIDO-01',
-                    date: '2026-04-12',
-                    time: '21:30',
-                    eggs: 5,
-                    chicksAlive: 0,
-                    chicksDead: 0,
-                    adults: 'Hembra presente',
-                    notes: 'Incubación iniciada. Hembra presente en nidada.'
-                },
-                {
-                    id: 2,
-                    nestId: 'NIDO-01',
-                    date: '2026-05-18',
-                    time: '22:15',
-                    eggs: 1,
-                    chicksAlive: 4,
-                    chicksDead: 0,
-                    adults: 'Ninguno detectado',
-                    notes: 'Eclosión exitosa de 4 pollos.'
-                }
-            ],
-            ringings: [
-                {
-                    id: 1,
-                    nestId: 'NIDO-01',
-                    ringCode: 'E-984301',
-                    type: 'Pollo en Nido',
-                    date: '2026-06-02',
-                    euringAge: '1 (Pullus)',
-                    sex: 'Indeterminado',
-                    weight: 295.5,
-                    wing: 185,
-                    p8: 110,
-                    tarsus: 55.4,
-                    r5: 80,
-                    feomelanin: 2,
-                    spots: 4
-                }
-            ],
-            incidents: [
-                {
-                    id: 1,
-                    nestId: 'NIDO-02',
-                    date: '2026-03-01',
-                    type: 'Pérdida por Depredación',
-                    cause: 'Depredación',
-                    ring: 'N/A',
-                    details: 'Restos de plumas en la entrada de la caja.'
-                }
-            ]
+        // Initial Mock Data
+        const initialNests = [
+            {
+                id: 'NIDO-01',
+                name: 'Caja Nido Masía El Roble',
+                pairId: 'PAREJA-2026-A',
+                maleRing: 'EURING-901241',
+                femaleRing: 'EURING-901242',
+                lat: 39.8942,
+                lng: -0.0631,
+                habitat: 'Casetón agrícola de piedra',
+                visits: [
+                    { id: 'v1', date: '2026-03-15', eggs: 5, chicksAlive: 0, chicksDead: 0, notes: 'Inicio de incubación. Hembra incubando 5 huevos.' },
+                    { id: 'v2', date: '2026-04-18', eggs: 1, chicksAlive: 4, chicksDead: 0, notes: '4 pollos eclosionados recientemente, 1 huevo por eclosionar.' }
+                ],
+                ringing: [
+                    { id: 'r1', ringCode: 'EURING-9801', age: '1', mass: 290, wing: 140, p8: 85, tarsus: 58.2, r5: 60, pattern: 'Moteado leve' },
+                    { id: 'r2', ringCode: 'EURING-9802', age: '1', mass: 310, wing: 145, p8: 88, tarsus: 59.0, r5: 62, pattern: 'Feomelanina media' }
+                ],
+                incidents: [
+                    { id: 'i1', type: 'Abandono de Nido', date: '2025-06-10', description: 'Temporada anterior: pérdida de puesta por molestias térmicas extremas.' }
+                ]
+            },
+            {
+                id: 'NIDO-02',
+                name: 'Torre del Campanario Viejo',
+                pairId: 'PAREJA-2026-B',
+                maleRing: 'EURING-882190',
+                femaleRing: 'EURING-882191',
+                lat: 39.9015,
+                lng: -0.0520,
+                habitat: 'Campanario histórico elevado',
+                visits: [
+                    { id: 'v3', date: '2026-04-02', eggs: 4, chicksAlive: 2, chicksDead: 0, notes: 'Dos pollos eclosionados.' }
+                ],
+                ringing: [],
+                incidents: []
+            }
+        ];
+
+        let state = {
+            nests: [],
+            currentNestId: null
         };
 
-        let db = loadData();
         let map = null;
-        let mapMarker = null;
+        let marker = null;
 
-        function loadData() {
-            const saved = localStorage.getItem(STORAGE_KEY);
+        // Initialize App
+        window.onload = function() {
+            lucide.createIcons();
+            loadState();
+            renderNestOptions();
+            
+            // Set default date inputs to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('visitDate').value = today;
+            document.getElementById('incidentDate').value = today;
+        };
+
+        function loadState() {
+            const saved = localStorage.getItem('tyto_alba_nest_data');
             if (saved) {
-                try { return JSON.parse(saved); } catch (e) { console.error(e); }
+                try {
+                    state = JSON.parse(saved);
+                } catch(e) {
+                    state.nests = initialNests;
+                }
+            } else {
+                state.nests = initialNests;
             }
-            return initialData;
+            if (!state.currentNestId && state.nests.length > 0) {
+                state.currentNestId = state.nests[0].id;
+            }
         }
 
-        function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+        function saveState() {
+            localStorage.setItem('tyto_alba_nest_data', JSON.stringify(state));
         }
 
-        function enterApp() {
-            document.getElementById('landing-page').classList.add('opacity-0', '-translate-y-4');
-            setTimeout(() => {
-                document.getElementById('landing-page').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('hidden');
-                document.getElementById('main-app').classList.add('flex');
-                initAppUI();
-            }, 500);
+        // Navigation toggles
+        function showLanding() {
+            document.getElementById('landingPage').classList.remove('hidden');
+            document.getElementById('dashboardPage').classList.add('hidden');
         }
 
-        function returnToLanding() {
-            document.getElementById('landing-page').classList.remove('hidden');
-            setTimeout(() => {
-                document.getElementById('landing-page').classList.remove('opacity-0', '-translate-y-4');
-                document.getElementById('main-app').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('flex');
-            }, 10);
+        function showDashboard() {
+            document.getElementById('landingPage').classList.add('hidden');
+            document.getElementById('dashboardPage').classList.remove('hidden');
+            
+            // Initialize map if not yet created
+            if (!map) {
+                initMap();
+            } else {
+                map.invalidateSize();
+            }
+
+            loadSelectedNest();
         }
 
-        function initAppUI() {
-            populateNestSelector();
-            updateCurrentNestView();
-            initMap();
-            renderTables();
-        }
+        // Map Initialization (ESRI Satellite Imagery)
+        function initMap() {
+            const currentNest = getCurrentNest();
+            const initialLat = currentNest ? currentNest.lat : 39.8942;
+            const initialLng = currentNest ? currentNest.lng : -0.0631;
 
-        function populateNestSelector() {
-            const select = document.getElementById('global-nest-select');
-            select.innerHTML = '';
-            db.nests.forEach(nest => {
-                const option = document.createElement('option');
-                option.value = nest.id;
-                option.textContent = `${nest.code} - ${nest.name}`;
-                if (nest.id === db.activeNestId) option.selected = true;
-                select.appendChild(option);
+            map = L.map('map').setView([initialLat, initialLng], 15);
+
+            // ESRI World Imagery Layer
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                maxZoom: 18
+            }).addTo(map);
+
+            // Draggable Marker
+            marker = L.marker([initialLat, initialLng], { draggable: true }).addTo(map);
+
+            marker.on('dragend', function(e) {
+                const coord = marker.getLatLng();
+                const nest = getCurrentNest();
+                if (nest) {
+                    nest.lat = parseFloat(coord.lat.toFixed(6));
+                    nest.lng = parseFloat(coord.lng.toFixed(6));
+                    updateCoordDisplay(nest.lat, nest.lng);
+                    saveState();
+                }
             });
         }
 
-        function changeActiveNest(nestId) {
-            db.activeNestId = nestId;
-            saveData();
-            updateCurrentNestView();
-            updateMapPosition();
-            renderTables();
-            showToast(`Nido activo: ${nestId}`);
+        function updateCoordDisplay(lat, lng) {
+            document.getElementById('displayLat').textContent = lat.toFixed(6);
+            document.getElementById('displayLng').textContent = lng.toFixed(6);
         }
 
+        // Current Nest Operations
         function getCurrentNest() {
-            return db.nests.find(n => n.id === db.activeNestId) || db.nests[0];
+            return state.nests.find(n => n.id === state.currentNestId);
         }
 
-        function updateCurrentNestView() {
+        function renderNestOptions() {
+            const select = document.getElementById('nestSelect');
+            select.innerHTML = '';
+            state.nests.forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n.id;
+                opt.textContent = `${n.id} - ${n.name}`;
+                if (n.id === state.currentNestId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function createNewNest() {
+            const nextIndex = state.nests.length + 1;
+            const newId = `NIDO-${nextIndex < 10 ? '0' + nextIndex : nextIndex}`;
+            const newNest = {
+                id: newId,
+                name: `Caja Nido Nueva ${nextIndex}`,
+                pairId: `PAREJA-2026-${String.fromCharCode(65 + nextIndex)}`,
+                maleRing: '',
+                femaleRing: '',
+                lat: 39.8950 + (Math.random() * 0.01),
+                lng: -0.0630 + (Math.random() * 0.01),
+                habitat: 'Casetón agrícola',
+                visits: [],
+                ringing: [],
+                incidents: []
+            };
+
+            state.nests.push(newNest);
+            state.currentNestId = newId;
+            saveState();
+            renderNestOptions();
+            loadSelectedNest();
+        }
+
+        function loadSelectedNest() {
+            const select = document.getElementById('nestSelect');
+            state.currentNestId = select.value;
             const nest = getCurrentNest();
             if (!nest) return;
 
-            document.getElementById('current-nest-code').textContent = nest.code;
-            document.getElementById('current-nest-name').textContent = nest.name;
-            document.getElementById('current-nest-location').innerHTML = `<i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i> Lat: ${parseFloat(nest.lat).toFixed(4)}, Lng: ${parseFloat(nest.lng).toFixed(4)}`;
-            
-            document.getElementById('pair-id').textContent = nest.pairId || 'Sin registrar';
-            document.getElementById('male-ring').textContent = nest.maleRing || 'Sin anilla';
-            document.getElementById('female-ring').textContent = nest.femaleRing || 'Sin anilla';
-            document.getElementById('current-pair-status').textContent = nest.status || 'Desconocido';
+            // Update UI fields
+            document.getElementById('nestBadge').textContent = nest.id;
+            document.getElementById('nestNameInput').value = nest.name;
+            document.getElementById('pairIdInput').value = nest.pairId || '';
+            document.getElementById('maleRingInput').value = nest.maleRing || '';
+            document.getElementById('femaleRingInput').value = nest.femaleRing || '';
+            document.getElementById('habitatInput').value = nest.habitat || '';
+
+            // Update Map
+            if (map && marker) {
+                const pos = [nest.lat, nest.lng];
+                marker.setLatLng(pos);
+                map.setView(pos, 15);
+                updateCoordDisplay(nest.lat, nest.lng);
+            }
+
+            // Render tables & timelines
+            renderVisits();
+            renderRinging();
+            renderIncidents();
+            calculateSeasonTimeline(nest);
+            saveState();
         }
 
-        function initMap() {
-            if (map) return;
-            
+        function saveNestDetails() {
             const nest = getCurrentNest();
-            const defaultLat = nest ? nest.lat : 40.4168;
-            const defaultLng = nest ? nest.lng : -3.7038;
+            if (!nest) return;
+            nest.name = document.getElementById('nestNameInput').value;
+            nest.pairId = document.getElementById('pairIdInput').value;
+            nest.maleRing = document.getElementById('maleRingInput').value;
+            nest.femaleRing = document.getElementById('femaleRingInput').value;
+            nest.habitat = document.getElementById('habitatInput').value;
+            saveState();
 
-            map = L.map('map').setView([defaultLat, defaultLng], 14);
-
-            const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri'
-            });
-
-            const openStreetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap'
-            });
-
-            esriSatellite.addTo(map);
-
-            L.control.layers({
-                "Satélite (ESRI)": esriSatellite,
-                "Mapa Callejero (OSM)": openStreetMap
-            }).addTo(map);
-
-            mapMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
-
-            mapMarker.on('dragend', function (e) {
-                const coord = e.target.getLatLng();
-                const activeNest = getCurrentNest();
-                activeNest.lat = coord.lat;
-                activeNest.lng = coord.lng;
-                saveData();
-                updateCurrentNestView();
-                showToast(`GPS: ${coord.lat.toFixed(4)}, ${coord.lng.toFixed(4)}`);
-            });
+            // Refresh option text
+            const select = document.getElementById('nestSelect');
+            const selectedOpt = select.options[select.selectedIndex];
+            if (selectedOpt) selectedOpt.textContent = `${nest.id} - ${nest.name}`;
         }
 
-        function updateMapPosition() {
+        // Season Timeline Calculation Logic (Biological Estimates)
+        function calculateSeasonTimeline(nest) {
+            const elLaying = document.getElementById('estLayingDate');
+            const elHatch = document.getElementById('estHatchDate');
+            const elRing = document.getElementById('estRingDate');
+            const elFledge = document.getElementById('estFledgeDate');
+
+            if (!nest.visits || nest.visits.length === 0) {
+                elLaying.textContent = '--/--';
+                elHatch.textContent = '--/--';
+                elRing.textContent = '--/--';
+                elFledge.textContent = '--/--';
+                return;
+            }
+
+            // Find first visit with eggs or chicks
+            const sortedVisits = [...nest.visits].sort((a,b) => new Date(a.date) - new Date(b.date));
+            const firstObs = sortedVisits[0];
+            const startDate = new Date(firstObs.date);
+
+            // Tyto alba breeding cycle averages:
+            // Incubation: ~32 days. Chick ringing optimal: ~25-30 days post-hatch. Fledging: ~50-55 days.
+            let layingDate = new Date(startDate);
+            let hatchDate = new Date(startDate);
+            hatchDate.setDate(hatchDate.getDate() + 32);
+
+            let ringDate = new Date(hatchDate);
+            ringDate.setDate(ringDate.getDate() + 28);
+
+            let fledgeDate = new Date(hatchDate);
+            fledgeDate.setDate(fledgeDate.getDate() + 52);
+
+            const formatDate = d => `${d.getDate()}/${d.getMonth()+1}`;
+
+            elLaying.textContent = formatDate(layingDate);
+            elHatch.textContent = formatDate(hatchDate);
+            elRing.textContent = formatDate(ringDate);
+            elFledge.textContent = formatDate(fledgeDate);
+        }
+
+        // VISITS LOGIC
+        function renderVisits() {
+            const tbody = document.getElementById('visitsTableBody');
             const nest = getCurrentNest();
-            if (map && nest) {
-                const latLng = [nest.lat, nest.lng];
-                map.setView(latLng, 14);
-                if (mapMarker) {
-                    mapMarker.setLatLng(latLng);
-                }
-            }
-        }
+            tbody.innerHTML = '';
 
-        function switchTab(tabName) {
-            ['inspections', 'ringings', 'incidents'].forEach(t => {
-                document.getElementById(`tab-content-${t}`).classList.add('hidden');
-                const btn = document.getElementById(`tab-btn-${t}`);
-                btn.classList.remove('text-emerald-300', 'bg-gray-800');
-                btn.classList.add('text-gray-400');
+            if (!nest.visits || nest.visits.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 italic">No hay observaciones registradas en este nido.</td></tr>`;
+                return;
+            }
+
+            nest.visits.forEach((v, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-900/50 transition-colors';
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono text-emerald-400">${v.date}</td>
+                    <td class="py-3 px-4 text-center font-bold text-amber-300">${v.eggs}</td>
+                    <td class="py-3 px-4 text-center font-bold text-emerald-400">${v.chicksAlive}</td>
+                    <td class="py-3 px-4 text-center font-bold text-rose-400">${v.chicksDead}</td>
+                    <td class="py-3 px-4 text-slate-300">${v.notes || '-'}</td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="deleteVisit(${index})" class="text-slate-500 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
             });
-
-            document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
-            activeBtn.classList.add('text-emerald-300', 'bg-gray-800');
-            activeBtn.classList.remove('text-gray-400');
+            lucide.createIcons();
         }
 
-        function renderTables() {
-            const activeId = db.activeNestId;
+        function openVisitModal() { document.getElementById('visitModal').classList.remove('hidden'); }
+        function closeVisitModal() { document.getElementById('visitModal').classList.add('hidden'); }
 
-            // Inspecciones
-            const nestInspections = db.inspections.filter(i => i.nestId === activeId);
-            document.getElementById('count-inspections').textContent = nestInspections.length;
-            const inspContainer = document.getElementById('tab-content-inspections');
-            
-            if (nestInspections.length === 0) {
-                inspContainer.innerHTML = `<p class="text-xs text-gray-500 italic text-center py-6">Sin visitas registradas para este nido.</p>`;
-            } else {
-                inspContainer.innerHTML = nestInspections.slice().reverse().map(i => `
-                    <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-xs flex flex-col gap-2">
-                        <div class="flex justify-between items-center text-gray-400 border-b border-gray-850 pb-1 text-[11px]">
-                            <span class="font-bold text-gray-200"><i class="fa-regular fa-calendar text-emerald-400 mr-1"></i> ${i.date} ${i.time ? '('+i.time+')' : ''}</span>
-                            <span class="bg-gray-900 px-2 py-0.5 rounded text-gray-300">${i.adults || 'Sin adultos'}</span>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2 text-center py-1 bg-gray-900/50 rounded">
-                            <div><span class="text-amber-400 font-bold">${i.eggs}</span> <span class="text-gray-500 block text-[10px]">Huevos</span></div>
-                            <div><span class="text-emerald-400 font-bold">${i.chicksAlive}</span> <span class="text-gray-500 block text-[10px]">Vivos</span></div>
-                            <div><span class="text-rose-400 font-bold">${i.chicksDead}</span> <span class="text-gray-500 block text-[10px]">Muertos</span></div>
-                        </div>
-                        ${i.notes ? `<p class="text-gray-300 text-xs italic bg-gray-900/30 p-2 rounded border border-gray-850">${i.notes}</p>` : ''}
-                    </div>
-                `).join('');
-            }
-
-            // Anillamientos
-            const nestRingings = db.ringings.filter(r => r.nestId === activeId);
-            document.getElementById('count-ringings').textContent = nestRingings.length;
-            const ringContainer = document.getElementById('tab-content-ringings');
-
-            if (nestRingings.length === 0) {
-                ringContainer.innerHTML = `<p class="text-xs text-gray-500 italic text-center py-6">Sin registros de anillamiento en esta caja.</p>`;
-            } else {
-                ringContainer.innerHTML = nestRingings.slice().reverse().map(r => `
-                    <div class="bg-gray-950 border border-gray-800 rounded-lg p-3 text-xs flex flex-col gap-2">
-                        <div class="flex justify-between items-center border-b border-gray-850 pb-1">
-                            <span class="font-mono font-bold text-sky-400 text-xs sm:text-sm"><i class="fa-solid fa-ring mr-1"></i> ${r.ringCode}</span>
-                            <span class="bg-sky-950 text-sky-300 border border-sky-800/40 px-2 py-0.5 rounded text-[10px]">${r.type}</span>
-                        </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-gray-400 text-[11px]">
-                            <div><span class="text-gray-500 block text-[10px]">Fecha</span> <span class="text-gray-200">${r.date}</span></div>
-                            <div><span class="text-gray-500 block text-[10px]">Edad EURING</span> <span class="text-gray-200">${r.euringAge}</span></div>
-                            <div><span class="text-gray-500 block text-[10px]">Sexo</span> <span class="text-gray-200">${r.sex}</span></div>
-                            <div><span class="text-gray-500 block text-[10px]">Peso</span> <span class="text-gray-200">${r.weight ? r.weight+' g' : 'N/A'}</span></div>
-                        </div>
-                        ${(r.wing || r.p8 || r.feomelanin) ? `
-                            <div class="border-t border-gray-850 pt-1 flex flex-wrap gap-2 text-[10px] text-gray-400">
-                                ${r.wing ? `<span>Ala: <b class="text-gray-200">${r.wing}mm</b></span>` : ''}
-                                ${r.p8 ? `<span>P8: <b class="text-gray-200">${r.p8}mm</b></span>` : ''}
-                                ${r.feomelanin ? `<span>Feomelanina: <b class="text-gray-200">${r.feomelanin}/5</b></span>` : ''}
-                                ${r.spots ? `<span>Motas: <b class="text-gray-200">${r.spots}/10</b></span>` : ''}
-                            </div>
-                        ` : ''}
-                    </div>
-                `).join('');
-            }
-
-            // Incidencias
-            const nestIncidents = db.incidents.filter(inc => inc.nestId === activeId);
-            document.getElementById('count-incidents').textContent = nestIncidents.length;
-            const incContainer = document.getElementById('tab-content-incidents');
-
-            if (nestIncidents.length === 0) {
-                incContainer.innerHTML = `<p class="text-xs text-gray-500 italic text-center py-6">Sin incidencias registradas.</p>`;
-            } else {
-                incContainer.innerHTML = nestIncidents.slice().reverse().map(inc => `
-                    <div class="bg-gray-950 border border-rose-950/60 rounded-lg p-3 text-xs flex flex-col gap-1.5">
-                        <div class="flex justify-between items-center border-b border-gray-850 pb-1">
-                            <span class="font-bold text-rose-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ${inc.type}</span>
-                            <span class="text-gray-400 text-[11px]">${inc.date}</span>
-                        </div>
-                        <div class="text-gray-300 text-[11px]">
-                            <p><strong class="text-gray-400">Causa:</strong> ${inc.cause}</p>
-                            ${inc.ring ? `<p><strong class="text-gray-400">Anilla:</strong> <span class="font-mono text-gray-200">${inc.ring}</span></p>` : ''}
-                            ${inc.details ? `<p class="mt-1 text-gray-400 italic bg-rose-950/20 p-1.5 rounded border border-rose-900/30">${inc.details}</p>` : ''}
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        function openModal(modalId) {
-            document.getElementById(modalId).classList.remove('hidden');
-            const today = new Date().toISOString().split('T')[0];
-            const dateInputs = document.querySelectorAll(`#${modalId} input[type="date"]`);
-            dateInputs.forEach(input => { if(!input.value) input.value = today; });
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-        }
-
-        function handleSaveNest(e) {
+        function saveVisit(e) {
             e.preventDefault();
-            const newNest = {
-                id: document.getElementById('nest-code-input').value.trim(),
-                code: document.getElementById('nest-code-input').value.trim(),
-                name: document.getElementById('nest-name-input').value.trim(),
-                lat: parseFloat(document.getElementById('nest-lat-input').value),
-                lng: parseFloat(document.getElementById('nest-lng-input').value),
-                pairId: document.getElementById('nest-pair-input').value.trim() || 'PAR-NUEVA',
-                maleRing: '',
-                femaleRing: '',
-                status: 'Activo'
+            const nest = getCurrentNest();
+            if (!nest) return;
+
+            const newVisit = {
+                id: 'v_' + Date.now(),
+                date: document.getElementById('visitDate').value,
+                eggs: parseInt(document.getElementById('visitEggs').value) || 0,
+                chicksAlive: parseInt(document.getElementById('visitChicksAlive').value) || 0,
+                chicksDead: parseInt(document.getElementById('visitChicksDead').value) || 0,
+                notes: document.getElementById('visitNotes').value
             };
 
-            db.nests.push(newNest);
-            db.activeNestId = newNest.id;
-            saveData();
-            closeModal('modal-new-nest');
-            document.getElementById('form-new-nest').reset();
-            
-            populateNestSelector();
-            updateCurrentNestView();
-            updateMapPosition();
-            renderTables();
-            showToast(`Nido ${newNest.code} registrado`);
+            nest.visits.push(newVisit);
+            saveState();
+            renderVisits();
+            calculateSeasonTimeline(nest);
+            closeVisitModal();
+            document.getElementById('visitForm').reset();
         }
 
-        function handleSaveInspection(e) {
+        function deleteVisit(index) {
+            const nest = getCurrentNest();
+            if (!nest) return;
+            nest.visits.splice(index, 1);
+            saveState();
+            renderVisits();
+            calculateSeasonTimeline(nest);
+        }
+
+        // EURING RINGING LOGIC
+        function renderRinging() {
+            const tbody = document.getElementById('ringingTableBody');
+            const nest = getCurrentNest();
+            tbody.innerHTML = '';
+
+            if (!nest.ringing || nest.ringing.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="py-4 text-center text-slate-500 italic">No hay ejemplares anillados registrados.</td></tr>`;
+                return;
+            }
+
+            nest.ringing.forEach((r, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-900/50 transition-colors';
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono font-bold text-lime-400">${r.ringCode}</td>
+                    <td class="py-3 px-4 font-semibold text-slate-300">EURING ${r.age}</td>
+                    <td class="py-3 px-4 font-mono">${r.mass ? r.mass + ' g' : '-'}</td>
+                    <td class="py-3 px-4 font-mono">${r.wing ? r.wing + ' mm' : '-'}</td>
+                    <td class="py-3 px-4 font-mono">${r.p8 ? r.p8 + ' mm' : '-'}</td>
+                    <td class="py-3 px-4 font-mono">${r.tarsus ? r.tarsus + ' mm' : '-'}</td>
+                    <td class="py-3 px-4 font-mono">${r.r5 ? r.r5 + ' mm' : '-'}</td>
+                    <td class="py-3 px-4 text-slate-300">${r.pattern || '-'}</td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="deleteRinging(${index})" class="text-slate-500 hover:text-rose-400 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        function openRingingModal() { document.getElementById('ringingModal').classList.remove('hidden'); }
+        function closeRingingModal() { document.getElementById('ringingModal').classList.add('hidden'); }
+
+        function saveRinging(e) {
             e.preventDefault();
-            const newInsp = {
-                id: Date.now(),
-                nestId: db.activeNestId,
-                date: document.getElementById('insp-date').value,
-                time: document.getElementById('insp-time').value,
-                eggs: parseInt(document.getElementById('insp-eggs').value) || 0,
-                chicksAlive: parseInt(document.getElementById('insp-chicks-alive').value) || 0,
-                chicksDead: parseInt(document.getElementById('insp-chicks-dead').value) || 0,
-                adults: document.getElementById('insp-adults').value,
-                notes: document.getElementById('insp-notes').value.trim()
+            const nest = getCurrentNest();
+            if (!nest) return;
+
+            const ringRecord = {
+                id: 'r_' + Date.now(),
+                ringCode: document.getElementById('ringCode').value,
+                age: document.getElementById('ringAge').value,
+                mass: parseFloat(document.getElementById('ringMass').value) || null,
+                wing: parseFloat(document.getElementById('ringWing').value) || null,
+                p8: parseFloat(document.getElementById('ringP8').value) || null,
+                tarsus: parseFloat(document.getElementById('ringTarsus').value) || null,
+                r5: parseFloat(document.getElementById('ringR5').value) || null,
+                pattern: document.getElementById('ringPattern').value
             };
 
-            db.inspections.push(newInsp);
-            saveData();
-            closeModal('modal-inspection');
-            document.getElementById('form-inspection').reset();
-            renderTables();
-            showToast('Visita registrada correctamente');
+            nest.ringing.push(ringRecord);
+            saveState();
+            renderRinging();
+            closeRingingModal();
+            document.getElementById('ringingForm').reset();
         }
 
-        function handleSaveRinging(e) {
-            e.preventDefault();
-            const newRinging = {
-                id: Date.now(),
-                nestId: db.activeNestId,
-                ringCode: document.getElementById('ring-code').value.trim(),
-                type: document.getElementById('ring-type').value,
-                date: document.getElementById('ring-date').value,
-                euringAge: document.getElementById('ring-euring-age').value,
-                sex: document.getElementById('ring-sex').value,
-                weight: parseFloat(document.getElementById('ring-weight').value) || null,
-                wing: parseFloat(document.getElementById('bio-wing').value) || null,
-                p8: parseFloat(document.getElementById('bio-p8').value) || null,
-                tarsus: parseFloat(document.getElementById('bio-tarsus').value) || null,
-                r5: parseFloat(document.getElementById('bio-r5').value) || null,
-                feomelanin: parseInt(document.getElementById('bio-feomelanin').value) || null,
-                spots: parseInt(document.getElementById('bio-spots').value) || null
-            };
-
-            db.ringings.push(newRinging);
-            saveData();
-            closeModal('modal-ringing');
-            document.getElementById('form-ringing').reset();
-            switchTab('ringings');
-            renderTables();
-            showToast(`Anillamiento ${newRinging.ringCode} guardado`);
+        function deleteRinging(index) {
+            const nest = getCurrentNest();
+            if (!nest) return;
+            nest.ringing.splice(index, 1);
+            saveState();
+            renderRinging();
         }
 
-        function handleSaveIncident(e) {
+        // INCIDENTS LOGIC
+        function renderIncidents() {
+            const grid = document.getElementById('incidentsGrid');
+            const nest = getCurrentNest();
+            grid.innerHTML = '';
+
+            if (!nest.incidents || nest.incidents.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-6 text-slate-500 italic text-xs">Sin incidencias reportadas en la ubicación de este nido.</div>`;
+                return;
+            }
+
+            nest.incidents.forEach((inc, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900/90 border border-amber-500/20 rounded-xl p-4 space-y-2 relative';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">${inc.type}</span>
+                        <span class="text-[10px] font-mono text-slate-400">${inc.date}</span>
+                    </div>
+                    <p class="text-xs text-slate-200 leading-relaxed">${inc.description}</p>
+                    <div class="flex justify-end pt-1">
+                        <button onclick="deleteIncident(${index})" class="text-xs text-slate-500 hover:text-rose-400 flex items-center gap-1">
+                            <i data-lucide="trash" class="w-3.5 h-3.5"></i> Eliminar
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function openIncidentModal() { document.getElementById('incidentModal').classList.remove('hidden'); }
+        function closeIncidentModal() { document.getElementById('incidentModal').classList.add('hidden'); }
+
+        function saveIncident(e) {
             e.preventDefault();
+            const nest = getCurrentNest();
+            if (!nest) return;
+
             const newIncident = {
-                id: Date.now(),
-                nestId: db.activeNestId,
-                date: document.getElementById('inc-date').value,
-                type: document.getElementById('inc-type').value,
-                cause: document.getElementById('inc-cause').value,
-                ring: document.getElementById('inc-ring').value.trim() || 'N/A',
-                details: document.getElementById('inc-details').value.trim()
+                id: 'i_' + Date.now(),
+                type: document.getElementById('incidentType').value,
+                date: document.getElementById('incidentDate').value,
+                description: document.getElementById('incidentDescription').value
             };
 
-            db.incidents.push(newIncident);
-            saveData();
-            closeModal('modal-incident');
-            document.getElementById('form-incident').reset();
-            switchTab('incidents');
-            renderTables();
-            showToast('Incidencia guardada');
+            nest.incidents.push(newIncident);
+            saveState();
+            renderIncidents();
+            closeIncidentModal();
+            document.getElementById('incidentForm').reset();
         }
 
-        function handleSavePairChange(e) {
-            e.preventDefault();
+        function deleteIncident(index) {
             const nest = getCurrentNest();
-            if (nest) {
-                nest.pairId = document.getElementById('pair-new-id').value.trim();
-                nest.maleRing = document.getElementById('pair-male-ring').value.trim();
-                nest.femaleRing = document.getElementById('pair-female-ring').value.trim();
-                nest.status = document.getElementById('pair-status').value;
-
-                saveData();
-                updateCurrentNestView();
-                closeModal('modal-change-pair');
-                showToast('Datos de pareja actualizados');
-            }
+            if (!nest) return;
+            nest.incidents.splice(index, 1);
+            saveState();
+            renderIncidents();
         }
 
+        // EXPORT DATA (CSV & JSON)
         function exportCSV() {
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "=== VISITAS Y INSPECCIONES ===\n";
-            csvContent += "Nido_ID,Fecha,Hora,Huevos,Pollos_Vivos,Pollos_Muertos,Adultos,Notas\n";
-            db.inspections.forEach(i => {
-                csvContent += `"${i.nestId}","${i.date}","${i.time || ''}",${i.eggs},${i.chicksAlive},${i.chicksDead},"${i.adults}","${(i.notes || '').replace(/"/g, '""')}"\n`;
-            });
+            csvContent += "NIDO_ID,NOMBRE_NIDO,PAREJA_ID,ANILLA_MACHO,ANILLA_HEMBRA,LATITUD,LONGITUD,TIPO_REGISTRO,FECHA,HUEVOS,POLLOS_VIVOS,POLLOS_MUERTOS,ANILLA_EURING,EDAD,MASA_G,ALA_MM,P8_MM,TARSUS_MM,OBSERVACIONES\n";
 
-            csvContent += "\n=== ANILLAMIENTOS EURING Y BIOMETRIA ===\n";
-            csvContent += "Nido_ID,Anilla_EURING,Tipo,Fecha,Edad_EURING,Sexo,Peso_g,Ala_mm,P8_mm,Tarso_mm,R5_mm,Feomelanina,Punteado\n";
-            db.ringings.forEach(r => {
-                csvContent += `"${r.nestId}","${r.ringCode}","${r.type}","${r.date}","${r.euringAge}","${r.sex}",${r.weight || ''},${r.wing || ''},${r.p8 || ''},${r.tarsus || ''},${r.r5 || ''},${r.feomelanin || ''},${r.spots || ''}\n`;
-            });
+            state.nests.forEach(nest => {
+                // Visits rows
+                nest.visits.forEach(v => {
+                    const row = [
+                        nest.id, `"${nest.name}"`, nest.pairId, nest.maleRing, nest.femaleRing, nest.lat, nest.lng,
+                        "VISITA_CAMPO", v.date, v.eggs, v.chicksAlive, v.chicksDead, "", "", "", "", "", "", `"${v.notes || ''}"`
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
 
-            csvContent += "\n=== INCIDENCIAS Y MORTALIDAD ===\n";
-            csvContent += "Nido_ID,Fecha,Tipo_Evento,Causa,Anilla_Afectada,Detalles\n";
-            db.incidents.forEach(inc => {
-                csvContent += `"${inc.nestId}","${inc.date}","${inc.type}","${inc.cause}","${inc.ring}","${(inc.details || '').replace(/"/g, '""')}"\n`;
+                // Ringing rows
+                nest.ringing.forEach(r => {
+                    const row = [
+                        nest.id, `"${nest.name}"`, nest.pairId, nest.maleRing, nest.femaleRing, nest.lat, nest.lng,
+                        "ANILLAMIENTO_EURING", "", "", "", "", r.ringCode, r.age, r.mass || '', r.wing || '', r.p8 || '', r.tarsus || '', `"${r.pattern || ''}"`
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
             });
 
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Tyto_Alba_Monitoreo_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute("download", `Tyto_alba_Monitoreo_${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showToast('Archivo CSV descargado');
         }
 
         function exportJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
-            const dlAnchor = document.createElement('a');
-            dlAnchor.setAttribute("href", dataStr);
-            dlAnchor.setAttribute("download", `Backup_Tyto_Alba_${new Date().toISOString().split('T')[0]}.json`);
-            document.body.appendChild(dlAnchor);
-            dlAnchor.click();
-            dlAnchor.remove();
-            showToast('Backup JSON guardado');
-        }
-
-        function showToast(text) {
-            const toast = document.getElementById('toast-msg');
-            const toastText = document.getElementById('toast-text');
-            toastText.textContent = text;
-            
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Tyto_alba_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
         }
     </script>
 </body>
