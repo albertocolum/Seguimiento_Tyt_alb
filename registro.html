@@ -309,11 +309,16 @@
                             <input type="text" id="ani-codigo" required placeholder="Ej. 1304521" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500">
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1">Nido Asociado *</label>
-                            <select id="ani-nido-id" required onchange="filterAnillamientoTable()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
-                                <!-- Dinámico -->
-                            </select>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Anilla PVC (Lectura a distancia)</label>
+                            <input type="text" id="ani-pvc" placeholder="Ej. A123 o Rojo-Blanco" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500">
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Nido Asociado *</label>
+                        <select id="ani-nido-id" required onchange="filterAnillamientoTable()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                            <!-- Dinámico -->
+                        </select>
                     </div>
 
                     <div class="grid grid-cols-3 gap-3">
@@ -391,7 +396,7 @@
                     <table class="w-full text-left text-xs text-slate-300">
                         <thead class="bg-slate-800/80 text-slate-400 uppercase font-mono">
                             <tr>
-                                <th class="p-2.5">Anilla</th>
+                                <th class="p-2.5">Anillas (EURING / PVC)</th>
                                 <th class="p-2.5">Edad/Sexo</th>
                                 <th class="p-2.5">Masa</th>
                                 <th class="p-2.5">Ala / P8</th>
@@ -871,11 +876,11 @@
             e.preventDefault();
             const id = document.getElementById('ani-id').value || Date.now().toString();
             const codigoAnilla = document.getElementById('ani-codigo').value.trim();
+            const anillaPvc = document.getElementById('ani-pvc').value.trim();
 
-            // Verificar si esta anilla ya fue dada de baja por mortalidad previamente
             const estaMuerta = db.incidencias.some(i => 
-                (i.tipo === 'Mortalidad Adulto' && i.adultoImplicado && i.adultoImplicado.includes(codigoAnilla)) ||
-                (i.tipo === 'Mortalidad Pollo' && i.polloImplicado && i.polloImplicado.includes(codigoAnilla))
+                (i.tipo === 'Mortalidad Adulto' && i.adultoImplicado && (i.adultoImplicado.includes(codigoAnilla) || (anillaPvc && i.adultoImplicado.includes(anillaPvc)))) ||
+                (i.tipo === 'Mortalidad Pollo' && i.polloImplicado && (i.polloImplicado.includes(codigoAnilla) || (anillaPvc && i.polloImplicado.includes(anillaPvc))))
             );
 
             if (estaMuerta) {
@@ -886,6 +891,7 @@
             const aniData = {
                 id: id,
                 codigo: codigoAnilla,
+                pvc: anillaPvc,
                 nidoId: document.getElementById('ani-nido-id').value,
                 edad: document.getElementById('ani-edad').value,
                 sexo: document.getElementById('ani-sexo').value,
@@ -939,7 +945,6 @@
             if (index >= 0) db.incidencias[index] = incData;
             else db.incidencias.push(incData);
 
-            // SI ES MORTALIDAD DE ADULTO, ELIMINAR ANILLA DE LOS DATOS DEL NIDO
             if (tipoEvento === 'Mortalidad Adulto' && adultoImp) {
                 const nidoObj = db.nidos.find(n => n.id === incData.nidoId);
                 if (nidoObj) {
@@ -948,13 +953,11 @@
                 }
             }
 
-            // SI ES MORTALIDAD DE POLLO, ELIMINAR FICHA DE ANILLAMIENTO DE LA BASE DE DATOS
             if (tipoEvento === 'Mortalidad Pollo' && polloImp) {
-                // Extraer el código de anilla del string guardado (ej. "Anilla: 1304521 (...)")
                 const match = polloImp.match(/Anilla:\s*([^\s(]+)/);
                 if (match && match[1]) {
                     const anillaPollo = match[1];
-                    db.anillamientos = db.anillamientos.filter(a => a.codigo !== anillaPollo);
+                    db.anillamientos = db.anillamientos.filter(a => a.codigo !== anillaPollo && a.pvc !== anillaPollo);
                 }
             }
 
@@ -1038,10 +1041,11 @@
             }
 
             anillamientosFiltrados.forEach(a => {
+                const pvcStr = a.pvc ? `<br><span class="text-[10px] text-amber-400 font-mono">PVC: ${a.pvc}</span>` : '';
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-800/50 transition';
                 tr.innerHTML = `
-                    <td class="p-2.5 font-mono font-bold text-emerald-400">${a.codigo}</td>
+                    <td class="p-2.5 font-mono font-bold text-emerald-400">${a.codigo} ${pvcStr}</td>
                     <td class="p-2.5">${a.edad} | ${a.sexo}</td>
                     <td class="p-2.5 font-mono">${a.masa ? a.masa + 'g' : '—'}</td>
                     <td class="p-2.5 font-mono">${a.ala || '—'} / ${a.p8 || '—'} mm</td>
@@ -1082,9 +1086,10 @@
 
             const pollosDelNido = db.anillamientos.filter(a => a.nidoId === selectedNidoId);
             pollosDelNido.forEach(p => {
+                const pvcInfo = p.pvc ? ` [PVC: ${p.pvc}]` : '';
                 const opt = document.createElement('option');
-                opt.value = `Anilla: ${p.codigo} (${p.edad}, ${p.sexo})`;
-                opt.textContent = `Pollo/Ejemplar [Anilla: ${p.codigo}] - ${p.edad}`;
+                opt.value = `Anilla: ${p.codigo}${pvcInfo} (${p.edad}, ${p.sexo})`;
+                opt.textContent = `Pollo [EURING: ${p.codigo}${pvcInfo}] - ${p.edad}`;
                 polloSelect.appendChild(opt);
             });
         }
@@ -1229,6 +1234,7 @@
                 return {
                     ID: a.id,
                     Anilla_EURING: a.codigo,
+                    Anilla_PVC: a.pvc || '—',
                     Codigo_Nido: nido ? nido.codigo : '—',
                     Edad_EURING: a.edad,
                     Sexo: a.sexo,
