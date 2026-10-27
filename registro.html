@@ -100,7 +100,7 @@
         <div id="tab-nidos" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- FORMULARIO NUEVO NIDO -->
             <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col gap-4">
-                <h3 class="text-lg font-semibold text-emerald-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                <h3 id="form-nido-titulo" class="text-lg font-semibold text-emerald-400 border-b border-slate-800 pb-2 flex items-center gap-2">
                     <i class="fa-solid fa-plus-circle"></i> Registrar / Editar Caja Nido
                 </h3>
                 
@@ -168,7 +168,7 @@
 
                     <div class="flex gap-2 pt-2">
                         <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg text-sm transition shadow">
-                            <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar Nido
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> <span id="btn-nido-submit-text">Guardar Nido</span>
                         </button>
                         <button type="button" onclick="resetFormNido()" class="bg-slate-800 hover:bg-slate-700 text-slate-400 px-3 py-2 rounded-lg text-sm">
                             Limpiar
@@ -225,7 +225,6 @@
 
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Seleccionar Nido *</label>
-                        <!-- Evento onchange añadido para filtrar la tabla al instante al cambiar de nido -->
                         <select id="visita-nido-id" required onchange="filterVisitasTable()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
                             <!-- Dinámico -->
                         </select>
@@ -751,9 +750,38 @@
             updateUI();
         }
 
+        function editNido(id) {
+            const nido = db.nidos.find(n => n.id === id);
+            if (!nido) return;
+
+            document.getElementById('nido-id').value = nido.id;
+            document.getElementById('nido-codigo').value = nido.codigo;
+            document.getElementById('nido-macho').value = nido.macho || '';
+            document.getElementById('nido-hembra').value = nido.hembra || '';
+            document.getElementById('nido-lat').value = nido.lat;
+            document.getElementById('nido-lng').value = nido.lng;
+            document.getElementById('nido-poblacion').value = nido.poblacion || '';
+            document.getElementById('nido-habitat').value = nido.habitat || 'Caja Nido en Masía/Cortijo';
+
+            // Actualizar textos del formulario visualmente para indicar modo edición
+            document.getElementById('form-nido-titulo').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> Editando Nido: <span class="text-white font-mono">${nido.codigo}</span>`;
+            document.getElementById('btn-nido-submit-text').innerText = "Actualizar Nido";
+
+            // Centrar mapa en el nido a editar y mover la chincheta
+            if (map && marker) {
+                map.setView([nido.lat, nido.lng], 15);
+                marker.setLatLng([nido.lat, nido.lng]);
+            }
+
+            showToast("Datos cargados en el formulario para editar", "info");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         function resetFormNido() {
             document.getElementById('form-nido').reset();
             document.getElementById('nido-id').value = '';
+            document.getElementById('form-nido-titulo').innerHTML = `<i class="fa-solid fa-plus-circle"></i> Registrar / Editar Caja Nido`;
+            document.getElementById('btn-nido-submit-text').innerText = "Guardar Nido";
         }
 
         function deleteNido(id) {
@@ -786,8 +814,6 @@
 
             saveToStorage();
             document.getElementById('form-visita').reset();
-            
-            // Mantener seleccionado el nido actual tras guardar la visita
             document.getElementById('visita-nido-id').value = visitaData.nidoId;
 
             updateUI();
@@ -865,7 +891,6 @@
             showToast("Incidencia eliminada", "info");
         }
 
-        // FUNCIÓN DE FILTRADO PARA LA TABLA DE VISITAS SEGÚN EL NIDO SELECCIONADO
         function filterVisitasTable() {
             const selectedNidoId = document.getElementById('visita-nido-id').value;
             const tbodyVisitas = document.getElementById('tbody-visitas');
@@ -922,8 +947,9 @@
                     <td class="p-2.5">${nido.poblacion || 'Sin especificar'}</td>
                     <td class="p-2.5 text-slate-400">${nido.macho || '—'} / ${nido.hembra || '—'}</td>
                     <td class="p-2.5 text-right space-x-2">
-                        <button onclick="zoomToNido(${nido.lat}, ${nido.lng})" class="text-xs text-blue-400 hover:underline"><i class="fa-solid fa-location-dot"></i> Ver</button>
-                        <button onclick="deleteNido('${nido.id}')" class="text-xs text-rose-400 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="zoomToNido(${nido.lat}, ${nido.lng})" class="text-xs text-blue-400 hover:underline" title="Ver en mapa"><i class="fa-solid fa-location-dot"></i></button>
+                        <button onclick="editNido('${nido.id}')" class="text-xs text-amber-400 hover:underline" title="Editar nido"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteNido('${nido.id}')" class="text-xs text-rose-400 hover:underline" title="Eliminar nido"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
                 tbodyNidos.appendChild(tr);
@@ -940,7 +966,6 @@
                 }
             });
 
-            // Guardar selección actual antes de repoblar los selects
             const currentVisitaNido = document.getElementById('visita-nido-id').value;
 
             const nidoSelects = ['visita-nido-id', 'ani-nido-id', 'inc-nido-id'];
@@ -957,12 +982,10 @@
                 }
             });
 
-            // Restaurar selección previa en visitas si sigue existiendo
             if (currentVisitaNido && document.getElementById('visita-nido-id').querySelector(`option[value="${currentVisitaNido}"]`)) {
                 document.getElementById('visita-nido-id').value = currentVisitaNido;
             }
 
-            // Actualizar tabla de visitas aplicando el filtro actual
             filterVisitasTable();
 
             const tbodyAni = document.getElementById('tbody-anillamiento');
