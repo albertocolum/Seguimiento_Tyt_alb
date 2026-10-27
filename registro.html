@@ -98,7 +98,6 @@
 
         <!-- SECCIÓN 1: CAJAS NIDO & MAPA -->
         <div id="tab-nidos" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- FORMULARIO NUEVO NIDO -->
             <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col gap-4">
                 <h3 id="form-nido-titulo" class="text-lg font-semibold text-emerald-400 border-b border-slate-800 pb-2 flex items-center gap-2">
                     <i class="fa-solid fa-plus-circle"></i> Registrar / Editar Caja Nido
@@ -177,7 +176,6 @@
                 </form>
             </div>
 
-            <!-- MAPA INTERACTIVO Y LISTADO -->
             <div class="lg:col-span-7 flex flex-col gap-6">
                 <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg flex flex-col gap-2">
                     <div class="flex justify-between items-center mb-1">
@@ -189,7 +187,6 @@
                     <div id="map" class="h-80 w-full rounded-lg bg-slate-950 border border-slate-800"></div>
                 </div>
 
-                <!-- TABLA DE NIDOS REGISTRADOS -->
                 <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg overflow-hidden flex flex-col gap-3">
                     <h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
                         <i class="fa-solid fa-list text-emerald-400"></i> Cajas Nido Registradas (<span id="count-nidos">0</span>)
@@ -317,7 +314,6 @@
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-slate-400 mb-1">Nido Asociado *</label>
-                            <!-- Evento onchange añadido para filtrar la tabla de anillamientos al instante -->
                             <select id="ani-nido-id" required onchange="filterAnillamientoTable()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
                                 <!-- Dinámico -->
                             </select>
@@ -349,7 +345,6 @@
                         </div>
                     </div>
 
-                    <!-- MEDIDAS BIOMÉTRICAS -->
                     <div class="border border-slate-800 rounded-lg p-3 bg-slate-950/40 space-y-3">
                         <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider block">Biometría Alar y Plumaje</span>
                         <div class="grid grid-cols-2 gap-3">
@@ -427,10 +422,26 @@
                     <input type="hidden" id="inc-id">
 
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Nido Afectado *</label>
-                        <select id="inc-nido-id" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-rose-500">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Nido Asociado *</label>
+                        <!-- Selector de Nido que actualiza los desplegables de aves -->
+                        <select id="inc-nido-id" required onchange="updateIncidenciaAvesDropdowns()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-rose-500">
                             <!-- Dinámico -->
                         </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Adulto Anillado Implicado</label>
+                            <select id="inc-adulto-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-rose-500">
+                                <option value="">Ninguno / Sin anilla de adulto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Pollo Anillado Implicado</label>
+                            <select id="inc-pollo-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-rose-500">
+                                <option value="">Ninguno / Sin pollo específico</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div>
@@ -482,6 +493,7 @@
                             <tr>
                                 <th class="p-2.5">Fecha</th>
                                 <th class="p-2.5">Nido</th>
+                                <th class="p-2.5">Aves Implicadas</th>
                                 <th class="p-2.5">Tipo Evento</th>
                                 <th class="p-2.5">Causa</th>
                                 <th class="p-2.5 text-right">Acción</th>
@@ -874,6 +886,8 @@
             const incData = {
                 id: id,
                 nidoId: document.getElementById('inc-nido-id').value,
+                adultoImplicado: document.getElementById('inc-adulto-select').value,
+                polloImplicado: document.getElementById('inc-pollo-select').value,
                 fecha: document.getElementById('inc-fecha').value,
                 tipo: document.getElementById('inc-tipo').value,
                 causa: document.getElementById('inc-causa').value,
@@ -886,6 +900,7 @@
 
             saveToStorage();
             document.getElementById('form-incidencia').reset();
+            updateIncidenciaAvesDropdowns();
             updateUI();
             showToast("Incidencia registrada", "warning");
         }
@@ -938,7 +953,6 @@
             });
         }
 
-        // FUNCIÓN DE FILTRADO PARA LA TABLA DE ANILLAMIENTO
         function filterAnillamientoTable() {
             const selectedNidoId = document.getElementById('ani-nido-id').value;
             const tbodyAni = document.getElementById('tbody-anillamiento');
@@ -980,6 +994,42 @@
             });
         }
 
+        // ACTUALIZAR DESPLEGABLES DE AVES EN LA PESTAÑA DE INCIDENCIAS
+        function updateIncidenciaAvesDropdowns() {
+            const selectedNidoId = document.getElementById('inc-nido-id').value;
+            const adultoSelect = document.getElementById('inc-adulto-select');
+            const polloSelect = document.getElementById('inc-pollo-select');
+
+            adultoSelect.innerHTML = '<option value="">Ninguno / Sin anilla de adulto</option>';
+            polloSelect.innerHTML = '<option value="">Ninguno / Sin pollo específico</option>';
+
+            if (!selectedNidoId) return;
+
+            const nidoObj = db.nidos.find(n => n.id === selectedNidoId);
+            if (nidoObj) {
+                if (nidoObj.macho) {
+                    const opt = document.createElement('option');
+                    opt.value = `Macho: ${nidoObj.macho}`;
+                    opt.textContent = `♂ Macho (${nidoObj.macho})`;
+                    adultoSelect.appendChild(opt);
+                }
+                if (nidoObj.hembra) {
+                    const opt = document.createElement('option');
+                    opt.value = `Hembra: ${nidoObj.hembra}`;
+                    opt.textContent = `♀ Hembra (${nidoObj.hembra})`;
+                    adultoSelect.appendChild(opt);
+                }
+            }
+
+            const pollosDelNido = db.anillamientos.filter(a => a.nidoId === selectedNidoId);
+            pollosDelNido.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = `Anilla: ${p.codigo} (${p.edad}, ${p.sexo})`;
+                opt.textContent = `Pollo/Ejemplar [Anilla: ${p.codigo}] - ${p.edad}`;
+                polloSelect.appendChild(opt);
+            });
+        }
+
         function updateUI() {
             const tbodyNidos = document.getElementById('tbody-nidos');
             tbodyNidos.innerHTML = '';
@@ -1016,6 +1066,7 @@
 
             const currentVisitaNido = document.getElementById('visita-nido-id').value;
             const currentAniNido = document.getElementById('ani-nido-id').value;
+            const currentIncNido = document.getElementById('inc-nido-id').value;
 
             const nidoSelects = ['visita-nido-id', 'ani-nido-id', 'inc-nido-id'];
             nidoSelects.forEach(selectId => {
@@ -1037,19 +1088,25 @@
             if (currentAniNido && document.getElementById('ani-nido-id').querySelector(`option[value="${currentAniNido}"]`)) {
                 document.getElementById('ani-nido-id').value = currentAniNido;
             }
+            if (currentIncNido && document.getElementById('inc-nido-id').querySelector(`option[value="${currentIncNido}"]`)) {
+                document.getElementById('inc-nido-id').value = currentIncNido;
+            }
 
             filterVisitasTable();
             filterAnillamientoTable();
+            updateIncidenciaAvesDropdowns();
 
             const tbodyInc = document.getElementById('tbody-incidencias');
             tbodyInc.innerHTML = '';
             db.incidencias.forEach(i => {
                 const nidoObj = db.nidos.find(n => n.id === i.nidoId);
+                const aveImplicada = (i.adultoImplicado ? i.adultoImplicado + ' ' : '') + (i.polloImplicado ? i.polloImplicado : '') || '—';
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-800/50 transition';
                 tr.innerHTML = `
                     <td class="p-2.5 font-mono">${i.fecha}</td>
                     <td class="p-2.5 font-semibold text-rose-400">${nidoObj ? nidoObj.codigo : '—'}</td>
+                    <td class="p-2.5 text-xs text-slate-300 font-mono">${aveImplicada}</td>
                     <td class="p-2.5">${i.tipo}</td>
                     <td class="p-2.5 text-slate-400">${i.causa}</td>
                     <td class="p-2.5 text-right">
@@ -1131,6 +1188,8 @@
                 return {
                     ID: i.id,
                     Codigo_Nido: nido ? nido.codigo : '—',
+                    Adulto_Implicado: i.adultoImplicado || '—',
+                    Pollo_Implicado: i.polloImplicado || '—',
                     Fecha: i.fecha,
                     Tipo_Evento: i.tipo,
                     Causa: i.causa,
