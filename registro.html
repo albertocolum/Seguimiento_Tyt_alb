@@ -685,4 +685,422 @@
                 btn.classList.add('text-slate-400');
             });
 
-            const selectedTab = document.getElementById('
+            const selectedTab = document.getElementById('tab-' + tabId);
+            const selectedBtn = document.getElementById('tab-btn-' + tabId);
+
+            if (selectedTab) selectedTab.classList.remove('hidden');
+            if (selectedBtn) {
+                selectedBtn.classList.add('border-b-2', 'border-emerald-400', 'text-emerald-400', 'bg-slate-900/50');
+                selectedBtn.classList.remove('text-slate-400');
+            }
+
+            if (tabId === 'nidos' && map) {
+                setTimeout(() => map.invalidateSize(), 150);
+            }
+        }
+
+        // 5. GESTIÓN DE CAJAS NIDO
+        function saveNido(e) {
+            e.preventDefault();
+            const id = document.getElementById('nido-id').value || Date.now().toString();
+            const nidoData = {
+                id: id,
+                codigo: document.getElementById('nido-codigo').value,
+                macho: document.getElementById('nido-macho').value,
+                hembra: document.getElementById('nido-hembra').value,
+                lat: parseFloat(document.getElementById('nido-lat').value),
+                lng: parseFloat(document.getElementById('nido-lng').value),
+                poblacion: document.getElementById('nido-poblacion').value,
+                habitat: document.getElementById('nido-habitat').value
+            };
+
+            const index = db.nidos.findIndex(n => n.id === id);
+            if (index >= 0) {
+                db.nidos[index] = nidoData;
+                showToast("Nido actualizado correctamente", "success");
+            } else {
+                db.nidos.push(nidoData);
+                showToast("Caja Nido registrada con éxito", "success");
+            }
+
+            saveToStorage();
+            resetFormNido();
+            updateUI();
+        }
+
+        function resetFormNido() {
+            document.getElementById('form-nido').reset();
+            document.getElementById('nido-id').value = '';
+        }
+
+        function deleteNido(id) {
+            if (confirm("¿Estás seguro de eliminar este nido y sus registros de visitas asociados?")) {
+                db.nidos = db.nidos.filter(n => n.id !== id);
+                db.visitas = db.visitas.filter(v => v.nidoId !== id);
+                saveToStorage();
+                updateUI();
+                showToast("Nido eliminado", "info");
+            }
+        }
+
+        // 6. GESTIÓN DE VISITAS DE CAMPO
+        function saveVisita(e) {
+            e.preventDefault();
+            const id = document.getElementById('visita-id').value || Date.now().toString();
+            const visitaData = {
+                id: id,
+                nidoId: document.getElementById('visita-nido-id').value,
+                fecha: document.getElementById('visita-fecha').value,
+                huevos: parseInt(document.getElementById('visita-huevos').value) || 0,
+                pollosVivos: parseInt(document.getElementById('visita-pollos-vivos').value) || 0,
+                pollosMuertos: parseInt(document.getElementById('visita-pollos-muertos').value) || 0,
+                estado: document.getElementById('visita-estado').value,
+                notas: document.getElementById('visita-notas').value
+            };
+
+            const index = db.visitas.findIndex(v => v.id === id);
+            if (index >= 0) db.visitas[index] = visitaData;
+            else db.visitas.push(visitaData);
+
+            saveToStorage();
+            document.getElementById('form-visita').reset();
+            updateUI();
+            showToast("Visita guardada correctamente", "success");
+        }
+
+        function deleteVisita(id) {
+            db.visitas = db.visitas.filter(v => v.id !== id);
+            saveToStorage();
+            updateUI();
+            showToast("Visita eliminada", "info");
+        }
+
+        // 7. GESTIÓN DE ANILLAMIENTO EURING
+        function saveAnillamiento(e) {
+            e.preventDefault();
+            const id = document.getElementById('ani-id').value || Date.now().toString();
+            const aniData = {
+                id: id,
+                codigo: document.getElementById('ani-codigo').value,
+                nidoId: document.getElementById('ani-nido-id').value,
+                edad: document.getElementById('ani-edad').value,
+                sexo: document.getElementById('ani-sexo').value,
+                masa: parseFloat(document.getElementById('ani-masa').value) || null,
+                ala: parseFloat(document.getElementById('ani-ala').value) || null,
+                p8: parseFloat(document.getElementById('ani-p8').value) || null,
+                tarso: parseFloat(document.getElementById('ani-tarso').value) || null,
+                r5: parseFloat(document.getElementById('ani-r5').value) || null,
+                feomelanina: document.getElementById('ani-feomelanina').value,
+                moteado: document.getElementById('ani-moteado').value
+            };
+
+            const index = db.anillamientos.findIndex(a => a.id === id);
+            if (index >= 0) db.anillamientos[index] = aniData;
+            else db.anillamientos.push(aniData);
+
+            saveToStorage();
+            document.getElementById('form-anillamiento').reset();
+            updateUI();
+            showToast("Ficha EURING guardada", "success");
+        }
+
+        function deleteAnillamiento(id) {
+            db.anillamientos = db.anillamientos.filter(a => a.id !== id);
+            saveToStorage();
+            updateUI();
+            showToast("Ejemplar eliminado", "info");
+        }
+
+        // 8. GESTIÓN DE INCIDENCIAS
+        function saveIncidencia(e) {
+            e.preventDefault();
+            const id = document.getElementById('inc-id').value || Date.now().toString();
+            const incData = {
+                id: id,
+                nidoId: document.getElementById('inc-nido-id').value,
+                fecha: document.getElementById('inc-fecha').value,
+                tipo: document.getElementById('inc-tipo').value,
+                causa: document.getElementById('inc-causa').value,
+                detalles: document.getElementById('inc-detalles').value
+            };
+
+            const index = db.incidencias.findIndex(i => i.id === id);
+            if (index >= 0) db.incidencias[index] = incData;
+            else db.incidencias.push(incData);
+
+            saveToStorage();
+            document.getElementById('form-incidencia').reset();
+            updateUI();
+            showToast("Incidencia registrada", "warning");
+        }
+
+        function deleteIncidencia(id) {
+            db.incidencias = db.incidencias.filter(i => i.id !== id);
+            saveToStorage();
+            updateUI();
+            showToast("Incidencia eliminada", "info");
+        }
+
+        // 9. ACTUALIZACIÓN INTEGRAL DE LA INTERFAZ
+        function updateUI() {
+            const tbodyNidos = document.getElementById('tbody-nidos');
+            tbodyNidos.innerHTML = '';
+            document.getElementById('count-nidos').innerText = db.nidos.length;
+
+            if (mapMarkersGroup) mapMarkersGroup.clearLayers();
+
+            db.nidos.forEach(nido => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/50 transition';
+                tr.innerHTML = `
+                    <td class="p-2.5 font-bold text-emerald-400 font-mono">${nido.codigo}</td>
+                    <td class="p-2.5">${nido.poblacion || 'Sin especificar'}</td>
+                    <td class="p-2.5 text-slate-400">${nido.macho || '—'} / ${nido.hembra || '—'}</td>
+                    <td class="p-2.5 text-right space-x-2">
+                        <button onclick="zoomToNido(${nido.lat}, ${nido.lng})" class="text-xs text-blue-400 hover:underline"><i class="fa-solid fa-location-dot"></i> Ver</button>
+                        <button onclick="deleteNido('${nido.id}')" class="text-xs text-rose-400 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbodyNidos.appendChild(tr);
+
+                if (mapMarkersGroup) {
+                    const m = L.marker([nido.lat, nido.lng]).bindPopup(`
+                        <div class="text-slate-900 font-sans">
+                            <h4 class="font-bold text-sm text-emerald-700">${nido.codigo}</h4>
+                            <p class="text-xs"><b>Población:</b> ${nido.poblacion || '—'}</p>
+                            <p class="text-xs"><b>Hábitat:</b> ${nido.habitat}</p>
+                        </div>
+                    `);
+                    mapMarkersGroup.addLayer(m);
+                }
+            });
+
+            const nidoSelects = ['visita-nido-id', 'ani-nido-id', 'inc-nido-id'];
+            nidoSelects.forEach(selectId => {
+                const sel = document.getElementById(selectId);
+                if (sel) {
+                    sel.innerHTML = db.nidos.length ? '' : '<option value="">Registra primero un nido...</option>';
+                    db.nidos.forEach(n => {
+                        const opt = document.createElement('option');
+                        opt.value = n.id;
+                        opt.textContent = `${n.codigo} (${n.poblacion || 'Sin pos.'})`;
+                        sel.appendChild(opt);
+                    });
+                }
+            });
+
+            const tbodyVisitas = document.getElementById('tbody-visitas');
+            tbodyVisitas.innerHTML = '';
+            db.visitas.forEach(v => {
+                const nidoObj = db.nidos.find(n => n.id === v.nidoId);
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/50 transition';
+                tr.innerHTML = `
+                    <td class="p-2.5 font-mono">${v.fecha}</td>
+                    <td class="p-2.5 font-semibold text-emerald-400">${nidoObj ? nidoObj.codigo : 'Nido eliminado'}</td>
+                    <td class="p-2.5 font-mono text-slate-300">${v.huevos} H / ${v.pollosVivos} PV / ${v.pollosMuertos} PM</td>
+                    <td class="p-2.5">${v.estado}</td>
+                    <td class="p-2.5 text-right">
+                        <button onclick="deleteVisita('${v.id}')" class="text-xs text-rose-400 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbodyVisitas.appendChild(tr);
+            });
+
+            const tbodyAni = document.getElementById('tbody-anillamiento');
+            tbodyAni.innerHTML = '';
+            db.anillamientos.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/50 transition';
+                tr.innerHTML = `
+                    <td class="p-2.5 font-mono font-bold text-emerald-400">${a.codigo}</td>
+                    <td class="p-2.5">${a.edad} | ${a.sexo}</td>
+                    <td class="p-2.5 font-mono">${a.masa ? a.masa + 'g' : '—'}</td>
+                    <td class="p-2.5 font-mono">${a.ala || '—'} / ${a.p8 || '—'} mm</td>
+                    <td class="p-2.5 font-mono">Feo:${a.feomelanina || 0} Mot:${a.moteado || 0}</td>
+                    <td class="p-2.5 text-right">
+                        <button onclick="deleteAnillamiento('${a.id}')" class="text-xs text-rose-400 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbodyAni.appendChild(tr);
+            });
+
+            const tbodyInc = document.getElementById('tbody-incidencias');
+            tbodyInc.innerHTML = '';
+            db.incidencias.forEach(i => {
+                const nidoObj = db.nidos.find(n => n.id === i.nidoId);
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/50 transition';
+                tr.innerHTML = `
+                    <td class="p-2.5 font-mono">${i.fecha}</td>
+                    <td class="p-2.5 font-semibold text-rose-400">${nidoObj ? nidoObj.codigo : '—'}</td>
+                    <td class="p-2.5">${i.tipo}</td>
+                    <td class="p-2.5 text-slate-400">${i.causa}</td>
+                    <td class="p-2.5 text-right">
+                        <button onclick="deleteIncidencia('${i.id}')" class="text-xs text-rose-400 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbodyInc.appendChild(tr);
+            });
+
+            document.getElementById('stat-nidos').innerText = db.nidos.length;
+            document.getElementById('stat-huevos').innerText = db.visitas.reduce((acc, curr) => acc + (curr.huevos || 0), 0);
+            document.getElementById('stat-pollos').innerText = db.visitas.reduce((acc, curr) => acc + (curr.pollosVivos || 0), 0);
+            document.getElementById('stat-incidencias').innerText = db.incidencias.length;
+        }
+
+        function zoomToNido(lat, lng) {
+            if (map) {
+                map.setView([lat, lng], 15);
+                showToast("Centrado en coordenadas del nido", "info");
+            }
+        }
+
+        // 10. EXPORTACIÓN A EXCEL (.XLSX)
+        function exportToExcel() {
+            if (typeof XLSX === 'undefined') {
+                showToast("Librería SheetJS cargando... Reintenta en unos segundos.", "error");
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+
+            const wsNidos = XLSX.utils.json_to_sheet(db.nidos.map(n => ({
+                ID: n.id,
+                Codigo_Nido: n.codigo,
+                Anilla_Macho: n.macho,
+                Anilla_Hembra: n.hembra,
+                Latitud: n.lat,
+                Longitud: n.lng,
+                Poblacion: n.poblacion,
+                Habitat: n.habitat
+            })));
+            XLSX.utils.book_append_sheet(wb, wsNidos, "Nidos");
+
+            const wsVisitas = XLSX.utils.json_to_sheet(db.visitas.map(v => {
+                const nido = db.nidos.find(n => n.id === v.nidoId);
+                return {
+                    ID: v.id,
+                    Codigo_Nido: nido ? nido.codigo : 'Desconocido',
+                    Fecha: v.fecha,
+                    Huevos: v.huevos,
+                    Pollos_Vivos: v.pollosVivos,
+                    Pollos_Muertos: v.pollosMuertos,
+                    Estado: v.estado,
+                    Notas: v.notas
+                };
+            }));
+            XLSX.utils.book_append_sheet(wb, wsVisitas, "Visitas_Campo");
+
+            const wsAnillamiento = XLSX.utils.json_to_sheet(db.anillamientos.map(a => {
+                const nido = db.nidos.find(n => n.id === a.nidoId);
+                return {
+                    ID: a.id,
+                    Anilla_EURING: a.codigo,
+                    Codigo_Nido: nido ? nido.codigo : '—',
+                    Edad_EURING: a.edad,
+                    Sexo: a.sexo,
+                    Masa_g: a.masa,
+                    Ala_mm: a.ala,
+                    P8_mm: a.p8,
+                    Tarso_mm: a.tarso,
+                    R5_mm: a.r5,
+                    Feomelanina: a.feomelanina,
+                    Moteado: a.moteado
+                };
+            }));
+            XLSX.utils.book_append_sheet(wb, wsAnillamiento, "Anillamientos_EURING");
+
+            const wsIncidencias = XLSX.utils.json_to_sheet(db.incidencias.map(i => {
+                const nido = db.nidos.find(n => n.id === i.nidoId);
+                return {
+                    ID: i.id,
+                    Codigo_Nido: nido ? nido.codigo : '—',
+                    Fecha: i.fecha,
+                    Tipo_Evento: i.tipo,
+                    Causa: i.causa,
+                    Detalles: i.detalles
+                };
+            }));
+            XLSX.utils.book_append_sheet(wb, wsIncidencias, "Incidencias");
+
+            const fechaStr = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `Tyto_Alba_Monitoreo_${fechaStr}.xlsx`);
+            showToast("Archivo Excel exportado con éxito", "success");
+        }
+
+        // 11. EXPORTACIÓN & IMPORTACIÓN JSON
+        function exportToJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Tyto_Alba_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Backup JSON descargado", "success");
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            const fileName = file.name.toLowerCase();
+
+            if (fileName.endsWith('.json')) {
+                reader.onload = function(e) {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+                        if (imported.nidos && Array.isArray(imported.nidos)) {
+                            db = imported;
+                            saveToStorage();
+                            updateUI();
+                            showToast("Base de datos JSON cargada correctamente", "success");
+                        } else {
+                            showToast("El archivo JSON no tiene el formato esperado.", "error");
+                        }
+                    } catch (err) {
+                        showToast("Error al procesar el archivo JSON.", "error");
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // 12. TOAST NOTIFICATIONS UI
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-800 border-slate-700 text-slate-200';
+            let icon = 'fa-info-circle text-blue-400';
+
+            if (type === 'success') {
+                bgClass = 'bg-slate-900 border-emerald-500/50 text-emerald-300';
+                icon = 'fa-circle-check text-emerald-400';
+            } else if (type === 'error') {
+                bgClass = 'bg-slate-900 border-rose-500/50 text-rose-300';
+                icon = 'fa-circle-xmark text-rose-400';
+            } else if (type === 'warning') {
+                bgClass = 'bg-slate-900 border-amber-500/50 text-amber-300';
+                icon = 'fa-triangle-exclamation text-amber-400';
+            }
+
+            toast.className = `pointer-events-auto border px-4 py-3 rounded-lg shadow-xl text-xs font-medium flex items-center gap-2.5 transition transform duration-300 translate-y-2 opacity-0 ${bgClass}`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
