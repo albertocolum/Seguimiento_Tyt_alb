@@ -105,6 +105,8 @@
                 
                 <form id="form-nido" onsubmit="saveNido(event)" class="space-y-4">
                     <input type="hidden" id="nido-id">
+                    <input type="hidden" id="nido-lat">
+                    <input type="hidden" id="nido-lng">
                     
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Código o Nombre del Nido *</label>
@@ -122,21 +124,16 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1">Latitud GPS *</label>
-                            <input type="number" step="any" id="nido-lat" required placeholder="Ej. 40.4167" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1">Longitud GPS *</label>
-                            <input type="number" step="any" id="nido-lng" required placeholder="Ej. -3.7037" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500">
-                        </div>
-                    </div>
-
+                    <!-- CAMPO ÚNICO DE UBICACIÓN Y BOTÓN -->
                     <div>
-                        <button type="button" onclick="pinCoordsOnMap()" class="w-full bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/50 text-amber-300 text-xs py-2 rounded-lg transition flex items-center justify-center gap-2 font-medium">
-                            <i class="fa-solid fa-map-pin text-amber-400"></i> Ver coordenada con chincheta en el mapa
-                        </button>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Ubicación (Lat, Lng) *</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="nido-ubicacion-input" required placeholder="Ej. 40.4167, -3.7037" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500">
+                            <button type="button" onclick="pinCoordsOnMap()" class="bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/50 text-amber-300 text-xs px-3 py-2 rounded-lg transition flex items-center justify-center gap-1.5 font-medium whitespace-nowrap">
+                                <i class="fa-solid fa-map-pin text-amber-400"></i> Ver en Mapa
+                            </button>
+                        </div>
+                        <span class="text-[10px] text-slate-500 mt-1 block">También puedes hacer clic directamente en el mapa para fijar el punto.</span>
                     </div>
 
                     <div class="flex gap-2">
@@ -423,7 +420,6 @@
 
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Nido Asociado *</label>
-                        <!-- Selector de Nido que actualiza los desplegables de aves -->
                         <select id="inc-nido-id" required onchange="updateIncidenciaAvesDropdowns()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-rose-500">
                             <!-- Dinámico -->
                         </select>
@@ -642,6 +638,7 @@
                 const coord = marker.getLatLng();
                 document.getElementById('nido-lat').value = coord.lat.toFixed(6);
                 document.getElementById('nido-lng').value = coord.lng.toFixed(6);
+                document.getElementById('nido-ubicacion-input').value = `${coord.lat.toFixed(6)}, ${coord.lng.toFixed(6)}`;
                 reverseGeocode(coord.lat, coord.lng);
             });
 
@@ -649,18 +646,36 @@
                 marker.setLatLng(e.latlng);
                 document.getElementById('nido-lat').value = e.latlng.lat.toFixed(6);
                 document.getElementById('nido-lng').value = e.latlng.lng.toFixed(6);
+                document.getElementById('nido-ubicacion-input').value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
                 reverseGeocode(e.latlng.lat, e.latlng.lng);
             });
         }
 
+        // FUNCIÓN PARA INTERPRETAR EL CAMPO ÚNICO DE UBICACIÓN Y MOSTRARLO EN EL MAPA
         function pinCoordsOnMap() {
-            const lat = parseFloat(document.getElementById('nido-lat').value);
-            const lng = parseFloat(document.getElementById('nido-lng').value);
-
-            if (isNaN(lat) || isNaN(lng)) {
-                showToast("Introduce una Latitud y Longitud válidas primero.", "error");
+            const val = document.getElementById('nido-ubicacion-input').value.trim();
+            if (!val) {
+                showToast("Introduce una ubicación válida (ej. 40.4167, -3.7037).", "error");
                 return;
             }
+
+            // Separar latitud y longitud por coma o espacio
+            const parts = val.split(/[,\s]+/).filter(Boolean);
+            if (parts.length < 2) {
+                showToast("Formato incorrecto. Usa: latitud, longitud (ej. 40.4167, -3.7037)", "error");
+                return;
+            }
+
+            const lat = parseFloat(parts[0]);
+            const lng = parseFloat(parts[1]);
+
+            if (isNaN(lat) || isNaN(lng)) {
+                showToast("Coordenadas numéricas no válidas.", "error");
+                return;
+            }
+
+            document.getElementById('nido-lat').value = lat.toFixed(6);
+            document.getElementById('nido-lng').value = lng.toFixed(6);
 
             if (map && marker) {
                 const newLatLng = [lat, lng];
@@ -694,7 +709,7 @@
                 reverseGeocode(lat, lng);
                 showToast("Buscando población para las coordenadas...", "info");
             } else {
-                showToast("Introduce coordenadas de Latitud y Longitud primero.", "error");
+                showToast("Fijan coordenadas válidas o usa 'Ver en Mapa' primero.", "error");
             }
         }
 
@@ -705,6 +720,7 @@
                     const lng = position.coords.longitude;
                     document.getElementById('nido-lat').value = lat.toFixed(6);
                     document.getElementById('nido-lng').value = lng.toFixed(6);
+                    document.getElementById('nido-ubicacion-input').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
                     map.setView([lat, lng], 14);
                     marker.setLatLng([lat, lng]);
                     reverseGeocode(lat, lng);
@@ -740,6 +756,15 @@
 
         function saveNido(e) {
             e.preventDefault();
+            
+            // Asegurarse de procesar el campo único antes de guardar si el usuario no dio a "Ver en Mapa"
+            const val = document.getElementById('nido-ubicacion-input').value.trim();
+            const parts = val.split(/[,\s]+/).filter(Boolean);
+            if (parts.length >= 2) {
+                document.getElementById('nido-lat').value = parseFloat(parts[0]) || 0;
+                document.getElementById('nido-lng').value = parseFloat(parts[1]) || 0;
+            }
+
             const id = document.getElementById('nido-id').value || Date.now().toString();
             const nidoData = {
                 id: id,
@@ -776,6 +801,7 @@
             document.getElementById('nido-hembra').value = nido.hembra || '';
             document.getElementById('nido-lat').value = nido.lat;
             document.getElementById('nido-lng').value = nido.lng;
+            document.getElementById('nido-ubicacion-input').value = `${nido.lat}, ${nido.lng}`;
             document.getElementById('nido-poblacion').value = nido.poblacion || '';
             document.getElementById('nido-habitat').value = nido.habitat || 'Caja Nido en Masía/Cortijo';
 
@@ -794,6 +820,8 @@
         function resetFormNido() {
             document.getElementById('form-nido').reset();
             document.getElementById('nido-id').value = '';
+            document.getElementById('nido-lat').value = '';
+            document.getElementById('nido-lng').value = '';
             document.getElementById('form-nido-titulo').innerHTML = `<i class="fa-solid fa-plus-circle"></i> Registrar / Editar Caja Nido`;
             document.getElementById('btn-nido-submit-text').innerText = "Guardar Nido";
         }
@@ -994,7 +1022,6 @@
             });
         }
 
-        // ACTUALIZAR DESPLEGABLES DE AVES EN LA PESTAÑA DE INCIDENCIAS
         function updateIncidenciaAvesDropdowns() {
             const selectedNidoId = document.getElementById('inc-nido-id').value;
             const adultoSelect = document.getElementById('inc-adulto-select');
@@ -1144,6 +1171,7 @@
                 Anilla_Hembra: n.hembra,
                 Latitud: n.lat,
                 Longitud: n.lng,
+                Ubicacion: `${n.lat}, ${n.lng}`,
                 Poblacion: n.poblacion,
                 Habitat: n.habitat
             })));
