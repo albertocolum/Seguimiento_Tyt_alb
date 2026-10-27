@@ -134,6 +134,13 @@
                         </div>
                     </div>
 
+                    <!-- BOTÓN SOLICITADO: UBICAR EN MAPA CON CHINCHETA -->
+                    <div>
+                        <button type="button" onclick="pinCoordsOnMap()" class="w-full bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/50 text-amber-300 text-xs py-2 rounded-lg transition flex items-center justify-center gap-2 font-medium">
+                            <i class="fa-solid fa-map-pin text-amber-400"></i> Ver coordenada con chincheta en el mapa
+                        </button>
+                    </div>
+
                     <div class="flex gap-2">
                         <button type="button" onclick="locateUser()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs py-2 rounded-lg transition flex items-center justify-center gap-1.5 text-slate-300">
                             <i class="fa-solid fa-location-crosshairs text-emerald-400"></i> Usar mi GPS
@@ -543,7 +550,6 @@
 
     <!-- JAVASCRIPT PRINCIPAL -->
     <script>
-        // 1. ESTADO GLOBAL DE DATOS
         let db = {
             nidos: [],
             visitas: [],
@@ -561,7 +567,6 @@
             updateUI();
         });
 
-        // 2. PERSISTENCIA EN STORAGE CON MANEJO DE ERRORES FILE:///
         function saveToStorage() {
             try {
                 localStorage.setItem('tyto_alba_db', JSON.stringify(db));
@@ -581,7 +586,6 @@
             }
         }
 
-        // 3. MAPA LEAFLET CON PROVEEDORES LIBRES (SIN API KEY)
         function initMap() {
             const initialLat = 40.4167;
             const initialLng = -3.7037;
@@ -631,6 +635,25 @@
             });
         }
 
+        // NUEVA FUNCIÓN: UBICAR COORDENADAS CON CHINCHETA DESDE LOS INPUTS
+        function pinCoordsOnMap() {
+            const lat = parseFloat(document.getElementById('nido-lat').value);
+            const lng = parseFloat(document.getElementById('nido-lng').value);
+
+            if (isNaN(lat) || isNaN(lng)) {
+                showToast("Introduce una Latitud y Longitud válidas primero.", "error");
+                return;
+            }
+
+            if (map && marker) {
+                const newLatLng = [lat, lng];
+                marker.setLatLng(newLatLng);
+                map.setView(newLatLng, 15);
+                reverseGeocode(lat, lng);
+                showToast("Chincheta posicionada en el mapa", "success");
+            }
+        }
+
         async function reverseGeocode(lat, lng) {
             try {
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
@@ -677,7 +700,6 @@
             }
         }
 
-        // 4. CAMBIO DE PESTAÑAS
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -699,7 +721,6 @@
             }
         }
 
-        // 5. GESTIÓN DE CAJAS NIDO
         function saveNido(e) {
             e.preventDefault();
             const id = document.getElementById('nido-id').value || Date.now().toString();
@@ -743,7 +764,6 @@
             }
         }
 
-        // 6. GESTIÓN DE VISITAS DE CAMPO
         function saveVisita(e) {
             e.preventDefault();
             const id = document.getElementById('visita-id').value || Date.now().toString();
@@ -775,7 +795,6 @@
             showToast("Visita eliminada", "info");
         }
 
-        // 7. GESTIÓN DE ANILLAMIENTO EURING
         function saveAnillamiento(e) {
             e.preventDefault();
             const id = document.getElementById('ani-id').value || Date.now().toString();
@@ -811,7 +830,6 @@
             showToast("Ejemplar eliminado", "info");
         }
 
-        // 8. GESTIÓN DE INCIDENCIAS
         function saveIncidencia(e) {
             e.preventDefault();
             const id = document.getElementById('inc-id').value || Date.now().toString();
@@ -841,7 +859,6 @@
             showToast("Incidencia eliminada", "info");
         }
 
-        // 9. ACTUALIZACIÓN INTEGRAL DE LA INTERFAZ
         function updateUI() {
             const tbodyNidos = document.getElementById('tbody-nidos');
             tbodyNidos.innerHTML = '';
@@ -956,7 +973,6 @@
             }
         }
 
-        // 10. EXPORTACIÓN A EXCEL (.XLSX)
         function exportToExcel() {
             if (typeof XLSX === 'undefined') {
                 showToast("Librería SheetJS cargando... Reintenta en unos segundos.", "error");
@@ -1029,7 +1045,6 @@
             showToast("Archivo Excel exportado con éxito", "success");
         }
 
-        // 11. EXPORTACIÓN & IMPORTACIÓN JSON
         function exportToJSON() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
             const downloadAnchor = document.createElement('a');
@@ -1068,7 +1083,6 @@
             }
         }
 
-        // 12. TOAST NOTIFICATIONS UI
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
