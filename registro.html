@@ -124,7 +124,6 @@
                         </div>
                     </div>
 
-                    <!-- CAMPO ÚNICO DE UBICACIÓN Y BOTÓN -->
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Ubicación (Lat, Lng) *</label>
                         <div class="flex gap-2">
@@ -449,7 +448,7 @@
                         <label class="block text-xs font-medium text-slate-400 mb-1">Tipo de Evento</label>
                         <select id="inc-tipo" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-rose-500">
                             <option value="Mortalidad Adulto">Mortalidad de Adulto</option>
-                            <option value="Mortalidad Pollo">Mortalidad de Pollo fuera del nido</option>
+                            <option value="Mortalidad Pollo">Mortalidad de Pollo</option>
                             <option value="Sustitución de Pareja">Sustitución / Cambio de parejante</option>
                             <option value="Expoliación / Depredación del Nido">Expoliación / Depredación del Nido</option>
                             <option value="Destrucción del Hábitat">Destrucción / Pérdida del soporte</option>
@@ -651,7 +650,6 @@
             });
         }
 
-        // FUNCIÓN PARA INTERPRETAR EL CAMPO ÚNICO DE UBICACIÓN Y MOSTRARLO EN EL MAPA
         function pinCoordsOnMap() {
             const val = document.getElementById('nido-ubicacion-input').value.trim();
             if (!val) {
@@ -659,7 +657,6 @@
                 return;
             }
 
-            // Separar latitud y longitud por coma o espacio
             const parts = val.split(/[,\s]+/).filter(Boolean);
             if (parts.length < 2) {
                 showToast("Formato incorrecto. Usa: latitud, longitud (ej. 40.4167, -3.7037)", "error");
@@ -757,7 +754,6 @@
         function saveNido(e) {
             e.preventDefault();
             
-            // Asegurarse de procesar el campo único antes de guardar si el usuario no dio a "Ver en Mapa"
             const val = document.getElementById('nido-ubicacion-input').value.trim();
             const parts = val.split(/[,\s]+/).filter(Boolean);
             if (parts.length >= 2) {
@@ -874,9 +870,22 @@
         function saveAnillamiento(e) {
             e.preventDefault();
             const id = document.getElementById('ani-id').value || Date.now().toString();
+            const codigoAnilla = document.getElementById('ani-codigo').value.trim();
+
+            // Verificar si esta anilla ya fue dada de baja por mortalidad previamente
+            const estaMuerta = db.incidencias.some(i => 
+                (i.tipo === 'Mortalidad Adulto' && i.adultoImplicado && i.adultoImplicado.includes(codigoAnilla)) ||
+                (i.tipo === 'Mortalidad Pollo' && i.polloImplicado && i.polloImplicado.includes(codigoAnilla))
+            );
+
+            if (estaMuerta) {
+                showToast("Esta anilla pertenece a un ejemplar registrado como fallecido/baja.", "error");
+                return;
+            }
+
             const aniData = {
                 id: id,
-                codigo: document.getElementById('ani-codigo').value,
+                codigo: codigoAnilla,
                 nidoId: document.getElementById('ani-nido-id').value,
                 edad: document.getElementById('ani-edad').value,
                 sexo: document.getElementById('ani-sexo').value,
@@ -911,13 +920,17 @@
         function saveIncidencia(e) {
             e.preventDefault();
             const id = document.getElementById('inc-id').value || Date.now().toString();
+            const tipoEvento = document.getElementById('inc-tipo').value;
+            const adultoImp = document.getElementById('inc-adulto-select').value;
+            const polloImp = document.getElementById('inc-pollo-select').value;
+
             const incData = {
                 id: id,
                 nidoId: document.getElementById('inc-nido-id').value,
-                adultoImplicado: document.getElementById('inc-adulto-select').value,
-                polloImplicado: document.getElementById('inc-pollo-select').value,
+                adultoImplicado: adultoImp,
+                polloImplicado: polloImp,
                 fecha: document.getElementById('inc-fecha').value,
-                tipo: document.getElementById('inc-tipo').value,
+                tipo: tipoEvento,
                 causa: document.getElementById('inc-causa').value,
                 detalles: document.getElementById('inc-detalles').value
             };
@@ -926,11 +939,30 @@
             if (index >= 0) db.incidencias[index] = incData;
             else db.incidencias.push(incData);
 
+            // SI ES MORTALIDAD DE ADULTO, ELIMINAR ANILLA DE LOS DATOS DEL NIDO
+            if (tipoEvento === 'Mortalidad Adulto' && adultoImp) {
+                const nidoObj = db.nidos.find(n => n.id === incData.nidoId);
+                if (nidoObj) {
+                    if (nidoObj.macho && adultoImp.includes(nidoObj.macho)) nidoObj.macho = '';
+                    if (nidoObj.hembra && adultoImp.includes(nidoObj.hembra)) nidoObj.hembra = '';
+                }
+            }
+
+            // SI ES MORTALIDAD DE POLLO, ELIMINAR FICHA DE ANILLAMIENTO DE LA BASE DE DATOS
+            if (tipoEvento === 'Mortalidad Pollo' && polloImp) {
+                // Extraer el código de anilla del string guardado (ej. "Anilla: 1304521 (...)")
+                const match = polloImp.match(/Anilla:\s*([^\s(]+)/);
+                if (match && match[1]) {
+                    const anillaPollo = match[1];
+                    db.anillamientos = db.anillamientos.filter(a => a.codigo !== anillaPollo);
+                }
+            }
+
             saveToStorage();
             document.getElementById('form-incidencia').reset();
             updateIncidenciaAvesDropdowns();
             updateUI();
-            showToast("Incidencia registrada", "warning");
+            showToast("Incidencia registrada y baja procesada", "warning");
         }
 
         function deleteIncidencia(id) {
