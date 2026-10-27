@@ -316,8 +316,9 @@
                             <input type="text" id="ani-codigo" required placeholder="Ej. 1304521" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500">
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1">Nido Asociado</label>
-                            <select id="ani-nido-id" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Nido Asociado *</label>
+                            <!-- Evento onchange añadido para filtrar la tabla de anillamientos al instante -->
+                            <select id="ani-nido-id" required onchange="filterAnillamientoTable()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
                                 <!-- Dinámico -->
                             </select>
                         </div>
@@ -389,8 +390,11 @@
             </div>
 
             <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg flex flex-col gap-3">
-                <h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
-                    <i class="fa-solid fa-list-ol text-emerald-400"></i> Registro de Ejemplares Anillados
+                <h3 class="text-sm font-semibold text-slate-300 flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-list-ol text-emerald-400"></i> Ejemplares Anillados del Nido Seleccionado
+                    </span>
+                    <span id="ani-nido-activo-label" class="text-xs font-mono text-emerald-400 bg-slate-800 px-2.5 py-1 rounded-md">Todos los nidos</span>
                 </h3>
                 <div class="overflow-x-auto flex-1">
                     <table class="w-full text-left text-xs text-slate-300">
@@ -763,11 +767,9 @@
             document.getElementById('nido-poblacion').value = nido.poblacion || '';
             document.getElementById('nido-habitat').value = nido.habitat || 'Caja Nido en Masía/Cortijo';
 
-            // Actualizar textos del formulario visualmente para indicar modo edición
             document.getElementById('form-nido-titulo').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> Editando Nido: <span class="text-white font-mono">${nido.codigo}</span>`;
             document.getElementById('btn-nido-submit-text').innerText = "Actualizar Nido";
 
-            // Centrar mapa en el nido a editar y mover la chincheta
             if (map && marker) {
                 map.setView([nido.lat, nido.lng], 15);
                 marker.setLatLng([nido.lat, nido.lng]);
@@ -785,9 +787,11 @@
         }
 
         function deleteNido(id) {
-            if (confirm("¿Estás seguro de eliminar este nido y sus registros de visitas asociados?")) {
+            if (confirm("¿Estás seguro de eliminar este nido y sus registros asociados?")) {
                 db.nidos = db.nidos.filter(n => n.id !== id);
                 db.visitas = db.visitas.filter(v => v.nidoId !== id);
+                db.anillamientos = db.anillamientos.filter(a => a.nidoId !== id);
+                db.incidencias = db.incidencias.filter(i => i.nidoId !== id);
                 saveToStorage();
                 updateUI();
                 showToast("Nido eliminado", "info");
@@ -851,6 +855,8 @@
 
             saveToStorage();
             document.getElementById('form-anillamiento').reset();
+            document.getElementById('ani-nido-id').value = aniData.nidoId;
+
             updateUI();
             showToast("Ficha EURING guardada", "success");
         }
@@ -932,6 +938,48 @@
             });
         }
 
+        // FUNCIÓN DE FILTRADO PARA LA TABLA DE ANILLAMIENTO
+        function filterAnillamientoTable() {
+            const selectedNidoId = document.getElementById('ani-nido-id').value;
+            const tbodyAni = document.getElementById('tbody-anillamiento');
+            const labelBadge = document.getElementById('ani-nido-activo-label');
+            tbodyAni.innerHTML = '';
+
+            const anillamientosFiltrados = selectedNidoId 
+                ? db.anillamientos.filter(a => a.nidoId === selectedNidoId)
+                : db.anillamientos;
+
+            const nidoObj = db.nidos.find(n => n.id === selectedNidoId);
+            if (nidoObj) {
+                labelBadge.innerText = `Nido: ${nidoObj.codigo}`;
+            } else {
+                labelBadge.innerText = "Todos los nidos";
+            }
+
+            if (anillamientosFiltrados.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="6" class="p-4 text-center text-slate-500 italic">No hay ejemplares anillados registrados para este nido.</td>`;
+                tbodyAni.appendChild(tr);
+                return;
+            }
+
+            anillamientosFiltrados.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/50 transition';
+                tr.innerHTML = `
+                    <td class="p-2.5 font-mono font-bold text-emerald-400">${a.codigo}</td>
+                    <td class="p-2.5">${a.edad} | ${a.sexo}</td>
+                    <td class="p-2.5 font-mono">${a.masa ? a.masa + 'g' : '—'}</td>
+                    <td class="p-2.5 font-mono">${a.ala || '—'} / ${a.p8 || '—'} mm</td>
+                    <td class="p-2.5 font-mono">Feo:${a.feomelanina || 0} Mot:${a.moteado || 0}</td>
+                    <td class="p-2.5 text-right">
+                        <button onclick="deleteAnillamiento('${a.id}')" class="text-xs text-rose-400 hover:underline"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbodyAni.appendChild(tr);
+            });
+        }
+
         function updateUI() {
             const tbodyNidos = document.getElementById('tbody-nidos');
             tbodyNidos.innerHTML = '';
@@ -967,6 +1015,7 @@
             });
 
             const currentVisitaNido = document.getElementById('visita-nido-id').value;
+            const currentAniNido = document.getElementById('ani-nido-id').value;
 
             const nidoSelects = ['visita-nido-id', 'ani-nido-id', 'inc-nido-id'];
             nidoSelects.forEach(selectId => {
@@ -985,26 +1034,12 @@
             if (currentVisitaNido && document.getElementById('visita-nido-id').querySelector(`option[value="${currentVisitaNido}"]`)) {
                 document.getElementById('visita-nido-id').value = currentVisitaNido;
             }
+            if (currentAniNido && document.getElementById('ani-nido-id').querySelector(`option[value="${currentAniNido}"]`)) {
+                document.getElementById('ani-nido-id').value = currentAniNido;
+            }
 
             filterVisitasTable();
-
-            const tbodyAni = document.getElementById('tbody-anillamiento');
-            tbodyAni.innerHTML = '';
-            db.anillamientos.forEach(a => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-800/50 transition';
-                tr.innerHTML = `
-                    <td class="p-2.5 font-mono font-bold text-emerald-400">${a.codigo}</td>
-                    <td class="p-2.5">${a.edad} | ${a.sexo}</td>
-                    <td class="p-2.5 font-mono">${a.masa ? a.masa + 'g' : '—'}</td>
-                    <td class="p-2.5 font-mono">${a.ala || '—'} / ${a.p8 || '—'} mm</td>
-                    <td class="p-2.5 font-mono">Feo:${a.feomelanina || 0} Mot:${a.moteado || 0}</td>
-                    <td class="p-2.5 text-right">
-                        <button onclick="deleteAnillamiento('${a.id}')" class="text-xs text-rose-400 hover:underline"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                `;
-                tbodyAni.appendChild(tr);
-            });
+            filterAnillamientoTable();
 
             const tbodyInc = document.getElementById('tbody-incidencias');
             tbodyInc.innerHTML = '';
