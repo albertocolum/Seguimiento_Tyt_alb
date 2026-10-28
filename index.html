@@ -1,580 +1,755 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full bg-[#f4f3ed]">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Monitoreo de Lechuza Común (Tyto alba)</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tyto Alba | Monitoreo - Conservación de la Lechuza Común</title>
 
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            earth: {
-              50: '#fbf9f5',
-              100: '#f4efe4',
-              200: '#e7dc8c',
-              600: '#7a5c38',
-              800: '#43311e',
-            },
-            forest: {
-              50: '#f2f7f4',
-              100: '#dfede5',
-              600: '#2d6a4f',
-              700: '#1b4332',
-              800: '#081c15',
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            forest: '#1e382b',     // Verde bosque muy oscuro de cabecera/banner
+                            forestLight: '#2a4b3b',// Hover verde
+                            ochre: '#c88a4b',      // Tono caramelo/ocre activo
+                            ochreHover: '#b3783c', // Hover ocre
+                            bg: '#f4f3ed',          // Fondo crema suave
+                            card: '#ffffff',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    }
+                }
             }
-          }
         }
-      }
-    }
-  </script>
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
 </head>
-<body class="bg-earth-50 text-stone-800 font-sans min-h-screen flex flex-col justify-between">
+<body class="bg-[#f4f3ed] text-stone-800 antialiased min-h-screen flex flex-col">
 
-  <!-- ENCABEZADO Y NAVEGACIÓN -->
-  <header class="bg-forest-800 text-earth-100 shadow-md sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-      <div class="flex items-center space-x-3">
-        <div class="bg-forest-600 p-2 rounded-lg text-white">
-          <i data-lucide="bird" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <h1 class="text-lg font-bold leading-tight">Tyto alba</h1>
-          <p class="text-xs text-forest-100/70 hidden sm:block">Monitoreo y Conservación de la Lechuza Común</p>
-        </div>
-      </div>
+    <!-- ENCABEZADO SUPERIOR -->
+    <header class="bg-[#1e382b] text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 sm:h-20">
+                
+                <!-- Logo & Título -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+                    <div class="p-2 bg-white/10 rounded-xl border border-white/15 text-amber-200/90">
+                        <i data-lucide="bird" class="w-6 h-6 sm:w-7 sm:h-7"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg sm:text-xl tracking-tight text-white flex items-center gap-1.5">
+                            Tyto Alba <span class="text-white/40 font-normal">|</span> <span class="text-amber-200/90 font-medium">Monitoreo</span>
+                        </h1>
+                        <p class="text-xs text-emerald-200/60 hidden sm:block">Conservación de la Lechuza Común</p>
+                    </div>
+                </div>
 
-      <nav class="flex space-x-1 sm:space-x-2">
-        <button id="nav-dashboard" onclick="showTab('dashboard')" class="px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 bg-forest-700 text-white">
-          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Dashboard</span>
-        </button>
-        <button id="nav-control" onclick="showTab('control')" class="px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 text-earth-100 hover:bg-forest-700/50">
-          <i data-lucide="clipboard-edit" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Gestión y Registro</span>
-        </button>
-      </nav>
-    </div>
-  </header>
-
-  <!-- CONTENIDO PRINCIPAL -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
-
-    <!-- PÁGINA 1: DASHBOARD PRINCIPAL -->
-    <section id="tab-dashboard" class="space-y-8">
-      
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-earth-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-2xl font-bold text-forest-800">Panel de Control de Campo</h2>
-          <p class="text-stone-600 text-sm mt-1">Resumen estadístico del estado poblacional y reproducción en tiempo real.</p>
-        </div>
-        <button onclick="showTab('control')" class="inline-flex items-center justify-center space-x-2 bg-forest-600 hover:bg-forest-700 text-white font-medium px-5 py-3 rounded-xl shadow-sm transition-all text-sm shrink-0">
-          <i data-lucide="plus-circle" class="w-5 h-5"></i>
-          <span>Registrar / Actualizar Nido</span>
-        </button>
-      </div>
-
-      <!-- Tarjetas de Estadísticas Rápidas -->
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-earth-100 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between text-forest-600 mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">Nidos Activos</span>
-            <div class="p-2 bg-forest-50 rounded-lg"><i data-lucide="home" class="w-5 h-5"></i></div>
-          </div>
-          <span id="stat-nests" class="text-3xl font-extrabold text-stone-800">0</span>
-        </div>
-
-        <div class="bg-white p-5 rounded-2xl border border-earth-100 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between text-forest-600 mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">Parejas ID</span>
-            <div class="p-2 bg-forest-50 rounded-lg"><i data-lucide="users" class="w-5 h-5"></i></div>
-          </div>
-          <span id="stat-pairs" class="text-3xl font-extrabold text-stone-800">0</span>
-        </div>
-
-        <div class="bg-white p-5 rounded-2xl border border-earth-100 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between text-forest-600 mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">Huevos</span>
-            <div class="p-2 bg-forest-50 rounded-lg"><i data-lucide="egg" class="w-5 h-5"></i></div>
-          </div>
-          <span id="stat-eggs" class="text-3xl font-extrabold text-stone-800">0</span>
-        </div>
-
-        <div class="bg-white p-5 rounded-2xl border border-earth-100 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between text-forest-600 mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">Crías Nacidas</span>
-            <div class="p-2 bg-forest-50 rounded-lg"><i data-lucide="feather" class="w-5 h-5"></i></div>
-          </div>
-          <span id="stat-chicks" class="text-3xl font-extrabold text-stone-800">0</span>
-        </div>
-
-        <div class="bg-white p-5 rounded-2xl border border-earth-100 shadow-sm flex flex-col justify-between col-span-2 md:col-span-1">
-          <div class="flex items-center justify-between text-forest-600 mb-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">Anillados</span>
-            <div class="p-2 bg-forest-50 rounded-lg"><i data-lucide="award" class="w-5 h-5"></i></div>
-          </div>
-          <span id="stat-ringed" class="text-3xl font-extrabold text-stone-800">0</span>
-        </div>
-      </div>
-
-      <!-- Tabla de Nidos Recientes -->
-      <div class="bg-white rounded-2xl border border-earth-100 shadow-sm overflow-hidden">
-        <div class="p-6 border-b border-earth-100 flex justify-between items-center">
-          <h3 class="text-lg font-bold text-forest-800 flex items-center gap-2">
-            <i data-lucide="list" class="w-5 h-5 text-forest-600"></i>
-            Resumen de Nidos Registrados
-          </h3>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-stone-600">
-            <thead class="bg-earth-100/50 text-stone-700 font-semibold uppercase text-xs">
-              <tr>
-                <th class="px-6 py-3">ID Nido</th>
-                <th class="px-6 py-3">Localización / Coordenadas</th>
-                <th class="px-6 py-3">Estado</th>
-                <th class="px-6 py-3">Salud Crías</th>
-                <th class="px-6 py-3">Puesta / Crías</th>
-                <th class="px-6 py-3 text-right">Última Revisión</th>
-              </tr>
-            </thead>
-            <tbody id="dashboard-table-body" class="divide-y divide-earth-100"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- PÁGINA 2: CONTROL Y GESTIÓN DE DATOS -->
-    <section id="tab-control" class="hidden space-y-8">
-      
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-earth-100">
-        <h2 class="text-2xl font-bold text-forest-800">Gestión y Registro de Datos de Campo</h2>
-        <p class="text-stone-600 text-sm mt-1">Selecciona un nido existente o añade uno nuevo para actualizar su inspección.</p>
-      </div>
-
-      <form id="nest-form" onsubmit="handleFormSubmit(event)" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-earth-100 space-y-8">
-        
-        <!-- 1. Información del Nido -->
-        <div>
-          <h3 class="text-base font-bold text-forest-700 border-b border-earth-100 pb-2 mb-4 flex items-center gap-2">
-            <i data-lucide="map-pin" class="w-5 h-5 text-forest-600"></i>
-            1. Información del Nido y Ubicación GPS
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Seleccionar o Crear ID Nido *</label>
-              <select id="nestIdSelect" onchange="onNestSelected(this.value)" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm bg-white mb-2">
-                <option value="NEW">+ Crear nuevo ID de nido...</option>
-              </select>
-              <input type="text" id="nestId" required placeholder="Ej. N-2026-03" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm">
+                <!-- Menú de Navegación -->
+                <nav class="flex items-center space-x-2">
+                    <button id="nav-dashboard" onclick="switchTab('dashboard')" 
+                        class="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 bg-[#c88a4b] text-white shadow-sm hover:bg-[#b3783c]">
+                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button id="nav-control" onclick="switchTab('control')" 
+                        class="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 text-stone-200 hover:text-white hover:bg-white/10">
+                        <i data-lucide="file-edit" class="w-4 h-4"></i>
+                        <span>Registro y Control</span>
+                    </button>
+                </nav>
             </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+        <!-- ================= PÁGINA 1: DASHBOARD ================= -->
+        <section id="dashboard-tab" class="tab-content active space-y-6">
             
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Nombre / Caja Nido *</label>
-              <input type="text" id="locationName" required placeholder="Ej. Masía Norte - Caja #4" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm">
+            <!-- Banner Verde Oscuro -->
+            <div class="bg-[#1e382b] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="space-y-2">
+                        <span class="inline-block px-3 py-1 bg-white/10 text-amber-200/90 border border-white/10 rounded-full text-[11px] font-bold tracking-wider uppercase">
+                            TEMPORADA DE CRÍA ACTIVA
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Resumen de Inspecciones de Campo</h2>
+                        <p class="text-emerald-100/70 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                            Consulte los indicadores de reproducción, estado de cajas nido y seguimiento de ejemplares anillados en tiempo real.
+                        </p>
+                    </div>
+                    <div>
+                        <button onclick="switchTab('control')" class="inline-flex items-center space-x-2 bg-[#c88a4b] hover:bg-[#b3783c] text-white px-5 py-3 rounded-xl font-medium shadow-md transition-all duration-200 text-sm w-full md:w-auto justify-center">
+                            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                            <span>Registrar Nuevo Nido</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Estado del Nido *</label>
-              <select id="status" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm bg-white">
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
-                <option value="Abandonado">Abandonado</option>
-              </select>
-            </div>
-          </div>
+            <!-- TARJETAS DE ESTADÍSTICAS (KPIs con iconos pastel) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                
+                <!-- KPI 1: Nidos Activos -->
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/60 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">NIDOS ACTIVOS</span>
+                        <div class="p-2 bg-[#d1f2d9] text-[#2d6a4f] rounded-xl">
+                            <i data-lucide="home" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <p id="kpi-nidos-activos" class="text-3xl font-extrabold text-stone-900">2</p>
+                        <p class="text-xs text-[#2d6a4f] mt-1 font-medium flex items-center">
+                            <i data-lucide="activity" class="w-3 h-3 mr-1"></i> Ocupación en caja
+                        </p>
+                    </div>
+                </div>
 
-          <!-- Coordenadas y Geolocalización -->
-          <div class="bg-earth-50 p-4 rounded-xl border border-earth-200 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div class="md:col-span-2">
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Coordenadas GPS (Latitud, Longitud)</label>
-              <input type="text" id="coordinates" placeholder="Ej. 38.9845, -0.4821 o utiliza el botón GPS" class="w-full px-3 py-2 border border-stone-300 rounded-lg bg-white focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm font-mono">
+                <!-- KPI 2: Parejas -->
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/60 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">PAREJAS</span>
+                        <div class="p-2 bg-[#fbe7d5] text-[#9a5b28] rounded-xl">
+                            <i data-lucide="heart" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <p id="kpi-parejas" class="text-3xl font-extrabold text-stone-900">3</p>
+                        <p class="text-xs text-[#9a5b28] mt-1 font-medium flex items-center">
+                            <i data-lucide="users" class="w-3 h-3 mr-1"></i> Identificadas
+                        </p>
+                    </div>
+                </div>
+
+                <!-- KPI 3: Huevos -->
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/60 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">HUEVOS</span>
+                        <div class="p-2 bg-[#fdf2d0] text-[#8a6a1c] rounded-xl">
+                            <i data-lucide="egg" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <p id="kpi-huevos" class="text-3xl font-extrabold text-stone-900">11</p>
+                        <p class="text-xs text-[#8a6a1c] mt-1 font-medium flex items-center">
+                            <i data-lucide="check-circle-2" class="w-3 h-3 mr-1"></i> Puestas contadas
+                        </p>
+                    </div>
+                </div>
+
+                <!-- KPI 4: Crías -->
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/60 shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">CRÍAS</span>
+                        <div class="p-2 bg-[#d1f4e0] text-[#1f7a4c] rounded-xl">
+                            <i data-lucide="baby" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <p id="kpi-crias" class="text-3xl font-extrabold text-stone-900">6</p>
+                        <p class="text-xs text-[#1f7a4c] mt-1 font-medium flex items-center">
+                            <i data-lucide="sparkles" class="w-3 h-3 mr-1"></i> Eclosionadas
+                        </p>
+                    </div>
+                </div>
+
+                <!-- KPI 5: Anillados -->
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/60 shadow-sm flex flex-col justify-between col-span-2 sm:col-span-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">ANILLADOS</span>
+                        <div class="p-2 bg-[#d8f0fa] text-[#1d6b8a] rounded-xl">
+                            <i data-lucide="tag" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <p id="kpi-anillados" class="text-3xl font-extrabold text-stone-900">4</p>
+                        <p class="text-xs text-[#1d6b8a] mt-1 font-medium flex items-center">
+                            <i data-lucide="shield-check" class="w-3 h-3 mr-1"></i> Registrados
+                        </p>
+                    </div>
+                </div>
+
             </div>
-            <div>
-              <button type="button" onclick="getGPSLocation()" class="w-full bg-forest-700 hover:bg-forest-800 text-white font-medium px-4 py-2 rounded-lg transition-all flex items-center justify-center space-x-2 text-sm shadow-sm">
-                <i data-lucide="locate-fixed" class="w-4 h-4"></i>
-                <span>Obtener GPS Actual</span>
-              </button>
+
+            <!-- Tabla de Resumen de Nidos -->
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200/60 overflow-hidden">
+                <div class="p-5 sm:p-6 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="font-bold text-stone-900 text-lg">Resumen de Nidos Registrados</h3>
+                        <p class="text-stone-400 text-xs mt-0.5">Últimas revisiones y estado actual de las cajas de anidación</p>
+                    </div>
+                    <button onclick="switchTab('control')" class="text-xs font-semibold text-[#1e382b] hover:text-[#c88a4b] flex items-center space-x-1 transition">
+                        <span>Gestionar todos los registros</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-stone-50/50 text-stone-400 text-[11px] uppercase font-bold tracking-wider border-b border-stone-100">
+                                <th class="py-3.5 px-6">ID NIDO</th>
+                                <th class="py-3.5 px-6">UBICACIÓN / CAJA</th>
+                                <th class="py-3.5 px-6">ESTADO</th>
+                                <th class="py-3.5 px-6">SALUD CRÍAS</th>
+                                <th class="py-3.5 px-6">HUEVOS / CRÍAS</th>
+                                <th class="py-3.5 px-6">ÚLTIMA REVISIÓN</th>
+                                <th class="py-3.5 px-6 text-right">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-recent-table" class="divide-y divide-stone-100 text-sm font-medium">
+                            <!-- Filas insertadas dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
-          </div>
-          <p id="gps-status" class="text-xs text-stone-500 mt-1 italic"></p>
+        </section>
+
+
+        <!-- ================= PÁGINA 2: REGISTRO Y CONTROL ================= -->
+        <section id="control-tab" class="tab-content space-y-6">
+            
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200/60 overflow-hidden">
+                <div class="bg-[#1e382b] p-5 text-white flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-white/10 rounded-xl">
+                            <i data-lucide="file-text" class="w-5 h-5 text-amber-200/90"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-white text-lg">Formulario de Registro / Actualización</h2>
+                            <p class="text-emerald-100/60 text-xs">Seleccione un nido existente o cree uno nuevo para ingresar datos de campo</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="nest-form" onsubmit="handleFormSubmit(event)" class="p-6 space-y-6">
+                    <input type="hidden" id="edit-index" value="-1">
+
+                    <!-- SECCIÓN 1: Selección e Identificación -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold text-[#1e382b] uppercase tracking-wider flex items-center gap-2 border-b border-stone-100 pb-2">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-[#c88a4b]"></i> 1. Información del Nido y Ubicación GPS
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Seleccionar o Crear Nido *</label>
+                                <select id="nest-select" onchange="onNestSelectChange()" class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition font-medium">
+                                    <option value="NEW">+ Registrar nuevo nido...</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">ID Nido *</label>
+                                <input type="text" id="nest-id" required placeholder="Ej. NIDO-01" 
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition font-bold text-stone-900">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Estado del Nido *</label>
+                                <select id="nest-status" required class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition bg-white font-medium">
+                                    <option value="Activo">Activo</option>
+                                    <option value="Inactivo">Inactivo</option>
+                                    <option value="Abandonado">Abandonado</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Ubicación / Código Caja *</label>
+                                <input type="text" id="nest-location" required placeholder="Ej. Masía del Sur - Caja 1" 
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Coordenadas GPS</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="nest-coords" placeholder="Ej. 39.9821, -0.0321" 
+                                        class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition font-mono text-xs">
+                                    <button type="button" onclick="getGPS()" class="px-4 py-2.5 bg-[#1e382b] hover:bg-[#2a4b3b] text-white text-xs font-medium rounded-xl transition flex items-center space-x-1 shrink-0">
+                                        <i data-lucide="navigation" class="w-3.5 h-3.5"></i>
+                                        <span>GPS</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 2: Pareja -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold text-[#1e382b] uppercase tracking-wider flex items-center gap-2 border-b border-stone-100 pb-2">
+                            <i data-lucide="heart" class="w-4 h-4 text-[#c88a4b]"></i> 2. Identificación de la Pareja
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Código Anilla Macho</label>
+                                <input type="text" id="male-ring" placeholder="Ej. M-1029 o 'Sin anillar'" 
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Código Anilla Hembra</label>
+                                <input type="text" id="female-ring" placeholder="Ej. H-8821 o 'Sin anillar'" 
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 3: Reproducción -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold text-[#1e382b] uppercase tracking-wider flex items-center gap-2 border-b border-stone-100 pb-2">
+                            <i data-lucide="egg" class="w-4 h-4 text-[#c88a4b]"></i> 3. Reproducción y Salud
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Fecha 1ª Puesta</label>
+                                <input type="date" id="lay-date" 
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Nº Huevos</label>
+                                <input type="number" id="egg-count" min="0" value="0" required
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Crías Eclosionadas</label>
+                                <input type="number" id="chick-count" min="0" value="0" required
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Salud Crías</label>
+                                <select id="health-status" class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition bg-white">
+                                    <option value="Excelente">Excelente</option>
+                                    <option value="Bueno">Bueno</option>
+                                    <option value="Alerta">Alerta</option>
+                                    <option value="N/A">N/A</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 4: Anillamiento y Notas -->
+                    <div class="space-y-4">
+                        <h3 class="text-xs font-bold text-[#1e382b] uppercase tracking-wider flex items-center gap-2 border-b border-stone-100 pb-2">
+                            <i data-lucide="tag" class="w-4 h-4 text-[#c88a4b]"></i> 4. Anillamiento y Observaciones
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Fecha Anillamiento</label>
+                                <input type="date" id="band-date" 
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Anillas Crías (separadas por coma)</label>
+                                <input type="text" id="chick-rings" placeholder="Ej. CH-01, CH-02, CH-03" 
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition font-mono text-xs">
+                            </div>
+                            <div class="sm:col-span-3">
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Notas de Campo</label>
+                                <textarea id="field-notes" rows="2" placeholder="Observaciones sobre presas encontradas, parásitos, comportamiento..." 
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:ring-2 focus:ring-[#1e382b] text-sm outline-none transition"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="flex items-center justify-end space-x-3 pt-4 border-t border-stone-100">
+                        <button type="button" onclick="resetForm()" class="px-5 py-2.5 rounded-xl text-stone-500 hover:bg-stone-100 text-sm font-semibold transition">
+                            Limpiar
+                        </button>
+                        <button type="submit" id="submit-btn" class="px-6 py-2.5 bg-[#c88a4b] hover:bg-[#b3783c] text-white rounded-xl text-sm font-semibold shadow-sm transition flex items-center space-x-2">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            <span>Guardar Registro</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabla Dinámica en Control -->
+            <div class="bg-white rounded-2xl shadow-sm border border-stone-200/60 overflow-hidden">
+                <div class="p-5 border-b border-stone-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-stone-900 text-lg">Registros Guardados en Memoria</h3>
+                        <p class="text-stone-400 text-xs">Persistencia de datos almacenada en navegador (localStorage)</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-stone-50/50 text-stone-400 text-[11px] uppercase font-bold tracking-wider border-b border-stone-100">
+                                <th class="py-3.5 px-6">ID / UBICACIÓN</th>
+                                <th class="py-3.5 px-6">ESTADO</th>
+                                <th class="py-3.5 px-6">PAREJA (M/H)</th>
+                                <th class="py-3.5 px-6">HUEVOS / CRÍAS</th>
+                                <th class="py-3.5 px-6">ANILLAS CRÍAS</th>
+                                <th class="py-3.5 px-6 text-right">ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody id="full-records-table" class="divide-y divide-stone-100 text-sm font-medium">
+                            <!-- Inserción dinámica por JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Modal Detalles de Nido -->
+    <div id="detail-modal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-stone-200">
+            <div class="bg-[#1e382b] text-white p-5 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="bird" class="w-6 h-6 text-amber-200/90"></i>
+                    <h3 id="modal-title" class="font-bold text-lg">Detalles del Nido</h3>
+                </div>
+                <button onclick="closeModal()" class="text-white/70 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="modal-body" class="p-6 space-y-3 text-sm text-stone-700"></div>
+            <div class="bg-stone-50 p-4 border-t border-stone-100 text-right">
+                <button onclick="closeModal()" class="px-5 py-2 bg-[#1e382b] text-white text-xs font-semibold rounded-xl hover:bg-[#2a4b3b]">
+                    Cerrar
+                </button>
+            </div>
         </div>
-
-        <!-- 2. Información de la Pareja -->
-        <div>
-          <h3 class="text-base font-bold text-forest-700 border-b border-earth-100 pb-2 mb-4 flex items-center gap-2">
-            <i data-lucide="users" class="w-5 h-5 text-forest-600"></i>
-            2. Datos de la Pareja
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Anilla Macho</label>
-              <input type="text" id="maleRing" placeholder="Código de anilla o 'Sin anillar'" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Anilla Hembra</label>
-              <input type="text" id="femaleRing" placeholder="Código de anilla o 'Sin anillar'" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm">
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Reproducción y Crías -->
-        <div>
-          <h3 class="text-base font-bold text-forest-700 border-b border-earth-100 pb-2 mb-4 flex items-center gap-2">
-            <i data-lucide="egg" class="w-5 h-5 text-forest-600"></i>
-            3. Reproducción y Estado Sanitario
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Fecha 1ª Puesta</label>
-              <input type="date" id="layDate" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Nº Total de Huevos</label>
-              <input type="number" id="eggCount" min="0" value="0" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Crías Eclosionadas</label>
-              <input type="number" id="chickCount" min="0" value="0" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Estado Salud Crías</label>
-              <select id="healthStatus" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm bg-white">
-                <option value="Excelente">Excelente</option>
-                <option value="Bueno">Bueno</option>
-                <option value="Alerta">Alerta / Riesgo</option>
-                <option value="N/A">Sin Crías (N/A)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. Anillamiento y Notas -->
-        <div>
-          <h3 class="text-base font-bold text-forest-700 border-b border-earth-100 pb-2 mb-4 flex items-center gap-2">
-            <i data-lucide="feather" class="w-5 h-5 text-forest-600"></i>
-            4. Anillamiento y Observaciones
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Anillas Nuevas Crías (separadas por coma)</label>
-              <input type="text" id="chickRings" placeholder="Ej. A123, A124, A125" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Fecha de Anillamiento</label>
-              <input type="date" id="ringDate" class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm">
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-stone-600 mb-1">Notas de Campo / Observaciones</label>
-            <textarea id="notes" rows="3" placeholder="Añade detalles sobre presas encontradas, parásitos o incidencias en el entorno..." class="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-forest-600 focus:border-transparent text-sm"></textarea>
-          </div>
-        </div>
-
-        <!-- Botón Guardar -->
-        <div class="flex justify-end">
-          <button type="submit" class="bg-forest-600 hover:bg-forest-700 text-white font-medium px-6 py-3 rounded-xl shadow-sm transition-all flex items-center space-x-2 text-sm">
-            <i data-lucide="save" class="w-4 h-4"></i>
-            <span>Guardar Registro</span>
-          </button>
-        </div>
-      </form>
-
-      <!-- Tabla Dinámica en Registro -->
-      <div class="bg-white rounded-2xl border border-earth-100 shadow-sm overflow-hidden">
-        <div class="p-6 border-b border-earth-100 flex justify-between items-center">
-          <h3 class="text-lg font-bold text-forest-800 flex items-center gap-2">
-            <i data-lucide="database" class="w-5 h-5 text-forest-600"></i>
-            Registros Almacenados
-          </h3>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-stone-600">
-            <thead class="bg-earth-100/50 text-stone-700 font-semibold uppercase text-xs">
-              <tr>
-                <th class="px-6 py-3">ID / Ubicación / Coordenadas</th>
-                <th class="px-6 py-3">Estado</th>
-                <th class="px-6 py-3">Pareja (M/H)</th>
-                <th class="px-6 py-3">Huevos/Crías</th>
-                <th class="px-6 py-3">Anillas Crías</th>
-                <th class="px-6 py-3 text-right">Acción</th>
-              </tr>
-            </thead>
-            <tbody id="control-table-body" class="divide-y divide-earth-100"></tbody>
-          </table>
-        </div>
-      </div>
-
-    </section>
-
-  </main>
-
-  <!-- PIE DE PÁGINA -->
-  <footer class="bg-earth-100 border-t border-earth-200 py-4 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-stone-500">
-      <p>© 2026 Proyecto Monitoreo <i>Tyto alba</i> — Conservación de Avifauna Ibérica</p>
     </div>
-  </footer>
 
-  <!-- LÓGICA JAVASCRIPT -->
-  <script>
-    const initialData = [
-      {
-        nestId: "N-2026-01",
-        locationName: "Caja #12 - Cortijo El Olivar",
-        coordinates: "38.9842, -0.4815",
-        status: "Activo",
-        maleRing: "EBD-90812",
-        femaleRing: "EBD-90813",
-        layDate: "2026-03-15",
-        eggCount: 5,
-        chickCount: 4,
-        healthStatus: "Excelente",
-        chickRings: "A-101, A-102, A-103, A-104",
-        ringDate: "2026-04-20",
-        notes: "Excelente desarrollo. Presas abundantes.",
-        lastReview: "2026-04-20"
-      },
-      {
-        nestId: "N-2026-02",
-        locationName: "Caja #04 - Campanario Viejo",
-        coordinates: "39.0124, -0.5231",
-        status: "Activo",
-        maleRing: "Sin anillar",
-        femaleRing: "EBD-88120",
-        layDate: "2026-03-22",
-        eggCount: 4,
-        chickCount: 2,
-        healthStatus: "Bueno",
-        chickRings: "A-105, A-106",
-        ringDate: "2026-04-25",
-        notes: "Restos de micromamíferos.",
-        lastReview: "2026-04-25"
-      }
-    ];
+    <!-- Script de Funcionamiento -->
+    <script>
+        const initialNests = [
+            {
+                id: "NIDO-01",
+                location: "Masía del Sur - Caja 1",
+                coords: "39.9821, -0.0321",
+                status: "Activo",
+                maleRing: "M-1029",
+                femaleRing: "H-8821",
+                layDate: "2026-03-15",
+                eggCount: 5,
+                chickCount: 4,
+                healthStatus: "Excelente",
+                bandDate: "2026-04-20",
+                chickRings: "CH-01, CH-02, CH-03, CH-04",
+                notes: "Presas abundantes en la caja (Microtus arvalis).",
+                lastReview: "2026-04-20"
+            },
+            {
+                id: "NIDO-02",
+                location: "Campanario Viejo - Caja 3",
+                coords: "39.9850, -0.0290",
+                status: "Activo",
+                maleRing: "Sin anillar",
+                femaleRing: "H-5542",
+                layDate: "2026-03-22",
+                eggCount: 6,
+                chickCount: 2,
+                healthStatus: "Bueno",
+                bandDate: "",
+                chickRings: "",
+                notes: "4 huevos pendientes de eclosión.",
+                lastReview: "2026-04-18"
+            },
+            {
+                id: "NIDO-03",
+                location: "Pajar Este - Caja 2",
+                coords: "39.9910, -0.0410",
+                status: "Inactivo",
+                maleRing: "-",
+                femaleRing: "-",
+                layDate: "",
+                eggCount: 0,
+                chickCount: 0,
+                healthStatus: "N/A",
+                bandDate: "",
+                chickRings: "",
+                notes: "Caja revisada y limpia.",
+                lastReview: "2026-04-10"
+            }
+        ];
 
-    function getStorageData() {
-      const stored = localStorage.getItem('tyto_monitoring_data');
-      if (!stored) {
-        localStorage.setItem('tyto_monitoring_data', JSON.stringify(initialData));
-        return initialData;
-      }
-      return JSON.parse(stored);
-    }
-
-    function setStorageData(data) {
-      localStorage.setItem('tyto_monitoring_data', JSON.stringify(data));
-      renderApp();
-    }
-
-    function showTab(tabName) {
-      const dashTab = document.getElementById('tab-dashboard');
-      const controlTab = document.getElementById('tab-control');
-      const navDash = document.getElementById('nav-dashboard');
-      const navControl = document.getElementById('nav-control');
-
-      if (tabName === 'dashboard') {
-        dashTab.classList.remove('hidden');
-        controlTab.classList.add('hidden');
-        navDash.className = "px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 bg-forest-700 text-white";
-        navControl.className = "px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 text-earth-100 hover:bg-forest-700/50";
-      } else {
-        controlTab.classList.remove('hidden');
-        dashTab.classList.add('hidden');
-        navControl.className = "px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 bg-forest-700 text-white";
-        navDash.className = "px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 text-earth-100 hover:bg-forest-700/50";
-      }
-    }
-
-    // Actualizar selector desplegable de nidos
-    function updateNestSelect() {
-      const data = getStorageData();
-      const select = document.getElementById('nestIdSelect');
-      const currentVal = select.value;
-      
-      select.innerHTML = '<option value="NEW">+ Crear nuevo ID de nido...</option>';
-      data.forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = item.nestId;
-        opt.textContent = `${item.nestId} (${item.locationName})`;
-        select.appendChild(opt);
-      });
-      select.value = currentVal;
-    }
-
-    // Cuando se selecciona un nido del desplegable
-    function onNestSelected(val) {
-      const nestIdInput = document.getElementById('nestId');
-      if (val === 'NEW') {
-        nestIdInput.value = '';
-        nestIdInput.readOnly = false;
-        document.getElementById('locationName').value = '';
-        document.getElementById('coordinates').value = '';
-      } else {
-        const data = getStorageData();
-        const found = data.find(d => d.nestId === val);
-        if (found) {
-          nestIdInput.value = found.nestId;
-          nestIdInput.readOnly = true; // Evitar alterar ID principal por error
-          document.getElementById('locationName').value = found.locationName || '';
-          document.getElementById('coordinates').value = found.coordinates || '';
-          document.getElementById('status').value = found.status || 'Activo';
+        function getNests() {
+            const data = localStorage.getItem('tyto_monitoring_data');
+            if (!data) {
+                localStorage.setItem('tyto_monitoring_data', JSON.stringify(initialNests));
+                return initialNests;
+            }
+            return JSON.parse(data);
         }
-      }
-    }
 
-    // Obtener Coordenadas GPS del dispositivo
-    function getGPSLocation() {
-      const statusText = document.getElementById('gps-status');
-      if (!navigator.geolocation) {
-        statusText.textContent = "La geolocalización no está soportada en tu navegador.";
-        return;
-      }
-
-      statusText.textContent = "Obteniendo señal GPS...";
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude.toFixed(6);
-          const lon = position.coords.longitude.toFixed(6);
-          document.getElementById('coordinates').value = `${lat}, ${lon}`;
-          statusText.textContent = "¡Ubicación obtenida con éxito!";
-        },
-        (error) => {
-          statusText.textContent = "Error al obtener GPS: comprueba los permisos de ubicación.";
-        },
-        { enableHighAccuracy: true }
-      );
-    }
-
-    function renderApp() {
-      const data = getStorageData();
-      updateNestSelect();
-
-      const activeNests = data.filter(d => d.status === 'Activo').length;
-      let identifiedPairs = 0, totalEggs = 0, totalChicks = 0, totalRinged = 0;
-
-      data.forEach(item => {
-        if ((item.maleRing && item.maleRing !== 'Sin anillar') || (item.femaleRing && item.femaleRing !== 'Sin anillar')) {
-          identifiedPairs++;
+        function saveNests(nests) {
+            localStorage.setItem('tyto_monitoring_data', JSON.stringify(nests));
+            renderApp();
         }
-        totalEggs += Number(item.eggCount || 0);
-        totalChicks += Number(item.chickCount || 0);
-        if (item.chickRings && item.chickRings.trim() !== "") {
-          totalRinged += item.chickRings.split(',').filter(r => r.trim() !== "").length;
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            const btnDash = document.getElementById('nav-dashboard');
+            const btnCtrl = document.getElementById('nav-control');
+
+            if (tabName === 'dashboard') {
+                btnDash.className = "flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 bg-[#c88a4b] text-white shadow-sm hover:bg-[#b3783c]";
+                btnCtrl.className = "flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 text-stone-200 hover:text-white hover:bg-white/10";
+            } else {
+                btnCtrl.className = "flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 bg-[#c88a4b] text-white shadow-sm hover:bg-[#b3783c]";
+                btnDash.className = "flex items-center space-x-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 text-stone-200 hover:text-white hover:bg-white/10";
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-      });
 
-      document.getElementById('stat-nests').textContent = activeNests;
-      document.getElementById('stat-pairs').textContent = identifiedPairs;
-      document.getElementById('stat-eggs').textContent = totalEggs;
-      document.getElementById('stat-chicks').textContent = totalChicks;
-      document.getElementById('stat-ringed').textContent = totalRinged;
+        function populateSelect() {
+            const nests = getNests();
+            const select = document.getElementById('nest-select');
+            select.innerHTML = '<option value="NEW">+ Registrar nuevo nido...</option>';
+            nests.forEach(n => {
+                select.innerHTML += `<option value="${n.id}">${n.id} - ${n.location}</option>`;
+            });
+        }
 
-      // Dashboard Tabla
-      const dashTbody = document.getElementById('dashboard-table-body');
-      dashTbody.innerHTML = data.length === 0 ? `<tr><td colspan="6" class="px-6 py-4 text-center text-stone-400">No hay nidos registrados</td></tr>` : '';
-      
-      data.forEach(item => {
-        const badgeColor = item.status === 'Activo' ? 'bg-emerald-100 text-emerald-800' :
-                           item.status === 'Inactivo' ? 'bg-stone-100 text-stone-700' : 'bg-amber-100 text-amber-800';
-        
-        dashTbody.innerHTML += `
-          <tr class="hover:bg-earth-50/50 transition-colors">
-            <td class="px-6 py-4 font-bold text-stone-800">${item.nestId}</td>
-            <td class="px-6 py-4">
-              <div class="font-medium text-stone-800">${item.locationName}</div>
-              <div class="text-xs font-mono text-stone-500">${item.coordinates || 'Sin coordenadas'}</div>
-            </td>
-            <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full ${badgeColor}">${item.status}</span></td>
-            <td class="px-6 py-4">${item.healthStatus}</td>
-            <td class="px-6 py-4 font-medium">${item.eggCount} h / ${item.chickCount} c</td>
-            <td class="px-6 py-4 text-right text-stone-500">${item.lastReview || 'N/A'}</td>
-          </tr>
-        `;
-      });
+        function onNestSelectChange() {
+            const selectedId = document.getElementById('nest-select').value;
+            if (selectedId === 'NEW') {
+                resetForm();
+            } else {
+                const nests = getNests();
+                const nest = nests.find(n => n.id === selectedId);
+                if (nest) {
+                    document.getElementById('edit-index').value = nests.indexOf(nest);
+                    document.getElementById('nest-id').value = nest.id;
+                    document.getElementById('nest-location').value = nest.location;
+                    document.getElementById('nest-coords').value = nest.coords || '';
+                    document.getElementById('nest-status').value = nest.status;
+                    document.getElementById('male-ring').value = nest.maleRing;
+                    document.getElementById('female-ring').value = nest.femaleRing;
+                    document.getElementById('lay-date').value = nest.layDate;
+                    document.getElementById('egg-count').value = nest.eggCount;
+                    document.getElementById('chick-count').value = nest.chickCount;
+                    document.getElementById('health-status').value = nest.healthStatus;
+                    document.getElementById('band-date').value = nest.bandDate;
+                    document.getElementById('chick-rings').value = nest.chickRings;
+                    document.getElementById('field-notes').value = nest.notes;
 
-      // Control Tabla
-      const controlTbody = document.getElementById('control-table-body');
-      controlTbody.innerHTML = data.length === 0 ? `<tr><td colspan="6" class="px-6 py-4 text-center text-stone-400">No hay datos en memoria</td></tr>` : '';
+                    document.getElementById('submit-btn').innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i><span>Actualizar Nido</span>`;
+                    lucide.createIcons();
+                }
+            }
+        }
 
-      data.forEach((item, idx) => {
-        controlTbody.innerHTML += `
-          <tr class="hover:bg-earth-50/50 transition-colors">
-            <td class="px-6 py-4">
-              <div class="font-bold text-stone-800">${item.nestId}</div>
-              <div class="text-xs text-stone-600">${item.locationName}</div>
-              <div class="text-xs font-mono text-forest-700">${item.coordinates || 'N/A'}</div>
-            </td>
-            <td class="px-6 py-4">${item.status}</td>
-            <td class="px-6 py-4 text-xs">M: ${item.maleRing || 'N/A'}<br>H: ${item.femaleRing || 'N/A'}</td>
-            <td class="px-6 py-4 font-medium">${item.eggCount} / ${item.chickCount}</td>
-            <td class="px-6 py-4 text-xs font-mono text-forest-700">${item.chickRings || 'Ninguno'}</td>
-            <td class="px-6 py-4 text-right">
-              <button onclick="deleteRecord(${idx})" class="text-rose-600 hover:text-rose-800 p-1 rounded transition-colors" title="Eliminar">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      });
+        function renderApp() {
+            const nests = getNests();
+            populateSelect();
 
-      lucide.createIcons();
-    }
+            // KPIs
+            let nidosActivos = 0, parejasCount = 0, totalHuevos = 0, totalCrias = 0, totalAnillados = 0;
 
-    function handleFormSubmit(e) {
-      e.preventDefault();
-      
-      const nestId = document.getElementById('nestId').value;
-      const newRecord = {
-        nestId: nestId,
-        locationName: document.getElementById('locationName').value,
-        coordinates: document.getElementById('coordinates').value,
-        status: document.getElementById('status').value,
-        maleRing: document.getElementById('maleRing').value || "Sin anillar",
-        femaleRing: document.getElementById('femaleRing').value || "Sin anillar",
-        layDate: document.getElementById('layDate').value,
-        eggCount: document.getElementById('eggCount').value,
-        chickCount: document.getElementById('chickCount').value,
-        healthStatus: document.getElementById('healthStatus').value,
-        chickRings: document.getElementById('chickRings').value,
-        ringDate: document.getElementById('ringDate').value,
-        notes: document.getElementById('notes').value,
-        lastReview: new Date().toISOString().split('T')[0]
-      };
+            nests.forEach(n => {
+                if (n.status === 'Activo') nidosActivos++;
+                if ((n.maleRing && n.maleRing !== 'Sin anillar' && n.maleRing !== '-') || 
+                    (n.femaleRing && n.femaleRing !== 'Sin anillar' && n.femaleRing !== '-')) {
+                    parejasCount++;
+                }
+                totalHuevos += parseInt(n.eggCount || 0);
+                totalCrias += parseInt(n.chickCount || 0);
+                if (n.chickRings && n.chickRings.trim() !== '') {
+                    totalAnillados += n.chickRings.split(',').filter(r => r.trim().length > 0).length;
+                }
+            });
 
-      let currentData = getStorageData();
-      
-      // Si ya existe el nido, actualizamos sus datos en lugar de duplicarlo
-      const existingIndex = currentData.findIndex(d => d.nestId === nestId);
-      if (existingIndex >= 0) {
-        currentData[existingIndex] = newRecord;
-      } else {
-        currentData.unshift(newRecord);
-      }
+            document.getElementById('kpi-nidos-activos').innerText = nidosActivos;
+            document.getElementById('kpi-parejas').innerText = parejasCount;
+            document.getElementById('kpi-huevos').innerText = totalHuevos;
+            document.getElementById('kpi-crias').innerText = totalCrias;
+            document.getElementById('kpi-anillados').innerText = totalAnillados;
 
-      setStorageData(currentData);
-      document.getElementById('nest-form').reset();
-      document.getElementById('nestId').readOnly = false;
-      document.getElementById('gps-status').textContent = "";
-      alert('¡Registro y actualización guardados correctamente!');
-    }
+            // Tabla Reciente (Dashboard)
+            const recentTable = document.getElementById('dashboard-recent-table');
+            recentTable.innerHTML = nests.length === 0 
+                ? `<tr><td colspan="7" class="py-6 text-center text-stone-400">Sin nidos.</td></tr>` 
+                : nests.map(n => `
+                    <tr class="hover:bg-stone-50/80 transition-colors">
+                        <td class="py-3.5 px-6 font-bold text-stone-900">${n.id}</td>
+                        <td class="py-3.5 px-6 text-stone-600">${n.location}</td>
+                        <td class="py-3.5 px-6">${getStatusBadge(n.status)}</td>
+                        <td class="py-3.5 px-6">${getHealthBadge(n.healthStatus)}</td>
+                        <td class="py-3.5 px-6 text-stone-900 font-medium">${n.eggCount} H / ${n.chickCount} C</td>
+                        <td class="py-3.5 px-6 text-stone-400 text-xs">${n.lastReview || '2026-04-20'}</td>
+                        <td class="py-3.5 px-6 text-right">
+                            <button onclick="viewDetails('${n.id}')" class="p-1.5 text-stone-400 hover:text-stone-700 transition" title="Ver detalle">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
 
-    function deleteRecord(index) {
-      if(confirm('¿Estás seguro de que deseas eliminar este registro?')) {
-        let currentData = getStorageData();
-        currentData.splice(index, 1);
-        setStorageData(currentData);
-      }
-    }
+            // Tabla Completa (Control)
+            const fullTable = document.getElementById('full-records-table');
+            fullTable.innerHTML = nests.length === 0 
+                ? `<tr><td colspan="6" class="py-6 text-center text-stone-400">Sin registros.</td></tr>` 
+                : nests.map((n, i) => `
+                    <tr class="hover:bg-stone-50/80 transition-colors">
+                        <td class="py-3.5 px-6">
+                            <div class="font-bold text-stone-900">${n.id}</div>
+                            <div class="text-xs text-stone-500">${n.location}</div>
+                        </td>
+                        <td class="py-3.5 px-6">${getStatusBadge(n.status)}</td>
+                        <td class="py-3.5 px-6 text-xs text-stone-600">
+                            <div>M: ${n.maleRing || 'N/A'}</div>
+                            <div>H: ${n.femaleRing || 'N/A'}</div>
+                        </td>
+                        <td class="py-3.5 px-6 text-stone-800 font-medium">${n.eggCount} / ${n.chickCount}</td>
+                        <td class="py-3.5 px-6 text-xs text-stone-600 font-mono">${n.chickRings || 'Sin anillar'}</td>
+                        <td class="py-3.5 px-6 text-right space-x-1">
+                            <button onclick="editNest(${i})" class="p-1.5 text-amber-700 hover:bg-amber-50 rounded-lg transition" title="Editar">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteNest(${i})" class="p-1.5 text-rose-700 hover:bg-rose-50 rounded-lg transition" title="Eliminar">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
 
-    window.addEventListener('DOMContentLoaded', () => {
-      renderApp();
-    });
-  </script>
+            lucide.createIcons();
+        }
+
+        function getStatusBadge(status) {
+            if (status === 'Activo') {
+                return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#d1f2d9] text-[#2d6a4f]">Activo</span>`;
+            } else if (status === 'Inactivo') {
+                return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-600">Inactivo</span>`;
+            }
+            return `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Abandonado</span>`;
+        }
+
+        function getHealthBadge(health) {
+            if (health === 'Excelente') {
+                return `<span class="inline-flex items-center text-xs font-semibold text-[#1f7a4c]"><span class="w-2 h-2 bg-[#1f7a4c] rounded-full mr-1.5"></span>Excelente</span>`;
+            } else if (health === 'Bueno') {
+                return `<span class="inline-flex items-center text-xs font-semibold text-[#1d6b8a]"><span class="w-2 h-2 bg-[#1d6b8a] rounded-full mr-1.5"></span>Bueno</span>`;
+            } else if (health === 'Alerta') {
+                return `<span class="inline-flex items-center text-xs font-semibold text-rose-600"><span class="w-2 h-2 bg-rose-600 rounded-full mr-1.5"></span>Alerta</span>`;
+            }
+            return `<span class="text-xs text-stone-400">N/A</span>`;
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const nests = getNests();
+            const idx = parseInt(document.getElementById('edit-index').value);
+
+            const record = {
+                id: document.getElementById('nest-id').value.trim(),
+                location: document.getElementById('nest-location').value.trim(),
+                coords: document.getElementById('nest-coords').value.trim(),
+                status: document.getElementById('nest-status').value,
+                maleRing: document.getElementById('male-ring').value.trim() || 'Sin anillar',
+                femaleRing: document.getElementById('female-ring').value.trim() || 'Sin anillar',
+                layDate: document.getElementById('lay-date').value,
+                eggCount: parseInt(document.getElementById('egg-count').value) || 0,
+                chickCount: parseInt(document.getElementById('chick-count').value) || 0,
+                healthStatus: document.getElementById('health-status').value,
+                bandDate: document.getElementById('band-date').value,
+                chickRings: document.getElementById('chick-rings').value.trim(),
+                notes: document.getElementById('field-notes').value.trim(),
+                lastReview: new Date().toISOString().split('T')[0]
+            };
+
+            if (idx >= 0) {
+                nests[idx] = record;
+            } else {
+                nests.unshift(record);
+            }
+
+            saveNests(nests);
+            resetForm();
+            alert('¡Registro de nido guardado correctamente!');
+        }
+
+        function resetForm() {
+            document.getElementById('nest-form').reset();
+            document.getElementById('edit-index').value = "-1";
+            document.getElementById('nest-select').value = "NEW";
+            document.getElementById('submit-btn').innerHTML = `<i data-lucide="save" class="w-4 h-4"></i><span>Guardar Registro</span>`;
+            lucide.createIcons();
+        }
+
+        function editNest(i) {
+            const nest = getNests()[i];
+            document.getElementById('nest-select').value = nest.id;
+            onNestSelectChange();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteNest(i) {
+            if (confirm('¿Eliminar este registro de nido?')) {
+                const nests = getNests();
+                nests.splice(i, 1);
+                saveNests(nests);
+            }
+        }
+
+        function getGPS() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        document.getElementById('nest-coords').value = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+                    },
+                    err => alert('No se pudo obtener la ubicación GPS.')
+                );
+            }
+        }
+
+        function viewDetails(nestId) {
+            const nest = getNests().find(n => n.id === nestId);
+            if (!nest) return;
+
+            document.getElementById('modal-title').innerText = `Ficha Nido: ${nest.id}`;
+            document.getElementById('modal-body').innerHTML = `
+                <div class="space-y-2">
+                    <p><strong>Ubicación:</strong> ${nest.location}</p>
+                    <p><strong>Coordenadas:</strong> ${nest.coords || 'No registradas'}</p>
+                    <p><strong>Estado:</strong> ${nest.status}</p>
+                    <p><strong>Salud:</strong> ${nest.healthStatus}</p>
+                    <p><strong>Pareja:</strong> Macho: ${nest.maleRing} | Hembra: ${nest.femaleRing}</p>
+                    <p><strong>Puesta:</strong> ${nest.eggCount} huevos | ${nest.chickCount} crías</p>
+                    <p><strong>Anillas Crías:</strong> ${nest.chickRings || 'Sin anillar'}</p>
+                    <p><strong>Notas:</strong> ${nest.notes || 'Ninguna'}</p>
+                </div>
+            `;
+            document.getElementById('detail-modal').classList.remove('hidden');
+            document.getElementById('detail-modal').classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+            document.getElementById('detail-modal').classList.remove('flex');
+        }
+
+        window.onload = function() {
+            renderApp();
+        };
+    </script>
 </body>
 </html>
