@@ -19,12 +19,11 @@
         extend: {
           colors: {
             brand: {
-              dark: '#1e382b',     // Verde bosque oscuro del header/banner
+              dark: '#1e382b',     // Verde bosque oscuro
               hover: '#162b20',
-              accent: '#c88a4b',   // Tono caramelo/ocre de botones principales
+              accent: '#c88a4b',   // Caramelo / ocre
               accentHover: '#b5793e',
-              bg: '#f4f3ed',       // Fondo beige suave
-              card: '#ffffff',
+              bg: '#f4f3ed',       // Beige suave
               border: '#e5e3d7'
             }
           }
@@ -57,7 +56,7 @@
         </div>
       </div>
 
-      <!-- NAVEGACIÓN (Pestañas) -->
+      <!-- NAVEGACIÓN -->
       <nav class="flex space-x-2">
         <button id="btn-tab-dashboard" onclick="switchTab('dashboard')" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center space-x-2 bg-brand-accent text-white shadow-sm">
           <i data-lucide="layout-grid" class="w-4 h-4"></i>
@@ -97,10 +96,9 @@
         </div>
       </div>
 
-      <!-- TARJETAS KPI (ESTADÍSTICAS) -->
+      <!-- TARJETAS KPI -->
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         
-        <!-- Nidos Activos -->
         <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Activos</span>
@@ -114,7 +112,6 @@
           </div>
         </div>
 
-        <!-- Parejas -->
         <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Parejas</span>
@@ -128,7 +125,6 @@
           </div>
         </div>
 
-        <!-- Huevos -->
         <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Huevos</span>
@@ -142,7 +138,6 @@
           </div>
         </div>
 
-        <!-- Crías -->
         <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Crías</span>
@@ -156,7 +151,6 @@
           </div>
         </div>
 
-        <!-- Anillados -->
         <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between col-span-2 md:col-span-1">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Anillados</span>
@@ -180,13 +174,13 @@
               <i data-lucide="map" class="w-5 h-5 text-brand-dark"></i>
               Mapa de Localización de Nidos
             </h2>
-            <p class="text-xs text-stone-500 mt-1">Haz clic en los marcadores para ver los detalles de cada caja nido.</p>
+            <p class="text-xs text-stone-500 mt-1">Haz clic en los marcadores para ver la información de la caja.</p>
           </div>
         </div>
         <div id="overview-map" class="w-full h-80 z-10"></div>
       </div>
 
-      <!-- TABLA DE RESUMEN DE NIDOS -->
+      <!-- TABLA RESUMEN -->
       <div class="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
         <div class="p-6 border-b border-brand-border flex justify-between items-center">
           <div>
@@ -203,7 +197,7 @@
             <thead class="bg-stone-50 text-stone-500 uppercase font-bold border-b border-brand-border">
               <tr>
                 <th class="px-6 py-4">ID Nido</th>
-                <th class="px-6 py-4">Ubicación / Caja</th>
+                <th class="px-6 py-4">Ubicación / Población</th>
                 <th class="px-6 py-4">Estado</th>
                 <th class="px-6 py-4">Salud Crías</th>
                 <th class="px-6 py-4">Huevos / Crías</th>
@@ -221,11 +215,10 @@
     <!-- ==================== PÁGINA 2: REGISTRO Y CONTROL ==================== -->
     <section id="tab-control" class="hidden space-y-8">
       
-      <!-- ENCABEZADO SECCIÓN -->
       <div class="bg-white p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 class="text-2xl font-bold text-brand-dark">Gestión y Registro de Inspecciones</h2>
-          <p class="text-stone-500 text-sm mt-1">Ingresa o actualiza los datos recopilados durante la revisión del nido en el campo.</p>
+          <p class="text-stone-500 text-sm mt-1">Ingresa o actualiza los datos recopilados durante la revisión del nido.</p>
         </div>
       </div>
 
@@ -235,7 +228,7 @@
         <!-- 1. IDENTIFICACIÓN Y UBICACIÓN -->
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
-            <i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i> 1. Identificación del Nido y Ubicación
+            <i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i> 1. Identificación del Nido y Ubicación GPS
           </h3>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -259,17 +252,23 @@
             </div>
           </div>
 
+          <!-- Nombre / Ubicación detectada -->
           <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Nombre Ubicación / Caja Nido *</label>
-            <input type="text" id="locationName" required placeholder="Ej. Masía del Sur - Caja 1" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark">
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-bold text-stone-600">Ubicación / Población *</label>
+              <span id="geo-loader" class="text-[11px] text-brand-accent font-medium hidden flex items-center gap-1">
+                <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Detectando municipio...
+              </span>
+            </div>
+            <input type="text" id="locationName" required placeholder="Ej. Masía del Sur (Castellón de la Plana)" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark">
           </div>
 
-          <!-- SECCIÓN DE COORDENADAS Y MAPA SELECCIONABLE CON RATÓN -->
+          <!-- SECCIÓN MAPA Y COORDENADAS -->
           <div class="bg-brand-bg p-4 rounded-xl border border-brand-border space-y-3">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <span class="text-xs font-bold text-brand-dark block">Coordenadas Geográficas (Latitud, Longitud)</span>
-                <span class="text-xs text-stone-500">Haz clic en el mapa de abajo para seleccionar la posición exacta con el ratón.</span>
+                <span class="text-xs text-stone-500">Al poner coordenadas o hacer clic en el mapa, la **población se detecta automáticamente**.</span>
               </div>
               <button type="button" onclick="getGPSLocation()" class="bg-brand-dark hover:bg-brand-hover text-white text-xs font-semibold px-3 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 shrink-0">
                 <i data-lucide="locate-fixed" class="w-3.5 h-3.5 text-emerald-400"></i> Usar mi GPS Actual
@@ -287,25 +286,76 @@
               </div>
             </div>
 
-            <!-- Mapa para hacer Clic con el Ratón -->
             <div id="picker-map" class="w-full h-60 rounded-xl border border-stone-300 z-10"></div>
           </div>
         </div>
 
-        <!-- 2. PAREJA -->
+        <!-- 2. PAREJA (ANILLAS OFICIALES Y ANILLAS PVC) -->
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
-            <i data-lucide="users" class="w-4 h-4 text-brand-accent"></i> 2. Identificación de la Pareja
+            <i data-lucide="users" class="w-4 h-4 text-brand-accent"></i> 2. Identificación de la Pareja y Anillas PVC
           </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Código Anilla Macho</label>
-              <input type="text" id="maleRing" placeholder="Ej. EBD-90812 o Sin anillar" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-stone-50/60 p-4 rounded-xl border border-brand-border">
+            
+            <!-- MACHO -->
+            <div class="space-y-3">
+              <span class="text-xs font-bold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-700"></i> Macho
+              </span>
+              <div>
+                <label class="block text-[11px] font-semibold text-stone-600 mb-1">Anilla Metálica Oficial</label>
+                <input type="text" id="maleRing" placeholder="Ej. EBD-90812 o Sin anillar" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-semibold text-stone-600 mb-1">Código PVC</label>
+                  <input type="text" id="malePvcCode" placeholder="Ej. A01" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm font-mono uppercase bg-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-stone-600 mb-1">Color PVC</label>
+                  <select id="malePvcColor" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
+                    <option value="">Sin PVC</option>
+                    <option value="Negro">Negro / Blanco</option>
+                    <option value="Amarillo">Amarillo</option>
+                    <option value="Rojo">Rojo</option>
+                    <option value="Verde">Verde</option>
+                    <option value="Azul">Azul</option>
+                    <option value="Blanco">Blanco</option>
+                  </select>
+                </div>
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Código Anilla Hembra</label>
-              <input type="text" id="femaleRing" placeholder="Ej. EBD-90813 o Sin anillar" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark">
+
+            <!-- HEMBRA -->
+            <div class="space-y-3">
+              <span class="text-xs font-bold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-700"></i> Hembra
+              </span>
+              <div>
+                <label class="block text-[11px] font-semibold text-stone-600 mb-1">Anilla Metálica Oficial</label>
+                <input type="text" id="femaleRing" placeholder="Ej. EBD-90813 o Sin anillar" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-semibold text-stone-600 mb-1">Código PVC</label>
+                  <input type="text" id="femalePvcCode" placeholder="Ej. B02" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm font-mono uppercase bg-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-stone-600 mb-1">Color PVC</label>
+                  <select id="femalePvcColor" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
+                    <option value="">Sin PVC</option>
+                    <option value="Negro">Negro / Blanco</option>
+                    <option value="Amarillo">Amarillo</option>
+                    <option value="Rojo">Rojo</option>
+                    <option value="Verde">Verde</option>
+                    <option value="Azul">Azul</option>
+                    <option value="Blanco">Blanco</option>
+                  </select>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
 
@@ -342,7 +392,7 @@
         <!-- 4. ANILLAMIENTO Y NOTAS -->
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
-            <i data-lucide="tag" class="w-4 h-4 text-brand-accent"></i> 4. Anillamiento de Crías y Notas de Campo
+            <i data-lucide="tag" class="w-4 h-4 text-brand-accent"></i> 4. Anillamiento de Crías y Notas
           </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -370,7 +420,7 @@
 
       </form>
 
-      <!-- TABLA DETALLADA CON ACCIÓN DE BORRADO -->
+      <!-- TABLA DETALLADA -->
       <div class="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
         <div class="p-6 border-b border-brand-border">
           <h3 class="text-lg font-bold text-stone-800">Registros Guardados en Memoria</h3>
@@ -381,7 +431,7 @@
               <tr>
                 <th class="px-6 py-4">ID / Ubicación / Coordenadas</th>
                 <th class="px-6 py-4">Estado</th>
-                <th class="px-6 py-4">Pareja (M / H)</th>
+                <th class="px-6 py-4">Pareja (Metal / PVC)</th>
                 <th class="px-6 py-4">Huevos / Crías</th>
                 <th class="px-6 py-4">Anillas Crías</th>
                 <th class="px-6 py-4 text-right">Acción</th>
@@ -396,25 +446,27 @@
 
   </main>
 
-  <!-- PIE DE PÁGINA -->
   <footer class="bg-white border-t border-brand-border py-4 mt-auto">
     <div class="max-w-7xl mx-auto px-4 text-center text-xs text-stone-400 font-medium">
       Tyto Alba Monitoreo — Sistema de Gestión y Conservación de Avifauna
     </div>
   </footer>
 
-  <!-- LÓGICA DE LA APLICACIÓN -->
+  <!-- LÓGICA JAVASCRIPT -->
   <script>
-    // DATOS DE MUESTRA INICIALES
     const initialNests = [
       {
         nestId: "NIDO-01",
-        locationName: "Masía del Sur - Caja 1",
-        lat: 38.9842,
-        lng: -0.4815,
+        locationName: "Masía del Sur (Vila-real)",
+        lat: 39.9381,
+        lng: -0.1012,
         status: "Activo",
         maleRing: "EBD-90812",
+        malePvcCode: "A01",
+        malePvcColor: "Negro",
         femaleRing: "EBD-90813",
+        femalePvcCode: "A02",
+        femalePvcColor: "Negro",
         layDate: "2026-03-15",
         eggCount: 5,
         chickCount: 4,
@@ -426,12 +478,16 @@
       },
       {
         nestId: "NIDO-02",
-        locationName: "Campanario Viejo - Caja 3",
-        lat: 39.0124,
-        lng: -0.5231,
+        locationName: "Campanario Viejo (Oropesa del Mar)",
+        lat: 40.0931,
+        lng: 0.1338,
         status: "Activo",
         maleRing: "Sin anillar",
+        malePvcCode: "",
+        malePvcColor: "",
         femaleRing: "EBD-88120",
+        femalePvcCode: "R12",
+        femalePvcColor: "Rojo",
         layDate: "2026-03-22",
         eggCount: 6,
         chickCount: 2,
@@ -440,48 +496,28 @@
         ringDate: "2026-04-18",
         notes: "Macho observado en posadero cercano.",
         lastReview: "2026-04-18"
-      },
-      {
-        nestId: "NIDO-03",
-        locationName: "Pajar Este - Caja 2",
-        lat: 38.9610,
-        lng: -0.4520,
-        status: "Inactivo",
-        maleRing: "",
-        femaleRing: "",
-        layDate: "",
-        eggCount: 0,
-        chickCount: 0,
-        healthStatus: "N/A",
-        chickRings: "",
-        ringDate: "",
-        notes: "Sin indicios de ocupación en esta temporada.",
-        lastReview: "2026-04-10"
       }
     ];
 
-    // VARIABLES MAPAS
     let overviewMap = null;
     let overviewMarkersGroup = null;
     let pickerMap = null;
     let pickerMarker = null;
 
-    // OBTENER Y GUARDAR DATOS EN LOCALSTORAGE
     function getStoredData() {
-      const data = localStorage.getItem('tyto_data_v2');
+      const data = localStorage.getItem('tyto_data_v3');
       if (!data) {
-        localStorage.setItem('tyto_data_v2', JSON.stringify(initialNests));
+        localStorage.setItem('tyto_data_v3', JSON.stringify(initialNests));
         return initialNests;
       }
       return JSON.parse(data);
     }
 
     function saveData(data) {
-      localStorage.setItem('tyto_data_v2', JSON.stringify(data));
+      localStorage.setItem('tyto_data_v3', JSON.stringify(data));
       renderApp();
     }
 
-    // CAMBIO DE PESTAÑAS
     function switchTab(tab) {
       const dash = document.getElementById('tab-dashboard');
       const ctrl = document.getElementById('tab-control');
@@ -503,22 +539,50 @@
       }
     }
 
-    // INICIALIZAR MAPA GENERAL (OVERVIEW)
+    // GEOCODIFICACIÓN INVERSA CON OPENSTREETMAP (NOMINATIM)
+    let geoTimeout = null;
+    function fetchLocationName(lat, lng) {
+      const loader = document.getElementById('geo-loader');
+      if (loader) loader.classList.remove('hidden');
+
+      clearTimeout(geoTimeout);
+      geoTimeout = setTimeout(() => {
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+          .then(res => res.json())
+          .then(data => {
+            if (loader) loader.classList.add('hidden');
+            if (data && data.address) {
+              const town = data.address.village || data.address.town || data.address.city || data.address.municipality || data.address.county || '';
+              const state = data.address.province || data.address.state || '';
+              
+              let detectedName = town ? (state ? `${town} (${state})` : town) : data.display_name.split(',')[0];
+              
+              const currentLocInput = document.getElementById('locationName');
+              if (currentLocInput && (!currentLocInput.value || currentLocInput.value.includes('(') || currentLocInput.dataset.auto === 'true')) {
+                currentLocInput.value = detectedName;
+                currentLocInput.dataset.auto = 'true';
+              }
+            }
+          })
+          .catch(() => {
+            if (loader) loader.classList.add('hidden');
+          });
+      }, 300);
+    }
+
+    // INICIALIZAR MAPA GENERAL
     function initOverviewMap() {
       if (overviewMap) return;
-
-      overviewMap = L.map('overview-map').setView([38.98, -0.48], 11);
+      overviewMap = L.map('overview-map').setView([39.95, -0.10], 10);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap'
       }).addTo(overviewMap);
-
       overviewMarkersGroup = L.layerGroup().addTo(overviewMap);
     }
 
     function updateOverviewMapMarkers(data) {
       if (!overviewMap) initOverviewMap();
       overviewMarkersGroup.clearLayers();
-
       const bounds = [];
 
       data.forEach(item => {
@@ -535,21 +599,17 @@
         }
       });
 
-      if (bounds.length > 0) {
-        overviewMap.fitBounds(bounds, { padding: [30, 30] });
-      }
+      if (bounds.length > 0) overviewMap.fitBounds(bounds, { padding: [30, 30] });
     }
 
-    // INICIALIZAR MAPA DE SELECCIÓN CON RATÓN (PICKER)
+    // MAPA SELECCIONADOR
     function initPickerMap() {
       if (pickerMap) return;
-
-      pickerMap = L.map('picker-map').setView([38.98, -0.48], 11);
+      pickerMap = L.map('picker-map').setView([39.95, -0.10], 10);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap'
       }).addTo(pickerMap);
 
-      // AL HACER CLIC EN EL MAPA CON EL RATÓN
       pickerMap.on('click', function(e) {
         const lat = e.latlng.lat.toFixed(6);
         const lng = e.latlng.lng.toFixed(6);
@@ -558,6 +618,7 @@
         document.getElementById('lng').value = lng;
 
         setPickerMarker(lat, lng);
+        fetchLocationName(lat, lng);
       });
     }
 
@@ -575,10 +636,10 @@
 
       if (!isNaN(lat) && !isNaN(lng)) {
         setPickerMarker(lat, lng);
+        fetchLocationName(lat, lng);
       }
     }
 
-    // GEOLOCALIZACIÓN GPS DISPOSITIVO
     function getGPSLocation() {
       if (!navigator.geolocation) {
         alert("Geolocalización no soportada por el navegador.");
@@ -594,13 +655,13 @@
           document.getElementById('lng').value = lng;
 
           setPickerMarker(lat, lng);
+          fetchLocationName(lat, lng);
         },
         err => alert("No se pudo obtener la ubicación GPS."),
         { enableHighAccuracy: true }
       );
     }
 
-    // GESTIÓN DE DESPLEGABLE NIDOS
     function updateNestSelectOptions(data) {
       const select = document.getElementById('nestSelect');
       const current = select.value;
@@ -623,6 +684,12 @@
         document.getElementById('locationName').value = '';
         document.getElementById('lat').value = '';
         document.getElementById('lng').value = '';
+        document.getElementById('maleRing').value = '';
+        document.getElementById('malePvcCode').value = '';
+        document.getElementById('malePvcColor').value = '';
+        document.getElementById('femaleRing').value = '';
+        document.getElementById('femalePvcCode').value = '';
+        document.getElementById('femalePvcColor').value = '';
         if (pickerMarker && pickerMap) pickerMap.removeLayer(pickerMarker);
       } else {
         const data = getStoredData();
@@ -634,6 +701,14 @@
           document.getElementById('status').value = found.status || 'Activo';
           document.getElementById('lat').value = found.lat || '';
           document.getElementById('lng').value = found.lng || '';
+          
+          document.getElementById('maleRing').value = found.maleRing || '';
+          document.getElementById('malePvcCode').value = found.malePvcCode || '';
+          document.getElementById('malePvcColor').value = found.malePvcColor || '';
+          
+          document.getElementById('femaleRing').value = found.femaleRing || '';
+          document.getElementById('femalePvcCode').value = found.femalePvcCode || '';
+          document.getElementById('femalePvcColor').value = found.femalePvcColor || '';
 
           if (found.lat && found.lng) {
             setPickerMarker(found.lat, found.lng);
@@ -642,16 +717,14 @@
       }
     }
 
-    // RENDERIZADO GENERAL UI
     function renderApp() {
       const data = getStoredData();
 
-      // Recalcular KPIs
       const activeCount = data.filter(d => d.status === 'Activo').length;
       let pairsCount = 0, eggTotal = 0, chickTotal = 0, ringedTotal = 0;
 
       data.forEach(item => {
-        if ((item.maleRing && item.maleRing !== 'Sin anillar') || (item.femaleRing && item.femaleRing !== 'Sin anillar')) pairsCount++;
+        if ((item.maleRing && item.maleRing !== 'Sin anillar') || (item.femaleRing && item.femaleRing !== 'Sin anillar') || item.malePvcCode || item.femalePvcCode) pairsCount++;
         eggTotal += Number(item.eggCount || 0);
         chickTotal += Number(item.chickCount || 0);
         if (item.chickRings && item.chickRings.trim() !== '') {
@@ -665,7 +738,7 @@
       document.getElementById('kpi-chicks').textContent = chickTotal;
       document.getElementById('kpi-ringed').textContent = ringedTotal;
 
-      // Actualizar Tabla Dashboard
+      // Dashboard Tabla
       const dashTbody = document.getElementById('dash-table-body');
       dashTbody.innerHTML = '';
 
@@ -694,11 +767,14 @@
         `;
       });
 
-      // Actualizar Tabla Control
+      // Control Tabla
       const ctrlTbody = document.getElementById('control-table-body');
       ctrlTbody.innerHTML = '';
 
       data.forEach((item, idx) => {
+        const mPvc = item.malePvcCode ? ` [PVC: ${item.malePvcCode}-${item.malePvcColor || ''}]` : '';
+        const fPvc = item.femalePvcCode ? ` [PVC: ${item.femalePvcCode}-${item.femalePvcColor || ''}]` : '';
+
         ctrlTbody.innerHTML += `
           <tr class="hover:bg-stone-50 transition-colors">
             <td class="px-6 py-4">
@@ -707,7 +783,10 @@
               <div class="text-[10px] font-mono text-emerald-700">${item.lat ? `${item.lat}, ${item.lng}` : ''}</div>
             </td>
             <td class="px-6 py-4">${item.status}</td>
-            <td class="px-6 py-4 text-stone-500">M: ${item.maleRing || '-'}<br>H: ${item.femaleRing || '-'}</td>
+            <td class="px-6 py-4 text-stone-500">
+              <div><strong class="text-stone-700">M:</strong> ${item.maleRing || '-'}<span class="text-brand-accent font-semibold">${mPvc}</span></div>
+              <div><strong class="text-stone-700">H:</strong> ${item.femaleRing || '-'}<span class="text-brand-accent font-semibold">${fPvc}</span></div>
+            </td>
             <td class="px-6 py-4 font-semibold">${item.eggCount || 0} / ${item.chickCount || 0}</td>
             <td class="px-6 py-4 font-mono text-emerald-700">${item.chickRings || 'Ninguna'}</td>
             <td class="px-6 py-4 text-right">
@@ -724,7 +803,6 @@
       lucide.createIcons();
     }
 
-    // FORMULARIO SUBMIT
     function handleFormSubmit(e) {
       e.preventDefault();
 
@@ -736,7 +814,11 @@
         lng: parseFloat(document.getElementById('lng').value) || null,
         status: document.getElementById('status').value,
         maleRing: document.getElementById('maleRing').value || "Sin anillar",
+        malePvcCode: document.getElementById('malePvcCode').value,
+        malePvcColor: document.getElementById('malePvcColor').value,
         femaleRing: document.getElementById('femaleRing').value || "Sin anillar",
+        femalePvcCode: document.getElementById('femalePvcCode').value,
+        femalePvcColor: document.getElementById('femalePvcColor').value,
         layDate: document.getElementById('layDate').value,
         eggCount: parseInt(document.getElementById('eggCount').value) || 0,
         chickCount: parseInt(document.getElementById('chickCount').value) || 0,
@@ -760,7 +842,7 @@
       document.getElementById('nest-form').reset();
       document.getElementById('nestId').readOnly = false;
       if (pickerMarker && pickerMap) pickerMap.removeLayer(pickerMarker);
-      alert('¡Inspección guardada exitosamente!');
+      alert('¡Inspección y marcas de PVC guardadas exitosamente!');
     }
 
     function deleteRecord(idx) {
@@ -771,7 +853,6 @@
       }
     }
 
-    // INICIALIZACIÓN
     window.addEventListener('DOMContentLoaded', () => {
       initOverviewMap();
       renderApp();
