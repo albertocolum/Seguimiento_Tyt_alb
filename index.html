@@ -215,7 +215,7 @@
       <div class="bg-white p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 class="text-2xl font-bold text-brand-dark">Gestión y Registro de Inspecciones</h2>
-          <p class="text-stone-500 text-sm mt-1">Selecciona un nido del desplegable para **cargar todos sus datos** o registra uno nuevo.</p>
+          <p class="text-stone-500 text-sm mt-1">Selecciona un nido del desplegable para cargar sus datos o registra uno nuevo.</p>
         </div>
       </div>
 
@@ -285,18 +285,18 @@
           </div>
         </div>
 
-        <!-- 2. PAREJA (ANILLAS OFICIALES Y PVC) -->
+        <!-- 2. PAREJA (ESTRUCTURA DE TARJETAS) -->
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
-            <i data-lucide="users" class="w-4 h-4 text-brand-accent"></i> 2. Identificación de la Pareja (Anillas y PVC)
+            <i data-lucide="users" class="w-4 h-4 text-brand-accent"></i> 2. Identificación de la Pareja
           </h3>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-stone-50/60 p-4 rounded-xl border border-brand-border">
             
             <!-- MACHO -->
-            <div class="space-y-3">
-              <span class="text-xs font-bold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
-                <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-700"></i> Macho
+            <div class="space-y-3 bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <span class="text-xs font-bold text-brand-dark uppercase tracking-wide flex items-center gap-1.5 border-b border-stone-100 pb-2">
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-700"></i> Adulto Macho
               </span>
               <div>
                 <label class="block text-[11px] font-semibold text-stone-600 mb-1">Anilla Metálica Oficial</label>
@@ -309,9 +309,9 @@
             </div>
 
             <!-- HEMBRA -->
-            <div class="space-y-3">
-              <span class="text-xs font-bold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
-                <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-700"></i> Hembra
+            <div class="space-y-3 bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+              <span class="text-xs font-bold text-brand-dark uppercase tracking-wide flex items-center gap-1.5 border-b border-stone-100 pb-2">
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-700"></i> Adulta Hembra
               </span>
               <div>
                 <label class="block text-[11px] font-semibold text-stone-600 mb-1">Anilla Metálica Oficial</label>
@@ -356,29 +356,33 @@
           </div>
         </div>
 
-        <!-- 4. ANILLAMIENTO DE CRÍAS Y NOTAS -->
+        <!-- 4. ANILLAMIENTO DE CRÍAS (ESTRUCTURA IGUAL A LA PAREJA) -->
         <div class="space-y-4">
-          <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
-            <i data-lucide="tag" class="w-4 h-4 text-brand-accent"></i> 4. Anillamiento de Crías (Metálicas y PVC) y Notas
-          </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Anillas Metálicas Crías</label>
-              <input type="text" id="chickRings" placeholder="Ej. A-101, A-102" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Anillas PVC Crías</label>
-              <input type="text" id="chickPvcCodes" placeholder="Ej. P01, P02" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm font-mono uppercase focus:ring-2 focus:ring-brand-dark">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Fecha Anillamiento</label>
-              <input type="date" id="ringDate" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark">
+          <div class="flex items-center justify-between border-b border-brand-border pb-2">
+            <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider flex items-center gap-2">
+              <i data-lucide="tag" class="w-4 h-4 text-brand-accent"></i> 4. Anillamiento de Crías
+            </h3>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
+                <label class="text-xs font-bold text-stone-600">Fecha Anillamiento:</label>
+                <input type="date" id="ringDate" class="px-2.5 py-1 border border-stone-300 rounded-lg text-xs bg-white">
+              </div>
+              <button type="button" onclick="addChickCard()" class="bg-brand-dark hover:bg-brand-hover text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 shadow-sm">
+                <i data-lucide="plus" class="w-3.5 h-3.5 text-emerald-400"></i> Añadir Cría
+              </button>
             </div>
           </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo</label>
-            <textarea id="notes" rows="3" placeholder="Restos de presas observados, condición física de los adultos, mantenimiento de la caja..." class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark"></textarea>
+
+          <!-- Contenedor dinámico de Tarjetas de Crías -->
+          <div id="chicks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-stone-50/60 p-4 rounded-xl border border-brand-border">
+            <!-- Se llenará dinámicamente con JS -->
           </div>
+        </div>
+
+        <!-- 5. NOTAS DE CAMPO -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-stone-600">Observaciones y Notas de Campo</label>
+          <textarea id="notes" rows="3" placeholder="Restos de presas observados, condición física de los adultos, mantenimiento de la caja..." class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark"></textarea>
         </div>
 
         <!-- BOTÓN DE GUARDADO -->
@@ -404,7 +408,7 @@
                 <th class="px-6 py-4">Estado</th>
                 <th class="px-6 py-4">Pareja (Metal / PVC)</th>
                 <th class="px-6 py-4">Huevos / Crías</th>
-                <th class="px-6 py-4">Anillas Crías (Metal / PVC)</th>
+                <th class="px-6 py-4">Anillamiento Crías (Metal / PVC)</th>
                 <th class="px-6 py-4 text-right">Acción</th>
               </tr>
             </thead>
@@ -440,8 +444,12 @@
         eggCount: 5,
         chickCount: 4,
         healthStatus: "Excelente",
-        chickRings: "A-101, A-102, A-103, A-104",
-        chickPvcCodes: "C01, C02, C03, C04",
+        chicksList: [
+          { metal: "NX-101", pvc: "C01" },
+          { metal: "NX-102", pvc: "C02" },
+          { metal: "NX-103", pvc: "C03" },
+          { metal: "NX-104", pvc: "C04" }
+        ],
         ringDate: "2026-04-20",
         notes: "Abundantes presas encontradas (Microtus arvalis).",
         lastReview: "2026-04-20"
@@ -460,8 +468,10 @@
         eggCount: 6,
         chickCount: 2,
         healthStatus: "Bueno",
-        chickRings: "A-105, A-106",
-        chickPvcCodes: "C05, C06",
+        chicksList: [
+          { metal: "NX-105", pvc: "C05" },
+          { metal: "NX-106", pvc: "C06" }
+        ],
         ringDate: "2026-04-18",
         notes: "Macho observado en posadero cercano.",
         lastReview: "2026-04-18"
@@ -474,16 +484,16 @@
     let pickerMarker = null;
 
     function getStoredData() {
-      const data = localStorage.getItem('tyto_data_v5');
+      const data = localStorage.getItem('tyto_data_v6');
       if (!data) {
-        localStorage.setItem('tyto_data_v5', JSON.stringify(initialNests));
+        localStorage.setItem('tyto_data_v6', JSON.stringify(initialNests));
         return initialNests;
       }
       return JSON.parse(data);
     }
 
     function saveData(data) {
-      localStorage.setItem('tyto_data_v5', JSON.stringify(data));
+      localStorage.setItem('tyto_data_v6', JSON.stringify(data));
       renderApp();
     }
 
@@ -508,6 +518,7 @@
       }
     }
 
+    // GEOCODIFICACIÓN INVERSA
     let geoTimeout = null;
     function fetchLocationName(lat, lng) {
       const loader = document.getElementById('geo-loader');
@@ -522,7 +533,6 @@
             if (data && data.address) {
               const town = data.address.village || data.address.town || data.address.city || data.address.municipality || data.address.county || '';
               const state = data.address.province || data.address.state || '';
-              
               let detectedName = town ? (state ? `${town} (${state})` : town) : data.display_name.split(',')[0];
               
               const currentLocInput = document.getElementById('locationName');
@@ -628,6 +638,68 @@
       );
     }
 
+    // MANEJO DINÁMICO DE TARJETAS DE CRÍAS
+    function renderChickCards(chicksList = []) {
+      const container = document.getElementById('chicks-container');
+      container.innerHTML = '';
+
+      if (chicksList.length === 0) {
+        // Por defecto creamos 1 tarjeta vacía para empezar
+        chicksList = [{ metal: '', pvc: '' }];
+      }
+
+      chicksList.forEach((chick, idx) => {
+        const card = document.createElement('div');
+        card.className = "chick-card space-y-3 bg-white p-4 rounded-xl border border-stone-200 shadow-sm relative";
+        card.innerHTML = `
+          <div class="flex items-center justify-between border-b border-stone-100 pb-2">
+            <span class="text-xs font-bold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
+              <i data-lucide="feather" class="w-3.5 h-3.5 text-teal-700"></i> Cría #${idx + 1}
+            </span>
+            ${chicksList.length > 1 ? `
+              <button type="button" onclick="removeChickCard(${idx})" class="text-rose-500 hover:text-rose-700 p-0.5 rounded" title="Eliminar Cría">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+            ` : ''}
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-stone-600 mb-1">Anilla Metálica Oficial</label>
+            <input type="text" value="${chick.metal || ''}" placeholder="Ej. NX-001" class="chick-metal w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-stone-600 mb-1">Código Anilla PVC</label>
+            <input type="text" value="${chick.pvc || ''}" placeholder="Ej. C01" class="chick-pvc w-full px-3 py-2 border border-stone-300 rounded-xl text-sm font-mono uppercase bg-white">
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function addChickCard() {
+      const currentChicks = getChicksFromUI();
+      currentChicks.push({ metal: '', pvc: '' });
+      renderChickCards(currentChicks);
+    }
+
+    function removeChickCard(index) {
+      const currentChicks = getChicksFromUI();
+      currentChicks.splice(index, 1);
+      renderChickCards(currentChicks);
+    }
+
+    function getChicksFromUI() {
+      const cards = document.querySelectorAll('.chick-card');
+      const chicks = [];
+      cards.forEach(card => {
+        const metal = card.querySelector('.chick-metal').value;
+        const pvc = card.querySelector('.chick-pvc').value;
+        chicks.push({ metal, pvc });
+      });
+      return chicks;
+    }
+
     function updateNestSelectOptions(data) {
       const select = document.getElementById('nestSelect');
       const current = select.value;
@@ -642,7 +714,6 @@
       select.value = current;
     }
 
-    // AL SELECCIONAR UN NIDO EXISTENTE, CARGAMOS TODOS SUS DATOS EN EL FORMULARIO
     function onNestSelectChange(val) {
       const inputId = document.getElementById('nestId');
       
@@ -650,12 +721,12 @@
         document.getElementById('nest-form').reset();
         inputId.value = '';
         inputId.readOnly = false;
+        renderChickCards([]);
         if (pickerMarker && pickerMap) pickerMap.removeLayer(pickerMarker);
       } else {
         const data = getStoredData();
         const found = data.find(d => d.nestId === val);
         if (found) {
-          // 1. Ubicación y Estado
           inputId.value = found.nestId;
           inputId.readOnly = true;
           document.getElementById('locationName').value = found.locationName || '';
@@ -663,25 +734,21 @@
           document.getElementById('lat').value = found.lat || '';
           document.getElementById('lng').value = found.lng || '';
 
-          // 2. Pareja
           document.getElementById('maleRing').value = found.maleRing || '';
           document.getElementById('malePvcCode').value = found.malePvcCode || '';
           document.getElementById('femaleRing').value = found.femaleRing || '';
           document.getElementById('femalePvcCode').value = found.femalePvcCode || '';
 
-          // 3. Reproducción
           document.getElementById('layDate').value = found.layDate || '';
           document.getElementById('eggCount').value = found.eggCount ?? 0;
           document.getElementById('chickCount').value = found.chickCount ?? 0;
           document.getElementById('healthStatus').value = found.healthStatus || 'Excelente';
 
-          // 4. Anillamiento crías y notas
-          document.getElementById('chickRings').value = found.chickRings || '';
-          document.getElementById('chickPvcCodes').value = found.chickPvcCodes || '';
           document.getElementById('ringDate').value = found.ringDate || '';
           document.getElementById('notes').value = found.notes || '';
 
-          // Actualizar mapa del selector si hay coordenadas
+          renderChickCards(found.chicksList || []);
+
           if (found.lat && found.lng) {
             setPickerMarker(found.lat, found.lng);
           } else if (pickerMarker && pickerMap) {
@@ -701,11 +768,11 @@
         if ((item.maleRing && item.maleRing !== 'Sin anillar') || (item.femaleRing && item.femaleRing !== 'Sin anillar') || item.malePvcCode || item.femalePvcCode) pairsCount++;
         eggTotal += Number(item.eggCount || 0);
         chickTotal += Number(item.chickCount || 0);
-        if (item.chickRings && item.chickRings.trim() !== '') {
-          ringedTotal += item.chickRings.split(',').filter(r => r.trim() !== '').length;
-        }
-        if (item.chickPvcCodes && item.chickPvcCodes.trim() !== '') {
-          ringedTotal += item.chickPvcCodes.split(',').filter(r => r.trim() !== '').length;
+        
+        if (item.chicksList && item.chicksList.length > 0) {
+          item.chicksList.forEach(c => {
+            if (c.metal || c.pvc) ringedTotal++;
+          });
         }
       });
 
@@ -749,7 +816,13 @@
       data.forEach((item, idx) => {
         const mPvc = item.malePvcCode ? ` [PVC: ${item.malePvcCode}]` : '';
         const fPvc = item.femalePvcCode ? ` [PVC: ${item.femalePvcCode}]` : '';
-        const cPvc = item.chickPvcCodes ? `<div class="text-[11px] font-mono text-amber-700">PVC: ${item.chickPvcCodes}</div>` : '';
+        
+        let chicksDisplay = 'Sin anillar';
+        if (item.chicksList && item.chicksList.length > 0) {
+          chicksDisplay = item.chicksList.map((c, i) => 
+            `<div><strong>#${i+1}:</strong> ${c.metal || 's/m'} ${c.pvc ? `<span class="text-amber-700 font-mono">[PVC: ${c.pvc}]</span>` : ''}</div>`
+          ).join('');
+        }
 
         ctrlTbody.innerHTML += `
           <tr class="hover:bg-stone-50 transition-colors">
@@ -764,9 +837,8 @@
               <div><strong class="text-stone-700">H:</strong> ${item.femaleRing || '-'}<span class="text-brand-accent font-semibold">${fPvc}</span></div>
             </td>
             <td class="px-6 py-4 font-semibold">${item.eggCount || 0} / ${item.chickCount || 0}</td>
-            <td class="px-6 py-4">
-              <div class="font-mono text-emerald-700">${item.chickRings || 'Ninguna'}</div>
-              ${cPvc}
+            <td class="px-6 py-4 font-sans text-xs">
+              ${chicksDisplay}
             </td>
             <td class="px-6 py-4 text-right">
               <button onclick="deleteRecord(${idx})" class="text-rose-600 hover:text-rose-800 p-1" title="Eliminar">
@@ -800,8 +872,7 @@
         eggCount: parseInt(document.getElementById('eggCount').value) || 0,
         chickCount: parseInt(document.getElementById('chickCount').value) || 0,
         healthStatus: document.getElementById('healthStatus').value,
-        chickRings: document.getElementById('chickRings').value,
-        chickPvcCodes: document.getElementById('chickPvcCodes').value,
+        chicksList: getChicksFromUI(),
         ringDate: document.getElementById('ringDate').value,
         notes: document.getElementById('notes').value,
         lastReview: new Date().toISOString().split('T')[0]
@@ -820,8 +891,9 @@
       document.getElementById('nest-form').reset();
       document.getElementById('nestId').readOnly = false;
       document.getElementById('nestSelect').value = 'NEW';
+      renderChickCards([]);
       if (pickerMarker && pickerMap) pickerMap.removeLayer(pickerMarker);
-      alert('¡Ficha del nido actualizada y guardada con éxito!');
+      alert('¡Ficha del nido e inspección guardadas con éxito!');
     }
 
     function deleteRecord(idx) {
@@ -835,6 +907,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       initOverviewMap();
       renderApp();
+      renderChickCards([]);
     });
   </script>
 </body>
