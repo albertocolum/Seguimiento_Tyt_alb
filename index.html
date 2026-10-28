@@ -215,7 +215,7 @@
       <div class="bg-white p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 class="text-2xl font-bold text-brand-dark">Gestión y Registro de Inspecciones</h2>
-          <p class="text-stone-500 text-sm mt-1">Ingresa o actualiza los datos recopilados durante la revisión del nido.</p>
+          <p class="text-stone-500 text-sm mt-1">Selecciona un nido del desplegable para **cargar todos sus datos** o registra uno nuevo.</p>
         </div>
       </div>
 
@@ -231,7 +231,7 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Seleccionar o Crear Nido *</label>
-              <select id="nestSelect" onchange="onNestSelectChange(this.value)" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark bg-white">
+              <select id="nestSelect" onchange="onNestSelectChange(this.value)" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark bg-white font-semibold">
                 <option value="NEW">+ Registrar nuevo ID de nido...</option>
               </select>
             </div>
@@ -285,7 +285,7 @@
           </div>
         </div>
 
-        <!-- 2. PAREJA (ANILLAS OFICIALES Y PVC SIN COLOR) -->
+        <!-- 2. PAREJA (ANILLAS OFICIALES Y PVC) -->
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
             <i data-lucide="users" class="w-4 h-4 text-brand-accent"></i> 2. Identificación de la Pareja (Anillas y PVC)
@@ -356,7 +356,7 @@
           </div>
         </div>
 
-        <!-- 4. ANILLAMIENTO DE CRÍAS (METÁLICAS Y PVC) Y NOTAS -->
+        <!-- 4. ANILLAMIENTO DE CRÍAS Y NOTAS -->
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
             <i data-lucide="tag" class="w-4 h-4 text-brand-accent"></i> 4. Anillamiento de Crías (Metálicas y PVC) y Notas
@@ -474,16 +474,16 @@
     let pickerMarker = null;
 
     function getStoredData() {
-      const data = localStorage.getItem('tyto_data_v4');
+      const data = localStorage.getItem('tyto_data_v5');
       if (!data) {
-        localStorage.setItem('tyto_data_v4', JSON.stringify(initialNests));
+        localStorage.setItem('tyto_data_v5', JSON.stringify(initialNests));
         return initialNests;
       }
       return JSON.parse(data);
     }
 
     function saveData(data) {
-      localStorage.setItem('tyto_data_v4', JSON.stringify(data));
+      localStorage.setItem('tyto_data_v5', JSON.stringify(data));
       renderApp();
     }
 
@@ -642,43 +642,50 @@
       select.value = current;
     }
 
+    // AL SELECCIONAR UN NIDO EXISTENTE, CARGAMOS TODOS SUS DATOS EN EL FORMULARIO
     function onNestSelectChange(val) {
       const inputId = document.getElementById('nestId');
+      
       if (val === 'NEW') {
+        document.getElementById('nest-form').reset();
         inputId.value = '';
         inputId.readOnly = false;
-        document.getElementById('locationName').value = '';
-        document.getElementById('lat').value = '';
-        document.getElementById('lng').value = '';
-        document.getElementById('maleRing').value = '';
-        document.getElementById('malePvcCode').value = '';
-        document.getElementById('femaleRing').value = '';
-        document.getElementById('femalePvcCode').value = '';
-        document.getElementById('chickRings').value = '';
-        document.getElementById('chickPvcCodes').value = '';
         if (pickerMarker && pickerMap) pickerMap.removeLayer(pickerMarker);
       } else {
         const data = getStoredData();
         const found = data.find(d => d.nestId === val);
         if (found) {
+          // 1. Ubicación y Estado
           inputId.value = found.nestId;
           inputId.readOnly = true;
           document.getElementById('locationName').value = found.locationName || '';
           document.getElementById('status').value = found.status || 'Activo';
           document.getElementById('lat').value = found.lat || '';
           document.getElementById('lng').value = found.lng || '';
-          
+
+          // 2. Pareja
           document.getElementById('maleRing').value = found.maleRing || '';
           document.getElementById('malePvcCode').value = found.malePvcCode || '';
-          
           document.getElementById('femaleRing').value = found.femaleRing || '';
           document.getElementById('femalePvcCode').value = found.femalePvcCode || '';
 
+          // 3. Reproducción
+          document.getElementById('layDate').value = found.layDate || '';
+          document.getElementById('eggCount').value = found.eggCount ?? 0;
+          document.getElementById('chickCount').value = found.chickCount ?? 0;
+          document.getElementById('healthStatus').value = found.healthStatus || 'Excelente';
+
+          // 4. Anillamiento crías y notas
           document.getElementById('chickRings').value = found.chickRings || '';
           document.getElementById('chickPvcCodes').value = found.chickPvcCodes || '';
+          document.getElementById('ringDate').value = found.ringDate || '';
+          document.getElementById('notes').value = found.notes || '';
 
+          // Actualizar mapa del selector si hay coordenadas
           if (found.lat && found.lng) {
             setPickerMarker(found.lat, found.lng);
+          } else if (pickerMarker && pickerMap) {
+            pickerMap.removeLayer(pickerMarker);
           }
         }
       }
@@ -728,7 +735,7 @@
             <td class="px-6 py-4 font-semibold text-stone-800">${item.eggCount || 0} H / ${item.chickCount || 0} C</td>
             <td class="px-6 py-4 text-stone-500">${item.lastReview || 'N/A'}</td>
             <td class="px-6 py-4 text-right">
-              <button onclick="switchTab('control'); onNestSelectChange('${item.nestId}')" class="text-stone-400 hover:text-brand-dark p-1">
+              <button onclick="switchTab('control'); document.getElementById('nestSelect').value='${item.nestId}'; onNestSelectChange('${item.nestId}')" class="text-stone-400 hover:text-brand-dark p-1" title="Ver ficha del nido">
                 <i data-lucide="eye" class="w-4 h-4"></i>
               </button>
             </td>
@@ -812,8 +819,9 @@
       saveData(data);
       document.getElementById('nest-form').reset();
       document.getElementById('nestId').readOnly = false;
+      document.getElementById('nestSelect').value = 'NEW';
       if (pickerMarker && pickerMap) pickerMap.removeLayer(pickerMarker);
-      alert('¡Inspección y anillas PVC guardadas exitosamente!');
+      alert('¡Ficha del nido actualizada y guardada con éxito!');
     }
 
     function deleteRecord(idx) {
