@@ -23,7 +23,7 @@
               hover: '#162b20',
               accent: '#c88a4b',   // Caramelo / ocre
               accentHover: '#b5793e',
-              bg: '#f4f3ed',       // Beige suave
+              bg: '#f4f3ed',
               border: '#e5e3d7'
             }
           }
@@ -32,16 +32,25 @@
     }
   </script>
   <style>
+    /* Configuración de la imagen de fondo con superposición fija */
+    body {
+      background-image: linear-gradient(rgba(30, 41, 59, 0.45), rgba(30, 41, 59, 0.45)), url('https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/fondo.jpg');
+      background-attachment: fixed;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+    
     .leaflet-popup-content-wrapper {
       border-radius: 0.75rem;
       padding: 0.25rem;
     }
   </style>
 </head>
-<body class="bg-brand-bg text-stone-800 font-sans min-h-screen flex flex-col justify-between">
+<body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
 
   <!-- ENCABEZADO / NAVBAR -->
-  <header class="bg-brand-dark text-white sticky top-0 z-50 shadow-sm">
+  <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
       
       <div class="flex items-center space-x-3">
@@ -75,7 +84,7 @@
     <!-- ==================== PÁGINA 1: DASHBOARD ==================== -->
     <section id="tab-dashboard" class="space-y-8">
       
-      <div class="bg-brand-dark rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div class="bg-brand-dark/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div class="max-w-2xl z-10">
           <span class="inline-block bg-white/10 text-emerald-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-emerald-500/20">
             Temporada de Cría Activa
@@ -96,7 +105,7 @@
       <!-- TARJETAS KPI -->
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         
-        <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+        <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Activos</span>
             <div class="p-2 bg-emerald-50 rounded-xl text-emerald-700"><i data-lucide="home" class="w-5 h-5"></i></div>
@@ -109,7 +118,7 @@
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+        <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Parejas</span>
             <div class="p-2 bg-amber-50 rounded-xl text-amber-700"><i data-lucide="heart" class="w-5 h-5"></i></div>
@@ -122,7 +131,7 @@
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+        <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Huevos</span>
             <div class="p-2 bg-yellow-50 rounded-xl text-yellow-700"><i data-lucide="egg" class="w-5 h-5"></i></div>
@@ -135,7 +144,7 @@
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+        <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Crías</span>
             <div class="p-2 bg-teal-50 rounded-xl text-teal-700"><i data-lucide="smile" class="w-5 h-5"></i></div>
@@ -148,7 +157,7 @@
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between col-span-2 md:col-span-1">
+        <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between col-span-2 md:col-span-1">
           <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Anillados</span>
             <div class="p-2 bg-sky-50 rounded-xl text-sky-700"><i data-lucide="tag" class="w-5 h-5"></i></div>
@@ -164,7 +173,7 @@
       </div>
 
       <!-- MAPA GENERAL DE NIDOS -->
-      <div class="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
+      <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
         <div class="p-6 border-b border-brand-border flex items-center justify-between">
           <div>
             <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2">
@@ -178,7 +187,7 @@
       </div>
 
       <!-- TABLA RESUMEN -->
-      <div class="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
+      <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
         <div class="p-6 border-b border-brand-border flex justify-between items-center">
           <div>
             <h2 class="text-lg font-bold text-stone-800">Resumen de Nidos Registrados</h2>
@@ -191,7 +200,7 @@
 
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="bg-stone-50 text-stone-500 uppercase font-bold border-b border-brand-border">
+            <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b border-brand-border">
               <tr>
                 <th class="px-6 py-4">ID Nido</th>
                 <th class="px-6 py-4">Ubicación / Población</th>
@@ -212,7 +221,7 @@
     <!-- ==================== PÁGINA 2: REGISTRO Y CONTROL ==================== -->
     <section id="tab-control" class="hidden space-y-8">
       
-      <div class="bg-white p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="bg-white/95 backdrop-blur-sm p-6 rounded-2xl border border-brand-border shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 class="text-2xl font-bold text-brand-dark">Gestión y Registro de Inspecciones</h2>
           <p class="text-stone-500 text-sm mt-1">Selecciona un nido del desplegable para cargar sus datos o registra uno nuevo.</p>
@@ -220,7 +229,7 @@
       </div>
 
       <!-- FORMULARIO DE REGISTRO -->
-      <form id="nest-form" onsubmit="handleFormSubmit(event)" class="bg-white p-6 md:p-8 rounded-2xl border border-brand-border shadow-sm space-y-8">
+      <form id="nest-form" onsubmit="handleFormSubmit(event)" class="bg-white/95 backdrop-blur-sm p-6 md:p-8 rounded-2xl border border-brand-border shadow-md space-y-8">
         
         <!-- 1. IDENTIFICACIÓN Y UBICACIÓN -->
         <div class="space-y-4">
@@ -259,7 +268,7 @@
             <input type="text" id="locationName" required placeholder="Ej. Masía del Sur (Castellón de la Plana)" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark">
           </div>
 
-          <div class="bg-brand-bg p-4 rounded-xl border border-brand-border space-y-3">
+          <div class="bg-stone-50/80 p-4 rounded-xl border border-brand-border space-y-3">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <span class="text-xs font-bold text-brand-dark block">Coordenadas Geográficas (Latitud, Longitud)</span>
@@ -285,15 +294,14 @@
           </div>
         </div>
 
-        <!-- 2. PAREJA (ESTRUCTURA DE TARJETAS) -->
+        <!-- 2. PAREJA -->
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
             <i data-lucide="users" class="w-4 h-4 text-brand-accent"></i> 2. Identificación de la Pareja
           </h3>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-stone-50/60 p-4 rounded-xl border border-brand-border">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-stone-50/80 p-4 rounded-xl border border-brand-border">
             
-            <!-- MACHO -->
             <div class="space-y-3 bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
               <span class="text-xs font-bold text-brand-dark uppercase tracking-wide flex items-center gap-1.5 border-b border-stone-100 pb-2">
                 <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-700"></i> Adulto Macho
@@ -308,7 +316,6 @@
               </div>
             </div>
 
-            <!-- HEMBRA -->
             <div class="space-y-3 bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
               <span class="text-xs font-bold text-brand-dark uppercase tracking-wide flex items-center gap-1.5 border-b border-stone-100 pb-2">
                 <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-700"></i> Adulta Hembra
@@ -356,7 +363,7 @@
           </div>
         </div>
 
-        <!-- 4. ANILLAMIENTO DE CRÍAS (ESTRUCTURA IGUAL A LA PAREJA) -->
+        <!-- 4. ANILLAMIENTO DE CRÍAS -->
         <div class="space-y-4">
           <div class="flex items-center justify-between border-b border-brand-border pb-2">
             <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider flex items-center gap-2">
@@ -373,9 +380,8 @@
             </div>
           </div>
 
-          <!-- Contenedor dinámico de Tarjetas de Crías -->
-          <div id="chicks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-stone-50/60 p-4 rounded-xl border border-brand-border">
-            <!-- Se llenará dinámicamente con JS -->
+          <div id="chicks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-stone-50/80 p-4 rounded-xl border border-brand-border">
+            <!-- Dinámico -->
           </div>
         </div>
 
@@ -396,13 +402,13 @@
       </form>
 
       <!-- TABLA DETALLADA -->
-      <div class="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
+      <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
         <div class="p-6 border-b border-brand-border">
           <h3 class="text-lg font-bold text-stone-800">Registros Guardados en Memoria</h3>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
-            <thead class="bg-stone-50 text-stone-500 uppercase font-bold border-b border-brand-border">
+            <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b border-brand-border">
               <tr>
                 <th class="px-6 py-4">ID / Ubicación / Coordenadas</th>
                 <th class="px-6 py-4">Estado</th>
@@ -421,8 +427,8 @@
 
   </main>
 
-  <footer class="bg-white border-t border-brand-border py-4 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-stone-400 font-medium">
+  <footer class="bg-white/90 backdrop-blur-md border-t border-brand-border py-4 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-stone-500 font-medium">
       Tyto Alba Monitoreo — Sistema de Gestión y Conservación de Avifauna
     </div>
   </footer>
@@ -484,16 +490,16 @@
     let pickerMarker = null;
 
     function getStoredData() {
-      const data = localStorage.getItem('tyto_data_v6');
+      const data = localStorage.getItem('tyto_data_v7');
       if (!data) {
-        localStorage.setItem('tyto_data_v6', JSON.stringify(initialNests));
+        localStorage.setItem('tyto_data_v7', JSON.stringify(initialNests));
         return initialNests;
       }
       return JSON.parse(data);
     }
 
     function saveData(data) {
-      localStorage.setItem('tyto_data_v6', JSON.stringify(data));
+      localStorage.setItem('tyto_data_v7', JSON.stringify(data));
       renderApp();
     }
 
@@ -518,7 +524,6 @@
       }
     }
 
-    // GEOCODIFICACIÓN INVERSA
     let geoTimeout = null;
     function fetchLocationName(lat, lng) {
       const loader = document.getElementById('geo-loader');
@@ -638,13 +643,11 @@
       );
     }
 
-    // MANEJO DINÁMICO DE TARJETAS DE CRÍAS
     function renderChickCards(chicksList = []) {
       const container = document.getElementById('chicks-container');
       container.innerHTML = '';
 
       if (chicksList.length === 0) {
-        // Por defecto creamos 1 tarjeta vacía para empezar
         chicksList = [{ metal: '', pvc: '' }];
       }
 
