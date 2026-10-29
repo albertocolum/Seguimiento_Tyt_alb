@@ -10,6 +10,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- LIBRERÍAS DE FIREBASE -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -39,7 +43,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
       <div class="flex items-center space-x-3">
         <div class="border border-white/20 p-2 rounded-xl flex items-center justify-center bg-white/5"><i data-lucide="bird" class="w-5 h-5 text-emerald-400"></i></div>
-        <div class="flex items-baseline space-x-2"><span class="text-lg font-bold">Tyto Alba</span><span class="text-white/40">|</span><span class="text-sm font-medium text-emerald-400">Monitoreo</span></div>
+        <div class="flex items-baseline space-x-2"><span class="text-lg font-bold">Tyto Alba</span><span class="text-white/40">|</span><span class="text-sm font-medium text-emerald-400">Monitoreo Cloud</span></div>
       </div>
       <nav class="flex space-x-1 sm:space-x-2">
         <a href="index.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10"><i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span></a>
@@ -54,7 +58,7 @@
     <div class="bg-white/95 backdrop-blur-sm p-6 rounded-2xl border border-brand-border shadow-md flex justify-between items-center">
       <div>
         <h2 class="text-2xl font-bold text-brand-dark">Gestión y Registro de Inspecciones</h2>
-        <p class="text-stone-500 text-sm mt-1">Selecciona un nido o crea uno nuevo para actualizar su estado de conservación.</p>
+        <p class="text-stone-500 text-sm mt-1">Sincronización en tiempo real activa en la nube.</p>
       </div>
     </div>
 
@@ -182,7 +186,6 @@
         </h3>
         
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-stone-50/80 p-4 rounded-xl border border-brand-border">
-
           <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-1">
             <span class="text-xs font-bold text-rose-800 flex items-center gap-1.5">
               <i data-lucide="skull" class="w-3.5 h-3.5 text-rose-600"></i> Muerte de Pollos
@@ -211,7 +214,6 @@
             <label class="block text-[11px] text-stone-500">Volantones independizados</label>
             <input type="number" id="fledgedChicks" min="0" value="0" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-sm font-semibold bg-white">
           </div>
-
         </div>
       </div>
 
@@ -222,53 +224,35 @@
       </div>
 
       <div class="flex justify-end pt-4 border-t">
-        <button type="submit" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-6 py-3 rounded-xl shadow-md flex items-center gap-2 text-sm"><i data-lucide="save" class="w-4 h-4"></i> Guardar Inspección</button>
+        <button type="submit" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-6 py-3 rounded-xl shadow-md flex items-center gap-2 text-sm"><i data-lucide="save" class="w-4 h-4"></i> Guardar en la Nube</button>
       </div>
     </form>
   </main>
 
-  <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo</footer>
+  <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo — Firebase Cloud Mode</footer>
 
   <script>
-    function getStoredData() {
-      const data = localStorage.getItem('tyto_data_v9');
-      if (!data) {
-        const initialNests = [
-          {
-            nestId: "NIDO-01",
-            nestType: "Nido Artificial",
-            hasCamera: "No",
-            locationName: "Masía del Sur (Vila-real)",
-            lat: 39.9381,
-            lng: -0.1012,
-            status: "Activo",
-            maleRing: "EBD-90812",
-            malePvcCode: "A01",
-            femaleRing: "EBD-90813",
-            femalePvcCode: "A02",
-            layDate: new Date().toISOString().split('T')[0],
-            visitationState: "Huevos",
-            healthStatus: "Excelente",
-            chickDeaths: 0,
-            adultDeath: "Ninguno",
-            fledgedChicks: 0,
-            notes: "Abundantes presas observadas.",
-            lastReview: new Date().toISOString().split('T')[0]
-          }
-        ];
-        localStorage.setItem('tyto_data_v9', JSON.stringify(initialNests));
-        return initialNests;
-      }
-      return JSON.parse(data);
-    }
+    const firebaseConfig = {
+      apiKey: "AIzaSyDgcdamrQ_4QbU-dZK-j2K-8GHz2U_JmVw",
+      authDomain: "tytoalbamonitoreo.firebaseapp.com",
+      databaseURL: "https://tytoalbamonitoreo-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "tytoalbamonitoreo",
+      storageBucket: "tytoalbamonitoreo.firebasestorage.app",
+      messagingSenderId: "770240286093",
+      appId: "1:770240286093:web:5d389a48e7580face9c1c4"
+    };
 
-    function saveData(data) {
-      localStorage.setItem('tyto_data_v9', JSON.stringify(data));
-      alert('¡Guardado con éxito!');
-      renderControl();
-    }
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
+    let allNests = [];
     let pickerMap = null, pickerMarker = null;
+
+    db.ref('nidos').on('value', snapshot => {
+      const val = snapshot.val();
+      allNests = val ? Object.values(val) : [];
+      updateNestSelectOptions(allNests);
+    });
 
     let geoTimeout = null;
     function fetchLocationName(lat, lng) {
@@ -380,7 +364,7 @@
         document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
         if (pickerMarker) pickerMap.removeLayer(pickerMarker);
       } else {
-        const found = getStoredData().find(d => d.nestId === val);
+        const found = allNests.find(d => d.nestId === val);
         if (found) {
           document.getElementById('nestId').value = found.nestId;
           document.getElementById('nestId').readOnly = true;
@@ -443,15 +427,16 @@
         lastReview: new Date().toISOString().split('T')[0]
       };
 
-      let data = getStoredData();
-      const idx = data.findIndex(d => d.nestId === nestId);
-      if (idx >= 0) data[idx] = record; else data.unshift(record);
-      saveData(data);
+      db.ref('nidos/' + nestId).set(record, err => {
+        if (err) {
+          alert('Error al guardar en la nube: ' + err.message);
+        } else {
+          alert('¡Guardado en la nube con éxito!');
+        }
+      });
     }
 
     function renderControl() {
-      const data = getStoredData();
-      updateNestSelectOptions(data);
       initPickerMap();
 
       if (!document.getElementById('layDate').value) {

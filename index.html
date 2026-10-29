@@ -10,6 +10,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- LIBRERÍAS DE FIREBASE -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -41,7 +45,6 @@
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
 
-  <!-- ENCABEZADO / NAVBAR -->
   <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
       
@@ -52,7 +55,7 @@
         <div class="flex items-baseline space-x-2">
           <span class="text-lg font-bold tracking-tight">Tyto Alba</span>
           <span class="text-white/40 font-light">|</span>
-          <span class="text-sm font-medium text-emerald-400">Monitoreo</span>
+          <span class="text-sm font-medium text-emerald-400">Monitoreo Cloud</span>
         </div>
       </div>
 
@@ -66,32 +69,18 @@
         <a href="anillados.html" class="px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
         </a>
-
-        <div class="w-px h-6 bg-white/20 mx-1"></div>
-
-        <!-- BOTÓN EXPORTAR EXCEL -->
-        <button onclick="exportDataToCSV()" title="Exportar datos a Excel / CSV" class="p-2 rounded-xl text-white/80 hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center bg-white/5 border border-white/10 cursor-pointer">
-          <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
-        </button>
-
-        <!-- BOTÓN IMPORTAR EXCEL -->
-        <label title="Importar datos desde Excel / CSV" class="p-2 rounded-xl text-white/80 hover:bg-amber-600 hover:text-white transition-all flex items-center justify-center bg-white/5 border border-white/10 cursor-pointer">
-          <i data-lucide="upload" class="w-4 h-4 text-amber-400"></i>
-          <input type="file" id="importFile" accept=".csv" onchange="importDataFromCSV(event)" class="hidden">
-        </label>
       </nav>
 
     </div>
   </header>
 
-  <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     
     <div class="bg-brand-dark/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div class="max-w-2xl z-10">
-        <span class="inline-block bg-white/10 text-emerald-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-emerald-500/20">Temporada de Cría Activa</span>
+        <span class="inline-block bg-white/10 text-emerald-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-emerald-500/20">Sincronización Cloud Activa</span>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Resumen de Inspecciones de Campo</h1>
-        <p class="text-white/70 text-sm mt-2 leading-relaxed">Consulte los indicadores de reproducción, estado de cajas nido y seguimiento de ejemplares anillados en tiempo real.</p>
+        <p class="text-white/70 text-sm mt-2 leading-relaxed">Consulte los datos sincronizados en tiempo real entre móvil y ordenador.</p>
       </div>
       <div class="z-10 shrink-0">
         <a href="control.html" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-5 py-3 rounded-xl transition-all shadow-md inline-flex items-center space-x-2 text-sm">
@@ -100,7 +89,7 @@
       </div>
     </div>
 
-    <!-- TARJETAS KPI (SIN LA TARJETA DE HUEVOS) -->
+    <!-- TARJETAS KPI -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
         <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Activos</span><div class="p-2 bg-emerald-50 rounded-xl text-emerald-700"><i data-lucide="home" class="w-5 h-5"></i></div></div>
@@ -120,12 +109,12 @@
       </a>
     </div>
 
-    <!-- TABLA RESUMEN DE NIDOS REGISTRADOS -->
+    <!-- TABLA RESUMEN -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
       <div class="p-6 border-b border-brand-border flex justify-between items-center">
         <div>
           <h2 class="text-lg font-bold text-stone-800">Resumen de Nidos Registrados</h2>
-          <p class="text-xs text-stone-500 mt-1">Últimas revisiones y estado actual de las cajas de anidación</p>
+          <p class="text-xs text-stone-500 mt-1">Últimas revisiones y estado actual en la nube</p>
         </div>
         <a href="control.html" class="text-xs font-bold text-brand-dark hover:underline flex items-center gap-1">
           Gestionar nidos <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
@@ -148,7 +137,7 @@
       </div>
     </div>
 
-    <!-- MAPA GENERAL DE NIDOS -->
+    <!-- MAPA GENERAL -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
       <div class="p-6 border-b border-brand-border">
         <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2">
@@ -162,46 +151,22 @@
   </main>
 
   <footer class="bg-white/90 backdrop-blur-md border-t border-brand-border py-4 mt-auto text-center text-xs text-stone-500 font-medium">
-    Tyto Alba Monitoreo — Sistema de Gestión y Conservación de Avifauna
+    Tyto Alba Monitoreo — Sincronización Nube Activa
   </footer>
 
   <script>
-    function getStoredData() {
-      const data = localStorage.getItem('tyto_data_v9');
-      if (!data) {
-        const initialNests = [
-          {
-            nestId: "NIDO-01",
-            nestType: "Nido Artificial",
-            hasCamera: "No",
-            locationName: "Masía del Sur (Vila-real)",
-            lat: 39.9381,
-            lng: -0.1012,
-            status: "Activo",
-            maleRing: "EBD-90812",
-            malePvcCode: "A01",
-            femaleRing: "EBD-90813",
-            femalePvcCode: "A02",
-            layDate: new Date().toISOString().split('T')[0],
-            visitationState: "Huevos",
-            healthStatus: "Excelente",
-            chickDeaths: 0,
-            adultDeath: "Ninguno",
-            fledgedChicks: 0,
-            notes: "Abundantes presas observadas.",
-            lastReview: new Date().toISOString().split('T')[0]
-          }
-        ];
-        localStorage.setItem('tyto_data_v9', JSON.stringify(initialNests));
-        return initialNests;
-      }
-      return JSON.parse(data);
-    }
+    const firebaseConfig = {
+      apiKey: "AIzaSyDgcdamrQ_4QbU-dZK-j2K-8GHz2U_JmVw",
+      authDomain: "tytoalbamonitoreo.firebaseapp.com",
+      databaseURL: "https://tytoalbamonitoreo-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "tytoalbamonitoreo",
+      storageBucket: "tytoalbamonitoreo.firebasestorage.app",
+      messagingSenderId: "770240286093",
+      appId: "1:770240286093:web:5d389a48e7580face9c1c4"
+    };
 
-    function getStoredBioData() {
-      const data = localStorage.getItem('tyto_bio_v1');
-      return data ? JSON.parse(data) : [];
-    }
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
     let overviewMap = null;
     let overviewMarkersGroup = null;
@@ -212,20 +177,16 @@
       overviewMarkersGroup = L.layerGroup().addTo(overviewMap);
     }
 
-    function renderApp() {
-      const data = getStoredData();
-      const bioData = getStoredBioData();
-
+    function renderData(data) {
       document.getElementById('kpi-nests').textContent = data.filter(d => d.status === 'Activo').length;
       document.getElementById('kpi-pairs').textContent = data.filter(d => (d.maleRing && d.maleRing !== 'Sin anillar') || (d.femaleRing && d.femaleRing !== 'Sin anillar') || d.malePvcCode || d.femalePvcCode).length;
       document.getElementById('kpi-chicks').textContent = data.filter(d => d.visitationState === 'Pollos').length;
-      document.getElementById('kpi-ringed').textContent = bioData.length;
 
       const tbody = document.getElementById('dash-table-body');
       tbody.innerHTML = '';
-      
+
       if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-stone-400">No hay nidos registrados todavía. Añade uno desde la pestaña Nidos.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-stone-400">No hay nidos guardados en la nube. Añade uno desde la pestaña Nidos.</td></tr>`;
       } else {
         data.forEach(item => {
           tbody.innerHTML += `
@@ -254,112 +215,15 @@
       lucide.createIcons();
     }
 
-    // EXPORTACIÓN A CSV / EXCEL
-    function exportDataToCSV() {
-      const nests = getStoredData();
-      if (nests.length === 0) {
-        alert("No hay registros de nidos para exportar.");
-        return;
-      }
+    db.ref('nidos').on('value', snapshot => {
+      const val = snapshot.val();
+      const nestsArray = val ? Object.values(val) : [];
+      renderData(nestsArray);
+    });
 
-      let csvContent = "\uFEFFID Nido;Tipo Nido;Fototrampeo;Ubicacion;Latitud;Longitud;Estado;Macho Metalico;Macho PVC;Hembra Metalica;Hembra PVC;Fecha Visita;Estado Nidada;Salud;Muerte Crias;Adulto Muerto;Pollos Volados;Ultima Revision;Notas\n";
-
-      nests.forEach(n => {
-        const row = [
-          n.nestId || '',
-          n.nestType || 'Nido Artificial',
-          n.hasCamera || 'No',
-          (n.locationName || '').replace(/;/g, ','),
-          n.lat || '',
-          n.lng || '',
-          n.status || '',
-          n.maleRing || '',
-          n.malePvcCode || '',
-          n.femaleRing || '',
-          n.femalePvcCode || '',
-          n.layDate || '',
-          n.visitationState || 'Huevos',
-          n.healthStatus || '',
-          n.chickDeaths || 0,
-          n.adultDeath || 'Ninguno',
-          n.fledgedChicks || 0,
-          n.lastReview || '',
-          (n.notes || '').replace(/;/g, ',').replace(/\n/g, ' ')
-        ];
-        csvContent += row.join(";") + "\n";
-      });
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `tyto_alba_nidos_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    function importDataFromCSV(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const text = e.target.result;
-          const lines = text.split("\n");
-          if (lines.length < 2) {
-            alert("El archivo está vacío o no tiene el formato correcto.");
-            return;
-          }
-
-          const newNests = [];
-          for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-
-            const row = line.split(";");
-            if (row.length >= 5) {
-              newNests.push({
-                nestId: row[0],
-                nestType: row[1] || 'Nido Artificial',
-                hasCamera: row[2] || 'No',
-                locationName: row[3],
-                lat: row[4] ? parseFloat(row[4]) : null,
-                lng: row[5] ? parseFloat(row[5]) : null,
-                status: row[6],
-                maleRing: row[7] || '',
-                malePvcCode: row[8] || '',
-                femaleRing: row[9] || '',
-                femalePvcCode: row[10] || '',
-                layDate: row[11] || '',
-                visitationState: row[12] || 'Huevos',
-                healthStatus: row[13] || 'Excelente',
-                chickDeaths: parseInt(row[14]) || 0,
-                adultDeath: row[15] || 'Ninguno',
-                fledgedChicks: parseInt(row[16]) || 0,
-                lastReview: row[17] || new Date().toISOString().split('T')[0],
-                notes: row[18] || ''
-              });
-            }
-          }
-
-          if (newNests.length > 0) {
-            localStorage.setItem('tyto_data_v9', JSON.stringify(newNests));
-            alert(`¡Se han importado ${newNests.length} nidos correctamente!`);
-            renderApp();
-          } else {
-            alert("No se pudieron leer registros válidos en el archivo.");
-          }
-        } catch (err) {
-          alert("Error al procesar el archivo. Asegúrate de que sea un CSV compatible.");
-        }
-        event.target.value = '';
-      };
-      reader.readAsText(file, "UTF-8");
-    }
-
-    window.addEventListener('DOMContentLoaded', renderApp);
+    window.addEventListener('DOMContentLoaded', () => {
+      initOverviewMap();
+    });
   </script>
 </body>
 </html>
