@@ -89,7 +89,7 @@
       </div>
     </div>
 
-    <!-- TARJETAS KPI (INCLUYENDO NIDOS INACTIVOS) -->
+    <!-- TARJETAS KPI -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
       <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
         <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Activos</span><div class="p-2 bg-emerald-50 rounded-xl text-emerald-700"><i data-lucide="home" class="w-5 h-5"></i></div></div>
@@ -146,7 +146,7 @@
       <div class="p-6 border-b border-brand-border">
         <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2">
           <i data-lucide="map" class="w-5 h-5 text-brand-dark"></i> 
-          Mapa de Localización de Nidos
+          Mapa de Localización de Nidos (Activos e Inactivos)
         </h2>
       </div>
       <div id="overview-map" class="w-full h-80 z-10"></div>
@@ -211,12 +211,28 @@
       if (!overviewMap) initOverviewMap();
       overviewMarkersGroup.clearLayers();
       const bounds = [];
+
       data.forEach(item => {
         if (item.lat && item.lng) {
-          L.marker([item.lat, item.lng]).addTo(overviewMarkersGroup).bindPopup(`<strong>${item.nestId}</strong><br>${item.locationName}`);
+          // Color de la chincheta según el estado: Verde si está Activo, Gris/Rojo oscuro si está Inactivo o Abandonado
+          const isActive = item.status === 'Activo';
+          const pinColor = isActive ? '#10b981' : '#94a3b8'; // Verde esmeralda vs Gris pizarra
+
+          const customIcon = L.divIcon({
+            className: 'custom-pin',
+            html: `<div style="background-color: ${pinColor}; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+          });
+
+          L.marker([item.lat, item.lng], { icon: customIcon })
+            .addTo(overviewMarkersGroup)
+            .bindPopup(`<strong>${item.nestId}</strong><br>${item.locationName}<br><span style="color: ${pinColor}; font-weight: bold;">Estado: ${item.status}</span>`);
+          
           bounds.push([item.lat, item.lng]);
         }
       });
+
       if (bounds.length > 0) overviewMap.fitBounds(bounds, { padding: [30, 30] });
       lucide.createIcons();
     }
