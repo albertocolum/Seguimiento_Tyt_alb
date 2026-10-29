@@ -105,7 +105,6 @@
             </button>
           </div>
 
-          <!-- CAMPO ÚNICO DE COORDENADAS -->
           <div>
             <input type="text" id="coordsInput" oninput="parseAndSetCoordinates(this.value)" placeholder="Ej. 39.9381, -0.1012  o  39°56'17.2&quot;N 0°06'04.3&quot;W" class="w-full px-3 py-2 border rounded-xl text-sm font-mono bg-white focus:ring-2 focus:ring-brand-dark">
             <input type="hidden" id="lat">
@@ -135,27 +134,85 @@
 
       <!-- REPRODUCCIÓN -->
       <div class="space-y-4">
-        <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2"><i data-lucide="egg" class="w-4 h-4 text-brand-accent"></i> 3. Reproducción y Salud</h3>
+        <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2"><i data-lucide="egg" class="w-4 h-4 text-brand-accent"></i> 3. Reproducción y Salud General</h3>
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <input type="date" id="layDate" class="px-3 py-2 border rounded-xl text-sm">
-          <input type="number" id="eggCount" min="0" value="0" placeholder="Nº Huevos" class="px-3 py-2 border rounded-xl text-sm">
-          <input type="number" id="chickCount" min="0" value="0" placeholder="Nº Crías" class="px-3 py-2 border rounded-xl text-sm">
-          <select id="healthStatus" class="px-3 py-2 border rounded-xl text-sm bg-white">
-            <option value="Excelente">Excelente</option><option value="Bueno">Bueno</option><option value="Alerta">Alerta</option>
-          </select>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Fecha 1ª Puesta</label>
+            <input type="date" id="layDate" class="w-full px-3 py-2 border rounded-xl text-sm bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Nº Huevos Puestos</label>
+            <input type="number" id="eggCount" min="0" value="0" placeholder="Nº Huevos" class="w-full px-3 py-2 border rounded-xl text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Nº Crías Vivas en Caja</label>
+            <input type="number" id="chickCount" min="0" value="0" placeholder="Nº Crías" class="w-full px-3 py-2 border rounded-xl text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Salud General Nidada</label>
+            <select id="healthStatus" class="w-full px-3 py-2 border rounded-xl text-sm bg-white">
+              <option value="Excelente">Excelente</option>
+              <option value="Bueno">Bueno</option>
+              <option value="Alerta / Riesgo">Alerta / Riesgo</option>
+              <option value="N/A (Sin Crías)">N/A (Sin Crías)</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <!-- CRÍAS -->
+      <!-- NUEVA SECCIÓN: EVENTOS DE LA NIDADAD, BAJAS Y VOLANTONES -->
       <div class="space-y-4">
-        <div class="flex justify-between items-center border-b border-brand-border pb-2">
-          <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider flex items-center gap-2"><i data-lucide="tag" class="w-4 h-4 text-brand-accent"></i> 4. Anillamiento de Crías</h3>
-          <button type="button" onclick="addChickCard()" class="bg-brand-dark text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">+ Añadir Cría</button>
+        <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
+          <i data-lucide="activity" class="w-4 h-4 text-rose-600"></i> 4. Eventos de la Nidada, Bajas y Vuelos
+        </h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-stone-50/80 p-4 rounded-xl border border-brand-border">
+          
+          <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-600"></i> Huevos Eclosionados
+            </span>
+            <label class="block text-[11px] text-stone-500">Total nacidos en la temporada</label>
+            <input type="number" id="hatchedEggs" min="0" value="0" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-sm font-semibold bg-white">
+          </div>
+
+          <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-rose-800 flex items-center gap-1.5">
+              <i data-lucide="skull" class="w-3.5 h-3.5 text-rose-600"></i> Muerte de Pollos
+            </span>
+            <label class="block text-[11px] text-stone-500">Bajas de crías en el nido</label>
+            <input type="number" id="chickDeaths" min="0" value="0" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-sm font-semibold bg-white">
+          </div>
+
+          <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+              <i data-lucide="user-x" class="w-3.5 h-3.5 text-stone-600"></i> Muerte de Adulto
+            </span>
+            <label class="block text-[11px] text-stone-500">Indicar si ha muerto un progenitor</label>
+            <select id="adultDeath" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-sm font-semibold bg-white">
+              <option value="Ninguno">Ninguno</option>
+              <option value="Macho">Macho</option>
+              <option value="Hembra">Hembra</option>
+              <option value="Ambos">Ambos</option>
+            </select>
+          </div>
+
+          <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-1">
+            <span class="text-xs font-bold text-sky-800 flex items-center gap-1.5">
+              <i data-lucide="wind" class="w-3.5 h-3.5 text-sky-600"></i> Pollos Volados
+            </span>
+            <label class="block text-[11px] text-stone-500">Volantones independizados</label>
+            <input type="number" id="fledgedChicks" min="0" value="0" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-sm font-semibold bg-white">
+          </div>
+
         </div>
-        <div id="chicks-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-stone-50/80 p-4 rounded-xl border"></div>
       </div>
 
-      <textarea id="notes" rows="3" placeholder="Observaciones de campo..." class="w-full px-3 py-2 border rounded-xl text-sm"></textarea>
+      <!-- OBSERVACIONES -->
+      <div class="space-y-2">
+        <label class="block text-xs font-bold text-stone-600">Observaciones y Notas de Campo</label>
+        <textarea id="notes" rows="3" placeholder="Detalles de causas de muerte si se conocen, restos de presas, estado de la caja..." class="w-full px-3 py-2 border rounded-xl text-sm"></textarea>
+      </div>
 
       <div class="flex justify-end pt-4 border-t">
         <button type="submit" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-6 py-3 rounded-xl shadow-md flex items-center gap-2 text-sm"><i data-lucide="save" class="w-4 h-4"></i> Guardar Inspección</button>
@@ -178,7 +235,6 @@
 
     let pickerMap = null, pickerMarker = null;
 
-    // GEOCODIFICACIÓN INVERSA AUTOMÁTICA
     let geoTimeout = null;
     function fetchLocationName(lat, lng) {
       const loader = document.getElementById('geo-loader');
@@ -196,14 +252,10 @@
               let detectedName = town ? (state ? `${town} (${state})` : town) : data.display_name.split(',')[0];
               
               const currentLocInput = document.getElementById('locationName');
-              if (currentLocInput) {
-                currentLocInput.value = detectedName;
-              }
+              if (currentLocInput) currentLocInput.value = detectedName;
             }
           })
-          .catch(() => {
-            if (loader) loader.classList.add('hidden');
-          });
+          .catch(() => { if (loader) loader.classList.add('hidden'); });
       }, 350);
     }
 
@@ -238,7 +290,6 @@
     function parseAndSetCoordinates(inputStr) {
       if (!inputStr || !inputStr.trim()) return;
 
-      // Formato Grados Minutos Segundos (ej: 39°56'17.2"N 0°06'04.3"W)
       const dmsRegex = /(\d+)[\°\s]+(\d+)[\'\s]+([\d\.]+)[\"\s]*([NnSsEeOoWw])[\s,]+(\d+)[\°\s]+(\d+)[\'\s]+([\d\.]+)[\"\s]*([NnSsEeOoWw])/;
       const dmsMatch = inputStr.match(dmsRegex);
 
@@ -253,7 +304,6 @@
         return;
       }
 
-      // Formato Decimal Simple (ej: 39.9381, -0.1012)
       const parts = inputStr.split(/[\s,]+/);
       if (parts.length >= 2) {
         const lat = parseFloat(parts[0]);
@@ -279,30 +329,6 @@
       });
     }
 
-    function renderChickCards(list = [{metal:'', pvc:''}]) {
-      const c = document.getElementById('chicks-container');
-      c.innerHTML = '';
-      list.forEach((chick, idx) => {
-        c.innerHTML += `
-          <div class="chick-card bg-white p-3 rounded-xl border shadow-sm space-y-2">
-            <div class="flex justify-between text-xs font-bold"><span>Cría #${idx+1}</span><button type="button" onclick="this.closest('.chick-card').remove()" class="text-rose-500">✕</button></div>
-            <input type="text" value="${chick.metal||''}" placeholder="Anilla Metálica" class="chick-metal w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white">
-            <input type="text" value="${chick.pvc||''}" placeholder="PVC" class="chick-pvc w-full px-2.5 py-1.5 border rounded-lg text-sm uppercase font-mono bg-white">
-          </div>
-        `;
-      });
-      lucide.createIcons();
-    }
-
-    function addChickCard() {
-      const cards = Array.from(document.querySelectorAll('.chick-card')).map(card => ({
-        metal: card.querySelector('.chick-metal').value,
-        pvc: card.querySelector('.chick-pvc').value
-      }));
-      cards.push({metal:'', pvc:''});
-      renderChickCards(cards);
-    }
-
     function updateNestSelectOptions(data) {
       const sel = document.getElementById('nestSelect');
       sel.innerHTML = '<option value="NEW">+ Registrar nuevo ID de nido...</option>';
@@ -316,7 +342,6 @@
         document.getElementById('lat').value = '';
         document.getElementById('lng').value = '';
         document.getElementById('coordsInput').value = '';
-        renderChickCards();
         if (pickerMarker) pickerMap.removeLayer(pickerMarker);
       } else {
         const found = getStoredData().find(d => d.nestId === val);
@@ -343,8 +368,14 @@
           document.getElementById('eggCount').value = found.eggCount ?? 0;
           document.getElementById('chickCount').value = found.chickCount ?? 0;
           document.getElementById('healthStatus').value = found.healthStatus || 'Excelente';
+          
+          // Cargar datos de eventos
+          document.getElementById('hatchedEggs').value = found.hatchedEggs ?? 0;
+          document.getElementById('chickDeaths').value = found.chickDeaths ?? 0;
+          document.getElementById('adultDeath').value = found.adultDeath || 'Ninguno';
+          document.getElementById('fledgedChicks').value = found.fledgedChicks ?? 0;
+
           document.getElementById('notes').value = found.notes || '';
-          renderChickCards(found.chicksList || []);
         }
       }
     }
@@ -352,19 +383,29 @@
     function handleFormSubmit(e) {
       e.preventDefault();
       const nestId = document.getElementById('nestId').value;
-      const chicks = Array.from(document.querySelectorAll('.chick-card')).map(card => ({
-        metal: card.querySelector('.chick-metal').value,
-        pvc: card.querySelector('.chick-pvc').value
-      }));
 
       const record = {
-        nestId, locationName: document.getElementById('locationName').value,
-        lat: parseFloat(document.getElementById('lat').value)||null, lng: parseFloat(document.getElementById('lng').value)||null,
-        status: document.getElementById('status').value, maleRing: document.getElementById('maleRing').value||"Sin anillar",
-        malePvcCode: document.getElementById('malePvcCode').value, femaleRing: document.getElementById('femaleRing').value||"Sin anillar",
-        femalePvcCode: document.getElementById('femalePvcCode').value, layDate: document.getElementById('layDate').value,
-        eggCount: parseInt(document.getElementById('eggCount').value)||0, chickCount: parseInt(document.getElementById('chickCount').value)||0,
-        healthStatus: document.getElementById('healthStatus').value, chicksList: chicks, notes: document.getElementById('notes').value,
+        nestId, 
+        locationName: document.getElementById('locationName').value,
+        lat: parseFloat(document.getElementById('lat').value)||null, 
+        lng: parseFloat(document.getElementById('lng').value)||null,
+        status: document.getElementById('status').value, 
+        maleRing: document.getElementById('maleRing').value||"Sin anillar",
+        malePvcCode: document.getElementById('malePvcCode').value, 
+        femaleRing: document.getElementById('femaleRing').value||"Sin anillar",
+        femalePvcCode: document.getElementById('femalePvcCode').value, 
+        layDate: document.getElementById('layDate').value,
+        eggCount: parseInt(document.getElementById('eggCount').value)||0, 
+        chickCount: parseInt(document.getElementById('chickCount').value)||0,
+        healthStatus: document.getElementById('healthStatus').value, 
+        
+        // Guardar eventos
+        hatchedEggs: parseInt(document.getElementById('hatchedEggs').value)||0,
+        chickDeaths: parseInt(document.getElementById('chickDeaths').value)||0,
+        adultDeath: document.getElementById('adultDeath').value,
+        fledgedChicks: parseInt(document.getElementById('fledgedChicks').value)||0,
+
+        notes: document.getElementById('notes').value,
         lastReview: new Date().toISOString().split('T')[0]
       };
 
@@ -378,7 +419,6 @@
       const data = getStoredData();
       updateNestSelectOptions(data);
       initPickerMap();
-      renderChickCards();
 
       const urlParams = new URLSearchParams(window.location.search);
       const editId = urlParams.get('edit');
