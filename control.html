@@ -160,7 +160,7 @@
         </div>
       </div>
 
-      <!-- NUEVA SECCIÓN: EVENTOS DE LA NIDADAD, BAJAS Y VOLANTONES -->
+      <!-- EVENTOS DE LA NIDADA, BAJAS Y VOLANTONES -->
       <div class="space-y-4">
         <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
           <i data-lucide="activity" class="w-4 h-4 text-rose-600"></i> 4. Eventos de la Nidada, Bajas y Vuelos
@@ -223,12 +223,42 @@
   <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo</footer>
 
   <script>
+    // CLAVE UNIFICADA v9 PARA COMPATIBILIDAD CON INDEX
     function getStoredData() {
-      const data = localStorage.getItem('tyto_data_v8');
-      return data ? JSON.parse(data) : [];
+      const data = localStorage.getItem('tyto_data_v9');
+      if (!data) {
+        // Datos iniciales de prueba por defecto si está vacío
+        const initialNests = [
+          {
+            nestId: "NIDO-01",
+            locationName: "Masía del Sur (Vila-real)",
+            lat: 39.9381,
+            lng: -0.1012,
+            status: "Activo",
+            maleRing: "EBD-90812",
+            malePvcCode: "A01",
+            femaleRing: "EBD-90813",
+            femalePvcCode: "A02",
+            layDate: "2026-03-15",
+            eggCount: 5,
+            chickCount: 4,
+            healthStatus: "Excelente",
+            hatchedEggs: 4,
+            chickDeaths: 0,
+            adultDeath: "Ninguno",
+            fledgedChicks: 0,
+            notes: "Abundantes presas observadas.",
+            lastReview: "2026-04-20"
+          }
+        ];
+        localStorage.setItem('tyto_data_v9', JSON.stringify(initialNests));
+        return initialNests;
+      }
+      return JSON.parse(data);
     }
+
     function saveData(data) {
-      localStorage.setItem('tyto_data_v8', JSON.stringify(data));
+      localStorage.setItem('tyto_data_v9', JSON.stringify(data));
       alert('¡Guardado con éxito!');
       renderControl();
     }
@@ -369,7 +399,6 @@
           document.getElementById('chickCount').value = found.chickCount ?? 0;
           document.getElementById('healthStatus').value = found.healthStatus || 'Excelente';
           
-          // Cargar datos de eventos
           document.getElementById('hatchedEggs').value = found.hatchedEggs ?? 0;
           document.getElementById('chickDeaths').value = found.chickDeaths ?? 0;
           document.getElementById('adultDeath').value = found.adultDeath || 'Ninguno';
@@ -399,7 +428,6 @@
         chickCount: parseInt(document.getElementById('chickCount').value)||0,
         healthStatus: document.getElementById('healthStatus').value, 
         
-        // Guardar eventos
         hatchedEggs: parseInt(document.getElementById('hatchedEggs').value)||0,
         chickDeaths: parseInt(document.getElementById('chickDeaths').value)||0,
         adultDeath: document.getElementById('adultDeath').value,
