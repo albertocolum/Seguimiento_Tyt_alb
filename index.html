@@ -41,9 +41,10 @@
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
 
-  <!-- ENCABEZADO / NAVBAR -->
+  <!-- ENCABEZADO / NAVBAR CON BOTONES DE EXPORTAR E IMPORTAR -->
   <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+      
       <div class="flex items-center space-x-3">
         <div class="border border-white/20 p-2 rounded-xl flex items-center justify-center bg-white/5">
           <i data-lucide="bird" class="w-5 h-5 text-emerald-400"></i>
@@ -55,17 +56,33 @@
         </div>
       </div>
 
-      <nav class="flex space-x-1 sm:space-x-2">
-        <a href="index.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm">
+      <!-- NAVEGACIÓN Y BOTONES DE EXPORTAR/IMPORTAR -->
+      <nav class="flex items-center space-x-1 sm:space-x-2">
+        <a href="index.html" class="px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm">
           <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span>
         </a>
-        <a href="control.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+        <a href="control.html" class="px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span>
         </a>
-        <a href="anillados.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+        <a href="anillados.html" class="px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
         </a>
+
+        <!-- SEPARADOR VISUAL -->
+        <div class="w-px h-6 bg-white/20 mx-1"></div>
+
+        <!-- BOTÓN EXPORTAR EXCEL -->
+        <button onclick="exportDataToCSV()" title="Exportar datos a Excel / CSV" class="p-2 rounded-xl text-white/80 hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center bg-white/5 border border-white/10">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
+        </button>
+
+        <!-- BOTÓN IMPORTAR EXCEL -->
+        <label title="Importar datos desde Excel / CSV" class="p-2 rounded-xl text-white/80 hover:bg-amber-600 hover:text-white transition-all flex items-center justify-center bg-white/5 border border-white/10 cursor-pointer">
+          <i data-lucide="upload" class="w-4 h-4 text-amber-400"></i>
+          <input type="file" id="importFile" accept=".csv" onchange="importDataFromCSV(event)" class="hidden">
+        </label>
       </nav>
+
     </div>
   </header>
 
@@ -110,7 +127,7 @@
       </a>
     </div>
 
-    <!-- TABLA RESUMEN DE NIDOS REGISTRADOS (AHORA ARRIBA DEL MAPA) -->
+    <!-- TABLA RESUMEN DE NIDOS REGISTRADOS -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
       <div class="p-6 border-b border-brand-border flex justify-between items-center">
         <div>
@@ -151,68 +168,4 @@
 
   </main>
 
-  <footer class="bg-white/90 backdrop-blur-md border-t border-brand-border py-4 mt-auto text-center text-xs text-stone-500 font-medium">
-    Tyto Alba Monitoreo — Sistema de Gestión y Conservación de Avifauna
-  </footer>
-
-  <script>
-    function getStoredData() {
-      const data = localStorage.getItem('tyto_data_v8');
-      return data ? JSON.parse(data) : [];
-    }
-    function getStoredBioData() {
-      const data = localStorage.getItem('tyto_bio_v1');
-      return data ? JSON.parse(data) : [];
-    }
-
-    let overviewMap = null;
-    let overviewMarkersGroup = null;
-
-    function initOverviewMap() {
-      overviewMap = L.map('overview-map').setView([39.95, -0.10], 10);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(overviewMap);
-      overviewMarkersGroup = L.layerGroup().addTo(overviewMap);
-    }
-
-    function renderApp() {
-      const data = getStoredData();
-      const bioData = getStoredBioData();
-
-      document.getElementById('kpi-nests').textContent = data.filter(d => d.status === 'Activo').length;
-      document.getElementById('kpi-pairs').textContent = data.filter(d => d.maleRing || d.femaleRing).length;
-      document.getElementById('kpi-eggs').textContent = data.reduce((acc, curr) => acc + Number(curr.eggCount || 0), 0);
-      document.getElementById('kpi-chicks').textContent = data.reduce((acc, curr) => acc + Number(curr.chickCount || 0), 0);
-      document.getElementById('kpi-ringed').textContent = bioData.length;
-
-      const tbody = document.getElementById('dash-table-body');
-      tbody.innerHTML = '';
-      data.forEach(item => {
-        tbody.innerHTML += `
-          <tr class="hover:bg-stone-50 transition-colors">
-            <td class="px-6 py-4 font-bold text-stone-900">${item.nestId}</td>
-            <td class="px-6 py-4">${item.locationName}</td>
-            <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${item.status}</span></td>
-            <td class="px-6 py-4">${item.healthStatus || 'N/A'}</td>
-            <td class="px-6 py-4 font-semibold">${item.eggCount || 0} H / ${item.chickCount || 0} C</td>
-            <td class="px-6 py-4 text-right"><a href="control.html?edit=${item.nestId}" class="text-brand-dark font-semibold hover:underline">Ver / Editar →</a></td>
-          </tr>
-        `;
-      });
-
-      if (!overviewMap) initOverviewMap();
-      overviewMarkersGroup.clearLayers();
-      const bounds = [];
-      data.forEach(item => {
-        if (item.lat && item.lng) {
-          L.marker([item.lat, item.lng]).addTo(overviewMarkersGroup).bindPopup(`<strong>${item.nestId}</strong><br>${item.locationName}`);
-          bounds.push([item.lat, item.lng]);
-        }
-      });
-      if (bounds.length > 0) overviewMap.fitBounds(bounds, { padding: [30, 30] });
-      lucide.createIcons();
-    }
-
-    window.addEventListener('DOMContentLoaded', renderApp);
-  </script>
-</body>
-</html>
+  <footer class="bg-white/90 backdrop-blur-md border-t border-brand-border py-4 mt-auto text-
