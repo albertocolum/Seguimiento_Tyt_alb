@@ -454,7 +454,7 @@
       
       let existingNotes = document.getElementById('notes').value;
 
-      // Si se ha escrito una nueva nota, se añade al histórico con fecha y estado
+      // Si se ha escrito una nota nueva, se añade al histórico con su estado correspondiente
       if (currentNoteText) {
         const state = document.getElementById('visitationState').value;
         const newEntry = `[${visitDate}] Estado: ${state} - ${currentNoteText}`;
