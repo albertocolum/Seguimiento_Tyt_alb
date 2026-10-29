@@ -133,7 +133,7 @@
 
       <!-- OBSERVACIONES -->
       <div class="space-y-2">
-        <label class="block text-xs font-bold text-stone-600">Observaciones Biométricas / Estado Fsico</label>
+        <label class="block text-xs font-bold text-stone-600">Observaciones Biométricas / Estado Físico</label>
         <textarea id="ringNotes" rows="2" placeholder="Condición corporal, muda, desarrollo de plumas..." class="w-full px-3 py-2 border rounded-xl text-sm"></textarea>
       </div>
 
@@ -164,6 +164,7 @@
       const val = snapshot.val();
       const nests = val ? Object.values(val) : [];
       const sel = document.getElementById('nestSelect');
+      const currentSelected = sel.value; // Conservar selección actual si se recarga
       
       sel.innerHTML = '<option value="">-- Seleccionar nido asociado --</option>';
       if (nests.length === 0) {
@@ -173,15 +174,17 @@
           sel.innerHTML += `<option value="${item.nestId}">${item.nestId} (${item.locationName || 'Sin ubicación'})</option>`;
         });
       }
+      if (currentSelected) sel.value = currentSelected;
     });
 
     function handleRingSubmit(e) {
       e.preventDefault();
       const metalRing = document.getElementById('metalRing').value.trim().toUpperCase();
+      const currentNest = document.getElementById('nestSelect').value;
       
       const ringRecord = {
         metalRing,
-        nestId: document.getElementById('nestSelect').value,
+        nestId: currentNest,
         ringDate: document.getElementById('ringDate').value,
         birdAge: document.getElementById('birdAge').value,
         pvcRing: document.getElementById('pvcRing').value.trim().toUpperCase(),
@@ -192,13 +195,27 @@
         ringNotes: document.getElementById('ringNotes').value
       };
 
-      // Guardar en la rama 'anillados' de Firebase usando la anilla metálica como identificador único
+      // Guardar en la rama 'anillados' de Firebase
       db.ref('anillados/' + metalRing.replace(/[\/\.#$\[\]]/g, '_')).set(ringRecord, err => {
         if (err) {
           alert('Error al guardar el registro: ' + err.message);
         } else {
-          alert('¡Registro de anillamiento guardado con éxito!');
-          window.location.href = 'index.html';
+          // Preguntar si desea anillar otra ave
+          const keepInNest = confirm('¡Registro guardado con éxito!\n\n¿Deseas anillar otra ave en este mismo nido?');
+          
+          if (keepInNest) {
+            // Limpiar campos de anilla y biometría, pero manteniendo el nido seleccionado
+            document.getElementById('metalRing').value = '';
+            document.getElementById('pvcRing').value = '';
+            document.getElementById('weight').value = '';
+            document.getElementById('wingChord').value = '';
+            document.getElementById('tarsus').value = '';
+            document.getElementById('ringNotes').value = '';
+            document.getElementById('metalRing').focus();
+          } else {
+            // Ir al inicio (index.html)
+            window.location.href = 'index.html';
+          }
         }
       });
     }
