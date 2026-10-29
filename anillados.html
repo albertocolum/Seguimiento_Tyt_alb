@@ -73,7 +73,20 @@
           <div><label class="text-[11px] font-semibold text-stone-600">Ala (mm)</label><input type="number" step="1" id="bioWing" placeholder="285" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
           <div><label class="text-[11px] font-semibold text-stone-600">P8 (mm)</label><input type="number" step="1" id="bioP8" placeholder="192" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
           <div><label class="text-[11px] font-semibold text-stone-600">Cola (mm)</label><input type="number" step="1" id="bioTail" placeholder="125" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
-          <div><label class="text-[11px] font-semibold text-stone-600">Edad EURING</label><select id="bioAge" class="w-full px-2 py-1.5 border rounded-lg text-sm bg-white"><option value="1 (Pollo)">1 (Pollo)</option><option value="3 (Nacido año)">3</option><option value="4 (Adulto)">4</option></select></div>
+          <div>
+            <label class="text-[11px] font-semibold text-stone-600">Edad EURING</label>
+            <select id="bioAge" class="w-full px-2 py-1.5 border rounded-lg text-sm bg-white">
+              <option value="1 - Polluelo / Pollo">1 - Pollo</option>
+              <option value="2 - Indiv. nacido año actual (volandero)">2 - Nacido año (volandero)</option>
+              <option value="3 - Nacido año actual (juv)">3 - Nacido año (juv)</option>
+              <option value="4 - Indiv. nacido antes año actual">4 - Nacido antes año actual</option>
+              <option value="5 - Nacido año anterior">5 - Nacido año anterior</option>
+              <option value="6 - Nacido antes año anterior (>1 año)">6 - Nacido antes año anterior</option>
+              <option value="7 - Nacido al menos hace 2 años">7 - Nacido hace +2 años</option>
+              <option value="8 - Adulto (edad desconocida)">8 - Adulto (edad desc.)</option>
+              <option value="9 - Nacido hace al menos 3 años">9 - Nacido hace +3 años</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -93,7 +106,7 @@
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs">
           <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b">
-            <tr><th class="px-6 py-4">Anilla Metal / PVC</th><th class="px-6 py-4">Tipo / Sexo</th><th class="px-6 py-4">Nido</th><th class="px-6 py-4">Morfometría (Peso / Tarso / Ala / P8 / Cola)</th><th class="px-6 py-4 text-right">Acción</th></tr>
+            <tr><th class="px-6 py-4">Anilla Metal / PVC</th><th class="px-6 py-4">Tipo / Sexo / Edad</th><th class="px-6 py-4">Nido</th><th class="px-6 py-4">Morfometría (Peso / Tarso / Ala / P8 / Cola)</th><th class="px-6 py-4 text-right">Acción</th></tr>
           </thead>
           <tbody id="bio-table-body" class="divide-y font-medium text-stone-700"></tbody>
         </table>
@@ -131,7 +144,7 @@
         tbody.innerHTML += `
           <tr class="hover:bg-stone-50">
             <td class="px-6 py-4"><div class="font-bold text-stone-900">${b.metal}</div><div class="text-xs text-sky-700 font-mono">${b.pvc ? 'PVC: '+b.pvc : ''}</div></td>
-            <td class="px-6 py-4"><div class="font-semibold">${b.type}</div><div class="text-stone-500 text-[11px]">${b.sex}</div></td>
+            <td class="px-6 py-4"><div class="font-semibold">${b.type}</div><div class="text-stone-500 text-[11px]">${b.sex} • EURING: ${b.age || '-'}</div></td>
             <td class="px-6 py-4 font-semibold">${b.nestId}</td>
             <td class="px-6 py-4 font-mono">Peso: <strong>${b.weight||'-'}g</strong> | Tarso: <strong>${b.tarsus||'-'}mm</strong> | Ala: <strong>${b.wing||'-'}mm</strong> | P8: <strong>${b.p8||'-'}mm</strong> | Cola: <strong>${b.tail||'-'}mm</strong></td>
             <td class="px-6 py-4 text-right"><button onclick="deleteBio(${idx})" class="text-rose-600 font-bold">Eliminar</button></td>
