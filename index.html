@@ -113,12 +113,12 @@
       </a>
     </div>
 
-    <!-- TABLA RESUMEN -->
+    <!-- TABLA RESUMEN CON ADULTOS ANILLADOS -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
       <div class="p-6 border-b border-brand-border flex justify-between items-center">
         <div>
-          <h2 class="text-lg font-bold text-stone-800">Resumen de Nidos Registrados</h2>
-          <p class="text-xs text-stone-500 mt-1">Últimas revisiones y estado actual en la nube</p>
+          <h2 class="text-lg font-bold text-stone-800">Resumen de Nidos y Parejas Asignadas</h2>
+          <p class="text-xs text-stone-500 mt-1">Estado actual y adultos anillados en cada caja</p>
         </div>
         <a href="control.html" class="text-xs font-bold text-brand-dark hover:underline flex items-center gap-1">
           Gestionar nidos <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
@@ -129,10 +129,10 @@
           <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b border-brand-border">
             <tr>
               <th class="px-6 py-4">ID Nido</th>
-              <th class="px-6 py-4">Ubicación / Población</th>
+              <th class="px-6 py-4">Ubicación</th>
               <th class="px-6 py-4">Estado</th>
-              <th class="px-6 py-4">Estado Nidada</th>
-              <th class="px-6 py-4">Salud Crías</th>
+              <th class="px-6 py-4">Macho (Anilla / PVC)</th>
+              <th class="px-6 py-4">Hembra (Anilla / PVC)</th>
               <th class="px-6 py-4 text-right">Acción</th>
             </tr>
           </thead>
@@ -146,7 +146,7 @@
       <div class="p-6 border-b border-brand-border">
         <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2">
           <i data-lucide="map" class="w-5 h-5 text-brand-dark"></i> 
-          Mapa de Localización de Nidos (Activos e Inactivos)
+          Mapa de Localización de Nidos
         </h2>
       </div>
       <div id="overview-map" class="w-full h-80 z-10"></div>
@@ -195,13 +195,17 @@
       } else {
         data.forEach(item => {
           const badgeColor = item.status === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
+          
+          const maleInfo = (item.maleRing && item.maleRing !== 'Sin anillar') ? `${item.maleRing} ${item.malePvcCode ? '('+item.malePvcCode+')' : ''}` : '<span class="text-stone-400 italic">Sin anillar</span>';
+          const femaleInfo = (item.femaleRing && item.femaleRing !== 'Sin anillar') ? `${item.femaleRing} ${item.femalePvcCode ? '('+item.femalePvcCode+')' : ''}` : '<span class="text-stone-400 italic">Sin anillar</span>';
+
           tbody.innerHTML += `
             <tr class="hover:bg-stone-50 transition-colors">
               <td class="px-6 py-4 font-bold text-stone-900">${item.nestId}</td>
               <td class="px-6 py-4">${item.locationName}</td>
               <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeColor}">${item.status}</span></td>
-              <td class="px-6 py-4 font-semibold text-brand-dark">${item.visitationState || 'Huevos'}</td>
-              <td class="px-6 py-4">${item.healthStatus || 'N/A'}</td>
+              <td class="px-6 py-4 font-mono text-stone-700">${maleInfo}</td>
+              <td class="px-6 py-4 font-mono text-stone-700">${femaleInfo}</td>
               <td class="px-6 py-4 text-right"><a href="control.html?edit=${item.nestId}" class="text-brand-dark font-semibold hover:underline">Ver / Editar →</a></td>
             </tr>
           `;
@@ -214,9 +218,8 @@
 
       data.forEach(item => {
         if (item.lat && item.lng) {
-          // Color de la chincheta según el estado: Verde si está Activo, Gris/Rojo oscuro si está Inactivo o Abandonado
           const isActive = item.status === 'Activo';
-          const pinColor = isActive ? '#10b981' : '#94a3b8'; // Verde esmeralda vs Gris pizarra
+          const pinColor = isActive ? '#10b981' : '#94a3b8';
 
           const customIcon = L.divIcon({
             className: 'custom-pin',
