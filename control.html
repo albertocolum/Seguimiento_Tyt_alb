@@ -224,13 +224,13 @@
         </h3>
         
         <div class="space-y-2">
-          <label class="block text-xs font-bold text-stone-600">Nueva Nota para la Visita Actual</label>
-          <textarea id="currentNote" rows="2" placeholder="Escribe aquí las observaciones de la visita de hoy..." class="w-full px-3 py-2 border rounded-xl text-sm bg-white"></textarea>
+          <label class="block text-xs font-bold text-stone-600">Comentario para la Visita Actual</label>
+          <textarea id="currentNote" rows="2" placeholder="Ej. Se anillan ambos adultos, se observa buena actividad..." class="w-full px-3 py-2 border rounded-xl text-sm bg-white"></textarea>
         </div>
 
         <div class="space-y-2">
-          <label class="block text-xs font-bold text-stone-500">Historial de Visitas Anteriores (Automático)</label>
-          <div id="notesHistory" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs font-mono text-stone-700 max-h-40 overflow-y-auto space-y-2">
+          <label class="block text-xs font-bold text-stone-500">Historial de Visitas Anteriores (Automático con cambios del día)</label>
+          <div id="notesHistory" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs font-mono text-stone-700 max-h-48 overflow-y-auto space-y-2">
             <span class="text-stone-400 italic">No hay visitas anteriores registradas.</span>
           </div>
           <!-- Campo oculto para conservar el historial completo en Firebase -->
@@ -454,12 +454,27 @@
       
       let existingNotes = document.getElementById('notes').value;
 
-      // Si se ha escrito una nota nueva, se añade al histórico con su estado correspondiente
+      // Recoger automáticamente los valores clave modificados hoy
+      const state = document.getElementById('visitationState').value;
+      const health = document.getElementById('healthStatus').value;
+      const deaths = document.getElementById('chickDeaths').value;
+      const fledged = document.getElementById('fledgedChicks').value;
+      const adultDeath = document.getElementById('adultDeath').value;
+
+      // Construir la línea automática con los datos de la visita
+      let autoSummary = `[Visita: ${visitDate}] Nidada: ${state} | Salud: ${health}`;
+      if (deaths > 0) autoSummary += ` | Bajas pollos: ${deaths}`;
+      if (fledged > 0) autoSummary += ` | Volantones: ${fledged}`;
+      if (adultDeath !== 'Ninguno') autoSummary += ` | Adulto muerto: ${adultDeath}`;
+
+      // Si el usuario añadió un comentario personal, lo adjuntamos debajo
+      let finalEntry = autoSummary;
       if (currentNoteText) {
-        const state = document.getElementById('visitationState').value;
-        const newEntry = `[${visitDate}] Estado: ${state} - ${currentNoteText}`;
-        existingNotes = existingNotes ? `${newEntry}\n---\n${existingNotes}` : newEntry;
+        finalEntry += `\n💬 Comentario: "${currentNoteText}"`;
       }
+
+      // Añadir al principio del historial general
+      existingNotes = existingNotes ? `${finalEntry}\n---\n${existingNotes}` : finalEntry;
 
       const record = {
         nestId, 
@@ -474,12 +489,12 @@
         femaleRing: document.getElementById('femaleRing').value||"Sin anillar",
         femalePvcCode: document.getElementById('femalePvcCode').value, 
         layDate: visitDate,
-        visitationState: document.getElementById('visitationState').value,
-        healthStatus: document.getElementById('healthStatus').value, 
+        visitationState: state,
+        healthStatus: health, 
         
-        chickDeaths: parseInt(document.getElementById('chickDeaths').value)||0,
-        adultDeath: document.getElementById('adultDeath').value,
-        fledgedChicks: parseInt(document.getElementById('fledgedChicks').value)||0,
+        chickDeaths: parseInt(deaths)||0,
+        adultDeath: adultDeath,
+        fledgedChicks: parseInt(fledged)||0,
 
         notes: existingNotes,
         lastReview: new Date().toISOString().split('T')[0]
