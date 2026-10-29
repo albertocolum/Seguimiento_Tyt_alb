@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tyto Alba | Registro Biométrico</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { dark: '#1e382b', hover: '#162b20', accent: '#c88a4b', accentHover: '#b5793e', bg: '#f4f3ed', border: '#e5e3d7' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-image: linear-gradient(rgba(30, 41, 59, 0.45), rgba(30, 41, 59, 0.45)), url('https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/fondo.jpg');
+      background-attachment: fixed;
+      background-position: center 25%;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+  </style>
+</head>
+<body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
+
+  <!-- NAVBAR -->
+  <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+      <div class="flex items-center space-x-3">
+        <div class="border border-white/20 p-2 rounded-xl flex items-center justify-center bg-white/5"><i data-lucide="bird" class="w-5 h-5 text-emerald-400"></i></div>
+        <div class="flex items-baseline space-x-2"><span class="text-lg font-bold">Tyto Alba</span><span class="text-white/40">|</span><span class="text-sm font-medium text-emerald-400">Monitoreo</span></div>
+      </div>
+      <nav class="flex space-x-1 sm:space-x-2">
+        <a href="index.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10"><i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span></a>
+        <a href="control.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10"><i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span></a>
+        <a href="anillados.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-sky-700 text-white shadow-sm"><i data-lucide="tag" class="w-4 h-4 text-white"></i><span>Anillados</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- CONTENIDO -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
+    <div class="bg-white/95 backdrop-blur-sm p-6 rounded-2xl border border-brand-border shadow-md flex justify-between items-center">
+      <div>
+        <h2 class="text-2xl font-bold text-brand-dark flex items-center gap-2"><i data-lucide="award" class="w-6 h-6 text-sky-600"></i> Registro Biométrico y Anillamiento</h2>
+        <p class="text-stone-500 text-sm mt-1">Gestión detallada de medidas morfométricas (peso, tarso, ala, P8, R5) de las capturas.</p>
+      </div>
+    </div>
+
+    <form id="bio-form" onsubmit="handleBioSubmit(event)" class="bg-white/95 backdrop-blur-sm p-6 md:p-8 rounded-2xl border border-brand-border shadow-md space-y-6">
+      <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b pb-2 flex items-center gap-2"><i data-lucide="ruler" class="w-4 h-4 text-sky-600"></i> Nueva Ficha Biométrica</h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div><label class="block text-xs font-bold text-stone-600 mb-1">Nido *</label><select id="bioNestId" class="w-full px-3 py-2 border rounded-xl text-sm bg-white"></select></div>
+        <div><label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica *</label><input type="text" id="bioMetal" required placeholder="Ej. EBD-90812" class="w-full px-3 py-2 border rounded-xl text-sm font-mono"></div>
+        <div><label class="block text-xs font-bold text-stone-600 mb-1">Código PVC</label><input type="text" id="bioPvc" placeholder="Ej. A01" class="w-full px-3 py-2 border rounded-xl text-sm font-mono uppercase"></div>
+        <div><label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Ejemplar *</label><select id="bioType" class="w-full px-3 py-2 border rounded-xl text-sm bg-white"><option value="Cría / Pollo">Cría / Pollo</option><option value="Adulto Macho">Adulto Macho</option><option value="Adulta Hembra">Adulta Hembra</option></select></div>
+      </div>
+
+      <div class="bg-stone-50/80 p-4 rounded-xl border space-y-3">
+        <span class="text-xs font-bold text-brand-dark uppercase">Medidas Morfométricas</span>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          <div><label class="text-[11px] font-semibold text-stone-600">Peso (g)</label><input type="number" step="0.1" id="bioWeight" placeholder="320.5" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
+          <div><label class="text-[11px] font-semibold text-stone-600">Tarso (mm)</label><input type="number" step="0.1" id="bioTarsus" placeholder="68.2" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
+          <div><label class="text-[11px] font-semibold text-stone-600">Ala (mm)</label><input type="number" step="1" id="bioWing" placeholder="285" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
+          <div><label class="text-[11px] font-semibold text-stone-600">P8 (mm)</label><input type="number" step="1" id="bioP8" placeholder="192" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
+          <div><label class="text-[11px] font-semibold text-stone-600">R5 (mm)</label><input type="number" step="1" id="bioR5" placeholder="125" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
+          <div><label class="text-[11px] font-semibold text-stone-600">Edad EURING</label><select id="bioAge" class="w-full px-2 py-1.5 border rounded-lg text-sm bg-white"><option value="1 (Pollo)">1 (Pollo)</option><option value="3 (Nacido año)">3</option><option value="4 (Adulto)">4</option></select></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div><label class="block text-xs font-bold text-stone-600">Sexo</label><select id="bioSex" class="w-full px-3 py-2 border rounded-xl text-sm bg-white"><option value="Indeterminado">Indeterminado</option><option value="Macho">Macho</option><option value="Hembra">Hembra</option></select></div>
+        <div><label class="block text-xs font-bold text-stone-600">Fecha</label><input type="date" id="bioDate" class="w-full px-3 py-2 border rounded-xl text-sm bg-white"></div>
+        <div><label class="block text-xs font-bold text-stone-600">Salud</label><select id="bioHealth" class="w-full px-3 py-2 border rounded-xl text-sm bg-white"><option value="Excelente">Excelente</option><option value="Bueno">Bueno</option></select></div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button type="submit" class="bg-sky-700 hover:bg-sky-800 text-white font-semibold px-6 py-2.5 rounded-xl shadow-md flex items-center gap-2 text-sm"><i data-lucide="plus-circle" class="w-4 h-4"></i> Guardar Ficha Biométrica</button>
+      </div>
+    </form>
+
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
+      <div class="p-6 border-b"><h3 class="text-lg font-bold text-stone-800">Base de Datos de Ejemplares Anillados</h3></div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b">
+            <tr><th class="px-6 py-4">Anilla Metal / PVC</th><th class="px-6 py-4">Tipo / Sexo</th><th class="px-6 py-4">Nido</th><th class="px-6 py-4">Morfometría (Peso / Tarso / Ala / P8 / R5)</th><th class="px-6 py-4 text-right">Acción</th></tr>
+          </thead>
+          <tbody id="bio-table-body" class="divide-y font-medium text-stone-700"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo</footer>
+
+  <script>
+    function getStoredBioData() {
+      const data = localStorage.getItem('tyto_bio_v1');
+      return data ? JSON.parse(data) : [];
+    }
+    function saveBioData(data) {
+      localStorage.setItem('tyto_bio_v1', JSON.stringify(data));
+      renderBio();
+    }
+    function getStoredNests() {
+      const data = localStorage.getItem('tyto_data_v8');
+      return data ? JSON.parse(data) : [];
+    }
+
+    function renderBio() {
+      const nests = getStoredNests();
+      const bioData = getStoredBioData();
+
+      const bioSelect = document.getElementById('bioNestId');
+      bioSelect.innerHTML = '';
+      nests.forEach(item => bioSelect.innerHTML += `<option value="${item.nestId}">${item.nestId} (${item.locationName})</option>`);
+
+      const tbody = document.getElementById('bio-table-body');
+      tbody.innerHTML = '';
+      bioData.forEach((b, idx) => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-stone-50">
+            <td class="px-6 py-4"><div class="font-bold text-stone-900">${b.metal}</div><div class="text-xs text-sky-700 font-mono">${b.pvc ? 'PVC: '+b.pvc : ''}</div></td>
+            <td class="px-6 py-4"><div class="font-semibold">${b.type}</div><div class="text-stone-500 text-[11px]">${b.sex}</div></td>
+            <td class="px-6 py-4 font-semibold">${b.nestId}</td>
+            <td class="px-6 py-4 font-mono">Peso: <strong>${b.weight||'-'}g</strong> | Tarso: <strong>${b.tarsus||'-'}mm</strong> | Ala: <strong>${b.wing||'-'}mm</strong> | P8: <strong>${b.p8||'-'}mm</strong> | R5: <strong>${b.r5||'-'}mm</strong></td>
+            <td class="px-6 py-4 text-right"><button onclick="deleteBio(${idx})" class="text-rose-600 font-bold">Eliminar</button></td>
+          </tr>
+        `;
+      });
+      lucide.createIcons();
+    }
+
+    function handleBioSubmit(e) {
+      e.preventDefault();
+      const item = {
+        metal: document.getElementById('bioMetal').value, pvc: document.getElementById('bioPvc').value,
+        nestId: document.getElementById('bioNestId').value, type: document.getElementById('bioType').value,
+        weight: document.getElementById('bioWeight').value, tarsus: document.getElementById('bioTarsus').value,
+        wing: document.getElementById('bioWing').value, p8: document.getElementById('bioP8').value,
+        r5: document.getElementById('bioR5').value, age: document.getElementById('bioAge').value,
+        sex: document.getElementById('bioSex').value, date: document.getElementById('bioDate').value || new Date().toISOString().split('T')[0]
+      };
+      let bio = getStoredBioData();
+      bio.unshift(item);
+      saveBioData(bio);
+      document.getElementById('bio-form').reset();
+      alert('¡Ficha guardada!');
+    }
+
+    function deleteBio(idx) {
+      if(confirm('¿Eliminar registro?')) {
+        let bio = getStoredBioData();
+        bio.splice(idx, 1);
+        saveBioData(bio);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', renderBio);
+  </script>
+</body>
+</html>
