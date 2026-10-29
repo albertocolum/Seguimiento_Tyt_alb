@@ -51,7 +51,7 @@
     <div class="bg-white/95 backdrop-blur-sm p-6 rounded-2xl border border-brand-border shadow-md flex justify-between items-center">
       <div>
         <h2 class="text-2xl font-bold text-brand-dark flex items-center gap-2"><i data-lucide="award" class="w-6 h-6 text-sky-600"></i> Registro Biométrico y Anillamiento</h2>
-        <p class="text-stone-500 text-sm mt-1">Gestión detallada de medidas morfométricas (peso, tarso, ala, P8, R5) de las capturas.</p>
+        <p class="text-stone-500 text-sm mt-1">Gestión detallada de medidas morfométricas (peso, tarso, ala, P8, cola) de las capturas.</p>
       </div>
     </div>
 
@@ -72,7 +72,7 @@
           <div><label class="text-[11px] font-semibold text-stone-600">Tarso (mm)</label><input type="number" step="0.1" id="bioTarsus" placeholder="68.2" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
           <div><label class="text-[11px] font-semibold text-stone-600">Ala (mm)</label><input type="number" step="1" id="bioWing" placeholder="285" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
           <div><label class="text-[11px] font-semibold text-stone-600">P8 (mm)</label><input type="number" step="1" id="bioP8" placeholder="192" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
-          <div><label class="text-[11px] font-semibold text-stone-600">R5 (mm)</label><input type="number" step="1" id="bioR5" placeholder="125" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
+          <div><label class="text-[11px] font-semibold text-stone-600">Cola (mm)</label><input type="number" step="1" id="bioTail" placeholder="125" class="w-full px-2.5 py-1.5 border rounded-lg text-sm bg-white font-mono"></div>
           <div><label class="text-[11px] font-semibold text-stone-600">Edad EURING</label><select id="bioAge" class="w-full px-2 py-1.5 border rounded-lg text-sm bg-white"><option value="1 (Pollo)">1 (Pollo)</option><option value="3 (Nacido año)">3</option><option value="4 (Adulto)">4</option></select></div>
         </div>
       </div>
@@ -93,7 +93,7 @@
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs">
           <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b">
-            <tr><th class="px-6 py-4">Anilla Metal / PVC</th><th class="px-6 py-4">Tipo / Sexo</th><th class="px-6 py-4">Nido</th><th class="px-6 py-4">Morfometría (Peso / Tarso / Ala / P8 / R5)</th><th class="px-6 py-4 text-right">Acción</th></tr>
+            <tr><th class="px-6 py-4">Anilla Metal / PVC</th><th class="px-6 py-4">Tipo / Sexo</th><th class="px-6 py-4">Nido</th><th class="px-6 py-4">Morfometría (Peso / Tarso / Ala / P8 / Cola)</th><th class="px-6 py-4 text-right">Acción</th></tr>
           </thead>
           <tbody id="bio-table-body" class="divide-y font-medium text-stone-700"></tbody>
         </table>
@@ -133,7 +133,7 @@
             <td class="px-6 py-4"><div class="font-bold text-stone-900">${b.metal}</div><div class="text-xs text-sky-700 font-mono">${b.pvc ? 'PVC: '+b.pvc : ''}</div></td>
             <td class="px-6 py-4"><div class="font-semibold">${b.type}</div><div class="text-stone-500 text-[11px]">${b.sex}</div></td>
             <td class="px-6 py-4 font-semibold">${b.nestId}</td>
-            <td class="px-6 py-4 font-mono">Peso: <strong>${b.weight||'-'}g</strong> | Tarso: <strong>${b.tarsus||'-'}mm</strong> | Ala: <strong>${b.wing||'-'}mm</strong> | P8: <strong>${b.p8||'-'}mm</strong> | R5: <strong>${b.r5||'-'}mm</strong></td>
+            <td class="px-6 py-4 font-mono">Peso: <strong>${b.weight||'-'}g</strong> | Tarso: <strong>${b.tarsus||'-'}mm</strong> | Ala: <strong>${b.wing||'-'}mm</strong> | P8: <strong>${b.p8||'-'}mm</strong> | Cola: <strong>${b.tail||'-'}mm</strong></td>
             <td class="px-6 py-4 text-right"><button onclick="deleteBio(${idx})" class="text-rose-600 font-bold">Eliminar</button></td>
           </tr>
         `;
@@ -148,7 +148,7 @@
         nestId: document.getElementById('bioNestId').value, type: document.getElementById('bioType').value,
         weight: document.getElementById('bioWeight').value, tarsus: document.getElementById('bioTarsus').value,
         wing: document.getElementById('bioWing').value, p8: document.getElementById('bioP8').value,
-        r5: document.getElementById('bioR5').value, age: document.getElementById('bioAge').value,
+        tail: document.getElementById('bioTail').value, age: document.getElementById('bioAge').value,
         sex: document.getElementById('bioSex').value, date: document.getElementById('bioDate').value || new Date().toISOString().split('T')[0]
       };
       let bio = getStoredBioData();
