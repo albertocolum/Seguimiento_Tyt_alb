@@ -113,7 +113,7 @@
       </a>
     </div>
 
-    <!-- TABLA RESUMEN CON ADULTOS ANILLADOS -->
+    <!-- TABLA RESUMEN CON PAREJAS ASIGNADAS -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
       <div class="p-6 border-b border-brand-border flex justify-between items-center">
         <div>
@@ -180,6 +180,13 @@
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(overviewMap);
       overviewMarkersGroup = L.layerGroup().addTo(overviewMap);
     }
+
+    // Escuchar cambios en los anillados para actualizar el contador de la tarjeta
+    db.ref('anillados').on('value', snapshot => {
+      const val = snapshot.val();
+      const ringedArray = val ? Object.values(val) : [];
+      document.getElementById('kpi-ringed').textContent = ringedArray.length;
+    });
 
     function renderData(data) {
       document.getElementById('kpi-nests').textContent = data.filter(d => d.status === 'Activo').length;
