@@ -247,11 +247,24 @@
 
     let allNests = [];
     let pickerMap = null, pickerMarker = null;
+    let initialLoadDone = false;
 
+    // Carga de datos desde Firebase
     db.ref('nidos').on('value', snapshot => {
       const val = snapshot.val();
       allNests = val ? Object.values(val) : [];
       updateNestSelectOptions(allNests);
+
+      // Si es la primera vez que cargan los datos de Firebase, comprobar si venimos del botón "Ver / Editar"
+      if (!initialLoadDone) {
+        initialLoadDone = true;
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('edit');
+        if (editId) {
+          document.getElementById('nestSelect').value = editId;
+          onNestSelectChange(editId);
+        }
+      }
     });
 
     let geoTimeout = null;
@@ -350,8 +363,10 @@
 
     function updateNestSelectOptions(data) {
       const sel = document.getElementById('nestSelect');
+      const currentVal = sel.value;
       sel.innerHTML = '<option value="NEW">+ Registrar nuevo ID de nido...</option>';
       data.forEach(item => sel.innerHTML += `<option value="${item.nestId}">${item.nestId} (${item.locationName})</option>`);
+      sel.value = currentVal;
     }
 
     function onNestSelectChange(val) {
@@ -443,12 +458,6 @@
         document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
       }
 
-      const urlParams = new URLSearchParams(window.location.search);
-      const editId = urlParams.get('edit');
-      if (editId) {
-        document.getElementById('nestSelect').value = editId;
-        onNestSelectChange(editId);
-      }
       lucide.createIcons();
     }
 
