@@ -89,11 +89,15 @@
       </div>
     </div>
 
-    <!-- TARJETAS KPI -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <!-- TARJETAS KPI (INCLUYENDO NIDOS INACTIVOS) -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
       <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
         <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Activos</span><div class="p-2 bg-emerald-50 rounded-xl text-emerald-700"><i data-lucide="home" class="w-5 h-5"></i></div></div>
         <div><div id="kpi-nests" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-stone-500 mt-1">Ocupación en caja</div></div>
+      </div>
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Inactivos</span><div class="p-2 bg-rose-50 rounded-xl text-rose-700"><i data-lucide="home-off" class="w-5 h-5"></i></div></div>
+        <div><div id="kpi-inactive" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-rose-700 mt-1">Inactivos / Abandonados</div></div>
       </div>
       <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
         <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Parejas</span><div class="p-2 bg-amber-50 rounded-xl text-amber-700"><i data-lucide="heart" class="w-5 h-5"></i></div></div>
@@ -103,7 +107,7 @@
         <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Crías</span><div class="p-2 bg-teal-50 rounded-xl text-teal-700"><i data-lucide="smile" class="w-5 h-5"></i></div></div>
         <div><div id="kpi-chicks" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-teal-700 mt-1">Eclosionadas</div></div>
       </div>
-      <a href="anillados.html" class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between cursor-pointer hover:border-sky-400 hover:ring-2 hover:ring-sky-200 transition-all group">
+      <a href="anillados.html" class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between cursor-pointer hover:border-sky-400 hover:ring-2 hover:ring-sky-200 transition-all group col-span-2 md:col-span-1">
         <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400 group-hover:text-sky-700">Anillados</span><div class="p-2 bg-sky-50 rounded-xl text-sky-700 group-hover:bg-sky-500 group-hover:text-white transition-colors"><i data-lucide="tag" class="w-5 h-5"></i></div></div>
         <div><div id="kpi-ringed" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-sky-700 mt-1 font-semibold flex items-center gap-1">Ver Biometría →</div></div>
       </a>
@@ -179,6 +183,7 @@
 
     function renderData(data) {
       document.getElementById('kpi-nests').textContent = data.filter(d => d.status === 'Activo').length;
+      document.getElementById('kpi-inactive').textContent = data.filter(d => d.status === 'Inactivo' || d.status === 'Abandonado').length;
       document.getElementById('kpi-pairs').textContent = data.filter(d => (d.maleRing && d.maleRing !== 'Sin anillar') || (d.femaleRing && d.femaleRing !== 'Sin anillar') || d.malePvcCode || d.femalePvcCode).length;
       document.getElementById('kpi-chicks').textContent = data.filter(d => d.visitationState === 'Pollos').length;
 
@@ -189,11 +194,12 @@
         tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-stone-400">No hay nidos guardados en la nube. Añade uno desde la pestaña Nidos.</td></tr>`;
       } else {
         data.forEach(item => {
+          const badgeColor = item.status === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
           tbody.innerHTML += `
             <tr class="hover:bg-stone-50 transition-colors">
               <td class="px-6 py-4 font-bold text-stone-900">${item.nestId}</td>
               <td class="px-6 py-4">${item.locationName}</td>
-              <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${item.status}</span></td>
+              <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeColor}">${item.status}</span></td>
               <td class="px-6 py-4 font-semibold text-brand-dark">${item.visitationState || 'Huevos'}</td>
               <td class="px-6 py-4">${item.healthStatus || 'N/A'}</td>
               <td class="px-6 py-4 text-right"><a href="control.html?edit=${item.nestId}" class="text-brand-dark font-semibold hover:underline">Ver / Editar →</a></td>
