@@ -249,13 +249,11 @@
     let pickerMap = null, pickerMarker = null;
     let initialLoadDone = false;
 
-    // Carga de datos desde Firebase
     db.ref('nidos').on('value', snapshot => {
       const val = snapshot.val();
       allNests = val ? Object.values(val) : [];
       updateNestSelectOptions(allNests);
 
-      // Si es la primera vez que cargan los datos de Firebase, comprobar si venimos del botón "Ver / Editar"
       if (!initialLoadDone) {
         initialLoadDone = true;
         const urlParams = new URLSearchParams(window.location.search);
@@ -446,7 +444,8 @@
         if (err) {
           alert('Error al guardar en la nube: ' + err.message);
         } else {
-          alert('¡Guardado en la nube con éxito!');
+          // Redirigir automáticamente al index tras guardar con éxito
+          window.location.href = 'index.html';
         }
       });
     }
