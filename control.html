@@ -85,7 +85,12 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-stone-600 mb-1">Ubicación / Población *</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-bold text-stone-600">Ubicación / Población *</label>
+            <span id="geo-loader" class="text-[11px] text-brand-accent font-medium hidden flex items-center gap-1">
+              <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Detectando municipio...
+            </span>
+          </div>
           <input type="text" id="locationName" required placeholder="Ej. Masía del Sur (Vila-real)" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm">
         </div>
 
@@ -103,7 +108,6 @@
           <!-- CAMPO ÚNICO DE COORDENADAS -->
           <div>
             <input type="text" id="coordsInput" oninput="parseAndSetCoordinates(this.value)" placeholder="Ej. 39.9381, -0.1012  o  39°56'17.2&quot;N 0°06'04.3&quot;W" class="w-full px-3 py-2 border rounded-xl text-sm font-mono bg-white focus:ring-2 focus:ring-brand-dark">
-            <!-- Campos ocultos para almacenar los decimales procesados -->
             <input type="hidden" id="lat">
             <input type="hidden" id="lng">
           </div>
@@ -174,6 +178,35 @@
 
     let pickerMap = null, pickerMarker = null;
 
+    // GEOCODIFICACIÓN INVERSA AUTOMÁTICA
+    let geoTimeout = null;
+    function fetchLocationName(lat, lng) {
+      const loader = document.getElementById('geo-loader');
+      if (loader) loader.classList.remove('hidden');
+
+      clearTimeout(geoTimeout);
+      geoTimeout = setTimeout(() => {
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+          .then(res => res.json())
+          .then(data => {
+            if (loader) loader.classList.add('hidden');
+            if (data && data.address) {
+              const town = data.address.village || data.address.town || data.address.city || data.address.municipality || data.address.county || '';
+              const state = data.address.province || data.address.state || '';
+              let detectedName = town ? (state ? `${town} (${state})` : town) : data.display_name.split(',')[0];
+              
+              const currentLocInput = document.getElementById('locationName');
+              if (currentLocInput) {
+                currentLocInput.value = detectedName;
+              }
+            }
+          })
+          .catch(() => {
+            if (loader) loader.classList.add('hidden');
+          });
+      }, 350);
+    }
+
     function initPickerMap() {
       if (pickerMap) return;
       pickerMap = L.map('picker-map').setView([39.95, -0.10], 10);
@@ -185,6 +218,7 @@
         document.getElementById('lng').value = lng;
         document.getElementById('coordsInput').value = `${lat}, ${lng}`;
         setPickerMarker(lat, lng);
+        fetchLocationName(lat, lng);
       });
     }
 
@@ -195,7 +229,6 @@
       pickerMap.setView([lat, lng], 13);
     }
 
-    // CONVERTIDOR DE GRADOS O DECIMALES A LAT/LNG DECIMAL
     function dmsToDecimal(degrees, minutes, seconds, direction) {
       let dd = Number(degrees) + Number(minutes)/60 + Number(seconds)/3600;
       if (direction === "S" || direction === "W" || direction === "O") dd = dd * -1;
@@ -205,7 +238,7 @@
     function parseAndSetCoordinates(inputStr) {
       if (!inputStr || !inputStr.trim()) return;
 
-      // Intentar Parsear Grados Minutos Segundos (ej: 39°56'17.2"N 0°06'04.3"W)
+      // Formato Grados Minutos Segundos (ej: 39°56'17.2"N 0°06'04.3"W)
       const dmsRegex = /(\d+)[\°\s]+(\d+)[\'\s]+([\d\.]+)[\"\s]*([NnSsEeOoWw])[\s,]+(\d+)[\°\s]+(\d+)[\'\s]+([\d\.]+)[\"\s]*([NnSsEeOoWw])/;
       const dmsMatch = inputStr.match(dmsRegex);
 
@@ -216,10 +249,11 @@
         document.getElementById('lat').value = lat;
         document.getElementById('lng').value = lng;
         setPickerMarker(lat, lng);
+        fetchLocationName(lat, lng);
         return;
       }
 
-      // Intentar Parsear Decimales Simples (ej: 39.9381, -0.1012 o 39.9381 -0.1012)
+      // Formato Decimal Simple (ej: 39.9381, -0.1012)
       const parts = inputStr.split(/[\s,]+/);
       if (parts.length >= 2) {
         const lat = parseFloat(parts[0]);
@@ -229,6 +263,7 @@
           document.getElementById('lat').value = lat.toFixed(6);
           document.getElementById('lng').value = lng.toFixed(6);
           setPickerMarker(lat, lng);
+          fetchLocationName(lat, lng);
         }
       }
     }
@@ -240,6 +275,7 @@
         document.getElementById('lng').value = lng;
         document.getElementById('coordsInput').value = `${lat}, ${lng}`;
         setPickerMarker(lat, lng);
+        fetchLocationName(lat, lng);
       });
     }
 
