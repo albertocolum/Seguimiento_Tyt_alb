@@ -60,10 +60,11 @@
 
     <form id="nest-form" onsubmit="handleFormSubmit(event)" class="bg-white/95 backdrop-blur-sm p-6 md:p-8 rounded-2xl border border-brand-border shadow-md space-y-8">
       
-      <!-- UBICACIÓN Y COORDENADAS UNIFICADAS -->
+      <!-- UBICACIÓN, TIPO DE NIDO Y COORDENADAS -->
       <div class="space-y-4">
         <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i> 1. Identificación y Ubicación GPS</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Seleccionar o Crear Nido</label>
             <select id="nestSelect" onchange="onNestSelectChange(this.value)" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white font-semibold">
@@ -73,6 +74,13 @@
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Código ID del Nido *</label>
             <input type="text" id="nestId" required placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido *</label>
+            <select id="nestType" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white font-semibold text-brand-dark">
+              <option value="Nido Artificial">Nido Artificial (Caja)</option>
+              <option value="Nido Natural">Nido Natural</option>
+            </select>
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Estado Actual *</label>
@@ -223,14 +231,13 @@
   <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo</footer>
 
   <script>
-    // CLAVE UNIFICADA v9 PARA COMPATIBILIDAD CON INDEX
     function getStoredData() {
       const data = localStorage.getItem('tyto_data_v9');
       if (!data) {
-        // Datos iniciales de prueba por defecto si está vacío
         const initialNests = [
           {
             nestId: "NIDO-01",
+            nestType: "Nido Artificial",
             locationName: "Masía del Sur (Vila-real)",
             lat: 39.9381,
             lng: -0.1012,
@@ -378,6 +385,7 @@
         if (found) {
           document.getElementById('nestId').value = found.nestId;
           document.getElementById('nestId').readOnly = true;
+          document.getElementById('nestType').value = found.nestType || 'Nido Artificial';
           document.getElementById('locationName').value = found.locationName || '';
           document.getElementById('status').value = found.status || 'Activo';
           
@@ -415,6 +423,7 @@
 
       const record = {
         nestId, 
+        nestType: document.getElementById('nestType').value,
         locationName: document.getElementById('locationName').value,
         lat: parseFloat(document.getElementById('lat').value)||null, 
         lng: parseFloat(document.getElementById('lng').value)||null,
