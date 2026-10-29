@@ -41,7 +41,7 @@
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
 
-  <!-- ENCABEZADO / NAVBAR CON BOTONES DE EXPORTAR E IMPORTAR -->
+  <!-- ENCABEZADO / NAVBAR -->
   <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
       
@@ -56,7 +56,6 @@
         </div>
       </div>
 
-      <!-- NAVEGACIÓN Y BOTONES DE EXPORTAR/IMPORTAR -->
       <nav class="flex items-center space-x-1 sm:space-x-2">
         <a href="index.html" class="px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm">
           <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span>
@@ -68,11 +67,10 @@
           <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
         </a>
 
-        <!-- SEPARADOR VISUAL -->
         <div class="w-px h-6 bg-white/20 mx-1"></div>
 
         <!-- BOTÓN EXPORTAR EXCEL -->
-        <button onclick="exportDataToCSV()" title="Exportar datos a Excel / CSV" class="p-2 rounded-xl text-white/80 hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center bg-white/5 border border-white/10">
+        <button onclick="exportDataToCSV()" title="Exportar datos a Excel / CSV" class="p-2 rounded-xl text-white/80 hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center bg-white/5 border border-white/10 cursor-pointer">
           <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i>
         </button>
 
@@ -89,7 +87,6 @@
   <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     
-    <!-- HEADER DASHBOARD -->
     <div class="bg-brand-dark/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div class="max-w-2xl z-10">
         <span class="inline-block bg-white/10 text-emerald-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-emerald-500/20">Temporada de Cría Activa</span>
@@ -168,4 +165,207 @@
 
   </main>
 
-  <footer class="bg-white/90 backdrop-blur-md border-t border-brand-border py-4 mt-auto text-
+  <footer class="bg-white/90 backdrop-blur-md border-t border-brand-border py-4 mt-auto text-center text-xs text-stone-500 font-medium">
+    Tyto Alba Monitoreo — Sistema de Gestión y Conservación de Avifauna
+  </footer>
+
+  <script>
+    // GESTIÓN DE DATOS UNIFICADA (CLAVE v9) CON DATOS POR DEFECTO SI ESTÁ VACÍO
+    function getStoredData() {
+      const data = localStorage.getItem('tyto_data_v9');
+      if (!data) {
+        const initialNests = [
+          {
+            nestId: "NIDO-01",
+            locationName: "Masía del Sur (Vila-real)",
+            lat: 39.9381,
+            lng: -0.1012,
+            status: "Activo",
+            maleRing: "EBD-90812",
+            malePvcCode: "A01",
+            femaleRing: "EBD-90813",
+            femalePvcCode: "A02",
+            layDate: "2026-03-15",
+            eggCount: 5,
+            chickCount: 4,
+            healthStatus: "Excelente",
+            hatchedEggs: 4,
+            chickDeaths: 0,
+            adultDeath: "Ninguno",
+            fledgedChicks: 0,
+            notes: "Abundantes presas observadas.",
+            lastReview: "2026-04-20"
+          }
+        ];
+        localStorage.setItem('tyto_data_v9', JSON.stringify(initialNests));
+        return initialNests;
+      }
+      return JSON.parse(data);
+    }
+
+    function getStoredBioData() {
+      const data = localStorage.getItem('tyto_bio_v1');
+      return data ? JSON.parse(data) : [];
+    }
+
+    let overviewMap = null;
+    let overviewMarkersGroup = null;
+
+    function initOverviewMap() {
+      overviewMap = L.map('overview-map').setView([39.95, -0.10], 10);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(overviewMap);
+      overviewMarkersGroup = L.layerGroup().addTo(overviewMap);
+    }
+
+    function renderApp() {
+      const data = getStoredData();
+      const bioData = getStoredBioData();
+
+      document.getElementById('kpi-nests').textContent = data.filter(d => d.status === 'Activo').length;
+      document.getElementById('kpi-pairs').textContent = data.filter(d => (d.maleRing && d.maleRing !== 'Sin anillar') || (d.femaleRing && d.femaleRing !== 'Sin anillar') || d.malePvcCode || d.femalePvcCode).length;
+      document.getElementById('kpi-eggs').textContent = data.reduce((acc, curr) => acc + Number(curr.eggCount || 0), 0);
+      document.getElementById('kpi-chicks').textContent = data.reduce((acc, curr) => acc + Number(curr.chickCount || 0), 0);
+      document.getElementById('kpi-ringed').textContent = bioData.length;
+
+      const tbody = document.getElementById('dash-table-body');
+      tbody.innerHTML = '';
+      
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-stone-400">No hay nidos registrados todavía. Añade uno desde la pestaña Nidos.</td></tr>`;
+      } else {
+        data.forEach(item => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-stone-50 transition-colors">
+              <td class="px-6 py-4 font-bold text-stone-900">${item.nestId}</td>
+              <td class="px-6 py-4">${item.locationName}</td>
+              <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${item.status}</span></td>
+              <td class="px-6 py-4">${item.healthStatus || 'N/A'}</td>
+              <td class="px-6 py-4 font-semibold">${item.eggCount || 0} H / ${item.chickCount || 0} C</td>
+              <td class="px-6 py-4 text-right"><a href="control.html?edit=${item.nestId}" class="text-brand-dark font-semibold hover:underline">Ver / Editar →</a></td>
+            </tr>
+          `;
+        });
+      }
+
+      if (!overviewMap) initOverviewMap();
+      overviewMarkersGroup.clearLayers();
+      const bounds = [];
+      data.forEach(item => {
+        if (item.lat && item.lng) {
+          L.marker([item.lat, item.lng]).addTo(overviewMarkersGroup).bindPopup(`<strong>${item.nestId}</strong><br>${item.locationName}`);
+          bounds.push([item.lat, item.lng]);
+        }
+      });
+      if (bounds.length > 0) overviewMap.fitBounds(bounds, { padding: [30, 30] });
+      lucide.createIcons();
+    }
+
+    // EXPORTACIÓN A CSV / EXCEL
+    function exportDataToCSV() {
+      const nests = getStoredData();
+      if (nests.length === 0) {
+        alert("No hay registros de nidos para exportar.");
+        return;
+      }
+
+      let csvContent = "\uFEFFID Nido;Ubicacion;Latitud;Longitud;Estado;Macho Metalico;Macho PVC;Hembra Metalica;Hembra PVC;Fecha Puesta;Huevos;Crias;Salud;Huevos Eclosionados;Muerte Crias;Adulto Muerto;Pollos Volados;Ultima Revision;Notas\n";
+
+      nests.forEach(n => {
+        const row = [
+          n.nestId || '',
+          (n.locationName || '').replace(/;/g, ','),
+          n.lat || '',
+          n.lng || '',
+          n.status || '',
+          n.maleRing || '',
+          n.malePvcCode || '',
+          n.femaleRing || '',
+          n.femalePvcCode || '',
+          n.layDate || '',
+          n.eggCount || 0,
+          n.chickCount || 0,
+          n.healthStatus || '',
+          n.hatchedEggs || 0,
+          n.chickDeaths || 0,
+          n.adultDeath || 'Ninguno',
+          n.fledgedChicks || 0,
+          n.lastReview || '',
+          (n.notes || '').replace(/;/g, ',').replace(/\n/g, ' ')
+        ];
+        csvContent += row.join(";") + "\n";
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `tyto_alba_nidos_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function importDataFromCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const text = e.target.result;
+          const lines = text.split("\n");
+          if (lines.length < 2) {
+            alert("El archivo está vacío o no tiene el formato correcto.");
+            return;
+          }
+
+          const newNests = [];
+          for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const row = line.split(";");
+            if (row.length >= 5) {
+              newNests.push({
+                nestId: row[0],
+                locationName: row[1],
+                lat: row[2] ? parseFloat(row[2]) : null,
+                lng: row[3] ? parseFloat(row[3]) : null,
+                status: row[4],
+                maleRing: row[5] || '',
+                malePvcCode: row[6] || '',
+                femaleRing: row[7] || '',
+                femalePvcCode: row[8] || '',
+                layDate: row[9] || '',
+                eggCount: parseInt(row[10]) || 0,
+                chickCount: parseInt(row[11]) || 0,
+                healthStatus: row[12] || 'Excelente',
+                hatchedEggs: parseInt(row[13]) || 0,
+                chickDeaths: parseInt(row[14]) || 0,
+                adultDeath: row[15] || 'Ninguno',
+                fledgedChicks: parseInt(row[16]) || 0,
+                lastReview: row[17] || new Date().toISOString().split('T')[0],
+                notes: row[18] || ''
+              });
+            }
+          }
+
+          if (newNests.length > 0) {
+            localStorage.setItem('tyto_data_v9', JSON.stringify(newNests));
+            alert(`¡Se han importado ${newNests.length} nidos correctamente!`);
+            renderApp();
+          } else {
+            alert("No se pudieron leer registros válidos en el archivo.");
+          }
+        } catch (err) {
+          alert("Error al procesar el archivo. Asegúrate de que sea un CSV compatible.");
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file, "UTF-8");
+    }
+
+    window.addEventListener('DOMContentLoaded', renderApp);
+  </script>
+</body>
+</html>
