@@ -59,6 +59,7 @@
       </div>
     </div>
 
+    <!-- FORMULARIO DE NUEVO ANILLAMIENTO -->
     <form id="ring-form" onsubmit="handleRingSubmit(event)" class="bg-white/95 backdrop-blur-sm p-6 md:p-8 rounded-2xl border border-brand-border shadow-md space-y-8">
       
       <!-- SELECCIÓN DE NIDO Y DATOS DE CAPTURA -->
@@ -144,6 +145,41 @@
         <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md flex items-center gap-2 text-sm"><i data-lucide="save" class="w-4 h-4"></i> Guardar Registro de Anillamiento</button>
       </div>
     </form>
+
+    <!-- HISTORIAL DE AVES ANILLADAS -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
+      <div class="p-6 border-b border-brand-border flex justify-between items-center flex-wrap gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-stone-800">Historial de Aves Anilladas</h2>
+          <p class="text-xs text-stone-500 mt-1">Listado completo de pollos y adultos registrados en la nube</p>
+        </div>
+        <div>
+          <input type="text" id="searchFilter" oninput="filterRingHistory()" placeholder="Filtrar por nido o anilla..." class="px-3 py-2 border border-stone-300 rounded-xl text-xs bg-white w-64">
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b border-brand-border">
+            <tr>
+              <th class="px-4 py-3">Nido</th>
+              <th class="px-4 py-3">Fecha</th>
+              <th class="px-4 py-3">Categoría</th>
+              <th class="px-4 py-3">Anilla Metálica</th>
+              <th class="px-4 py-3">PVC</th>
+              <th class="px-4 py-3">Sexo</th>
+              <th class="px-4 py-3">Ala Max</th>
+              <th class="px-4 py-3">P8</th>
+              <th class="px-4 py-3">Tarso</th>
+              <th class="px-4 py-3">Peso</th>
+              <th class="px-4 py-3 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="ring-history-body" class="divide-y divide-brand-border font-medium text-stone-700">
+            <tr><td colspan="11" class="px-6 py-4 text-center text-stone-400">Cargando registros...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </main>
 
   <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo — Firebase Cloud Mode</footer>
@@ -162,7 +198,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Cargar nidos desde Firebase para llenar el desplegable
+    let allRings = [];
+
+    // Cargar nidos desde Firebase para el desplegable
     db.ref('nidos').on('value', snapshot => {
       const val = snapshot.val();
       const nests = val ? Object.values(val) : [];
@@ -179,6 +217,68 @@
       }
       if (currentSelected) sel.value = currentSelected;
     });
+
+    // Cargar historial de anillamientos desde Firebase
+    db.ref('anillados').on('value', snapshot => {
+      const val = snapshot.val();
+      allRings = val ? Object.values(val) : [];
+      renderRingHistory(allRings);
+    });
+
+    function renderRingHistory(data) {
+      const tbody = document.getElementById('ring-history-body');
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" class="px-6 py-4 text-center text-stone-400">No hay aves anilladas registradas todavía.</td></tr>`;
+        return;
+      }
+
+      // Ordenar por fecha más reciente primero
+      data.sort((a, b) => new Date(b.ringDate) - new Date(a.ringDate));
+
+      data.forEach(item => {
+        const badgeColor = item.birdAge === 'Adulto' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+        
+        tbody.innerHTML += `
+          <tr class="hover:bg-stone-50 transition-colors">
+            <td class="px-4 py-3 font-bold text-stone-900">${item.nestId || 'N/A'}</td>
+            <td class="px-4 py-3">${item.ringDate || ''}</td>
+            <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-[11px] font-semibold ${badgeColor}">${item.birdAge}</span></td>
+            <td class="px-4 py-3 font-mono font-bold text-sky-700">${item.metalRing}</td>
+            <td class="px-4 py-3 font-mono">${item.pvcRing || '-'}</td>
+            <td class="px-4 py-3">${item.sex || 'Desconocido'}</td>
+            <td class="px-4 py-3">${item.wingChord ? item.wingChord + ' mm' : '-'}</td>
+            <td class="px-4 py-3">${item.p8 ? item.p8 + ' mm' : '-'}</td>
+            <td class="px-4 py-3">${item.tarsus ? item.tarsus + ' mm' : '-'}</td>
+            <td class="px-4 py-3 font-semibold">${item.weight ? item.weight + ' g' : '-'}</td>
+            <td class="px-4 py-3 text-right">
+              <button onclick="deleteRingRecord('${item.metalRing}')" class="text-rose-600 hover:text-rose-800 font-semibold text-xs">Eliminar</button>
+            </td>
+          </tr>
+        `;
+      });
+      lucide.createIcons();
+    }
+
+    function filterRingHistory() {
+      const query = document.getElementById('searchFilter').value.toLowerCase();
+      const filtered = allRings.filter(item => 
+        (item.nestId && item.nestId.toLowerCase().includes(query)) ||
+        (item.metalRing && item.metalRing.toLowerCase().includes(query)) ||
+        (item.pvcRing && item.pvcRing.toLowerCase().includes(query))
+      );
+      renderRingHistory(filtered);
+    }
+
+    function deleteRingRecord(metalRing) {
+      if (confirm(`¿Estás seguro de que deseas eliminar el registro de la anilla ${metalRing}?`)) {
+        const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
+        db.ref('anillados/' + safeKey).remove()
+          .then(() => alert('Registro eliminado con éxito.'))
+          .catch(err => alert('Error al eliminar: ' + err.message));
+      }
+    }
 
     function handleRingSubmit(e) {
       e.preventDefault();
