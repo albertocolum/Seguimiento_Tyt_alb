@@ -100,8 +100,8 @@
       </div>
     </div>
 
-    <!-- TARJETAS KPI -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    <!-- TARJETAS KPI (SIN LA TARJETA DE HUEVOS) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
         <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Activos</span><div class="p-2 bg-emerald-50 rounded-xl text-emerald-700"><i data-lucide="home" class="w-5 h-5"></i></div></div>
         <div><div id="kpi-nests" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-stone-500 mt-1">Ocupación en caja</div></div>
@@ -111,14 +111,10 @@
         <div><div id="kpi-pairs" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-amber-700 mt-1">Identificadas</div></div>
       </div>
       <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Huevos</span><div class="p-2 bg-yellow-50 rounded-xl text-yellow-700"><i data-lucide="egg" class="w-5 h-5"></i></div></div>
-        <div><div id="kpi-eggs" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-yellow-700 mt-1">Puestas contadas</div></div>
-      </div>
-      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
         <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Crías</span><div class="p-2 bg-teal-50 rounded-xl text-teal-700"><i data-lucide="smile" class="w-5 h-5"></i></div></div>
         <div><div id="kpi-chicks" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-teal-700 mt-1">Eclosionadas</div></div>
       </div>
-      <a href="anillados.html" class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between cursor-pointer hover:border-sky-400 hover:ring-2 hover:ring-sky-200 transition-all group col-span-2 md:col-span-1">
+      <a href="anillados.html" class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between cursor-pointer hover:border-sky-400 hover:ring-2 hover:ring-sky-200 transition-all group">
         <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400 group-hover:text-sky-700">Anillados</span><div class="p-2 bg-sky-50 rounded-xl text-sky-700 group-hover:bg-sky-500 group-hover:text-white transition-colors"><i data-lucide="tag" class="w-5 h-5"></i></div></div>
         <div><div id="kpi-ringed" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-sky-700 mt-1 font-semibold flex items-center gap-1">Ver Biometría →</div></div>
       </a>
@@ -142,8 +138,8 @@
               <th class="px-6 py-4">ID Nido</th>
               <th class="px-6 py-4">Ubicación / Población</th>
               <th class="px-6 py-4">Estado</th>
+              <th class="px-6 py-4">Estado Nidada</th>
               <th class="px-6 py-4">Salud Crías</th>
-              <th class="px-6 py-4">Huevos / Crías</th>
               <th class="px-6 py-4 text-right">Acción</th>
             </tr>
           </thead>
@@ -170,13 +166,14 @@
   </footer>
 
   <script>
-    // GESTIÓN DE DATOS UNIFICADA (CLAVE v9) CON DATOS POR DEFECTO SI ESTÁ VACÍO
     function getStoredData() {
       const data = localStorage.getItem('tyto_data_v9');
       if (!data) {
         const initialNests = [
           {
             nestId: "NIDO-01",
+            nestType: "Nido Artificial",
+            hasCamera: "No",
             locationName: "Masía del Sur (Vila-real)",
             lat: 39.9381,
             lng: -0.1012,
@@ -185,16 +182,14 @@
             malePvcCode: "A01",
             femaleRing: "EBD-90813",
             femalePvcCode: "A02",
-            layDate: "2026-03-15",
-            eggCount: 5,
-            chickCount: 4,
+            layDate: new Date().toISOString().split('T')[0],
+            visitationState: "Huevos",
             healthStatus: "Excelente",
-            hatchedEggs: 4,
             chickDeaths: 0,
             adultDeath: "Ninguno",
             fledgedChicks: 0,
             notes: "Abundantes presas observadas.",
-            lastReview: "2026-04-20"
+            lastReview: new Date().toISOString().split('T')[0]
           }
         ];
         localStorage.setItem('tyto_data_v9', JSON.stringify(initialNests));
@@ -223,8 +218,7 @@
 
       document.getElementById('kpi-nests').textContent = data.filter(d => d.status === 'Activo').length;
       document.getElementById('kpi-pairs').textContent = data.filter(d => (d.maleRing && d.maleRing !== 'Sin anillar') || (d.femaleRing && d.femaleRing !== 'Sin anillar') || d.malePvcCode || d.femalePvcCode).length;
-      document.getElementById('kpi-eggs').textContent = data.reduce((acc, curr) => acc + Number(curr.eggCount || 0), 0);
-      document.getElementById('kpi-chicks').textContent = data.reduce((acc, curr) => acc + Number(curr.chickCount || 0), 0);
+      document.getElementById('kpi-chicks').textContent = data.filter(d => d.visitationState === 'Pollos').length;
       document.getElementById('kpi-ringed').textContent = bioData.length;
 
       const tbody = document.getElementById('dash-table-body');
@@ -239,8 +233,8 @@
               <td class="px-6 py-4 font-bold text-stone-900">${item.nestId}</td>
               <td class="px-6 py-4">${item.locationName}</td>
               <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">${item.status}</span></td>
+              <td class="px-6 py-4 font-semibold text-brand-dark">${item.visitationState || 'Huevos'}</td>
               <td class="px-6 py-4">${item.healthStatus || 'N/A'}</td>
-              <td class="px-6 py-4 font-semibold">${item.eggCount || 0} H / ${item.chickCount || 0} C</td>
               <td class="px-6 py-4 text-right"><a href="control.html?edit=${item.nestId}" class="text-brand-dark font-semibold hover:underline">Ver / Editar →</a></td>
             </tr>
           `;
@@ -268,11 +262,13 @@
         return;
       }
 
-      let csvContent = "\uFEFFID Nido;Ubicacion;Latitud;Longitud;Estado;Macho Metalico;Macho PVC;Hembra Metalica;Hembra PVC;Fecha Puesta;Huevos;Crias;Salud;Huevos Eclosionados;Muerte Crias;Adulto Muerto;Pollos Volados;Ultima Revision;Notas\n";
+      let csvContent = "\uFEFFID Nido;Tipo Nido;Fototrampeo;Ubicacion;Latitud;Longitud;Estado;Macho Metalico;Macho PVC;Hembra Metalica;Hembra PVC;Fecha Visita;Estado Nidada;Salud;Muerte Crias;Adulto Muerto;Pollos Volados;Ultima Revision;Notas\n";
 
       nests.forEach(n => {
         const row = [
           n.nestId || '',
+          n.nestType || 'Nido Artificial',
+          n.hasCamera || 'No',
           (n.locationName || '').replace(/;/g, ','),
           n.lat || '',
           n.lng || '',
@@ -282,10 +278,8 @@
           n.femaleRing || '',
           n.femalePvcCode || '',
           n.layDate || '',
-          n.eggCount || 0,
-          n.chickCount || 0,
+          n.visitationState || 'Huevos',
           n.healthStatus || '',
-          n.hatchedEggs || 0,
           n.chickDeaths || 0,
           n.adultDeath || 'Ninguno',
           n.fledgedChicks || 0,
@@ -328,19 +322,19 @@
             if (row.length >= 5) {
               newNests.push({
                 nestId: row[0],
-                locationName: row[1],
-                lat: row[2] ? parseFloat(row[2]) : null,
-                lng: row[3] ? parseFloat(row[3]) : null,
-                status: row[4],
-                maleRing: row[5] || '',
-                malePvcCode: row[6] || '',
-                femaleRing: row[7] || '',
-                femalePvcCode: row[8] || '',
-                layDate: row[9] || '',
-                eggCount: parseInt(row[10]) || 0,
-                chickCount: parseInt(row[11]) || 0,
-                healthStatus: row[12] || 'Excelente',
-                hatchedEggs: parseInt(row[13]) || 0,
+                nestType: row[1] || 'Nido Artificial',
+                hasCamera: row[2] || 'No',
+                locationName: row[3],
+                lat: row[4] ? parseFloat(row[4]) : null,
+                lng: row[5] ? parseFloat(row[5]) : null,
+                status: row[6],
+                maleRing: row[7] || '',
+                malePvcCode: row[8] || '',
+                femaleRing: row[9] || '',
+                femalePvcCode: row[10] || '',
+                layDate: row[11] || '',
+                visitationState: row[12] || 'Huevos',
+                healthStatus: row[13] || 'Excelente',
                 chickDeaths: parseInt(row[14]) || 0,
                 adultDeath: row[15] || 'Ninguno',
                 fledgedChicks: parseInt(row[16]) || 0,
