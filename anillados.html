@@ -75,13 +75,13 @@
     <div class="bg-brand-dark/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
         <span class="inline-block bg-white/10 text-sky-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-sky-500/20">Base de Datos Biométrica</span>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Registro de Anillamiento</h1>
-        <p class="text-white/70 text-sm mt-2">Control de ejemplares, anillas metálicas, códigos PVC y medidas biométricas en la nube.</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Registro de Anillamiento y Biometría</h1>
+        <p class="text-white/70 text-sm mt-2">Control completo de ejemplares, anillas metálicas, PVC y biometría.</p>
       </div>
 
       <div class="shrink-0 flex items-center gap-2">
         <button onclick="openAddModal()" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow-sm inline-flex items-center space-x-2 text-xs">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Nuevo Ejemplar</span>
+          <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Nuevo Anillamiento</span>
         </button>
       </div>
     </div>
@@ -91,20 +91,21 @@
       <div class="p-6 border-b border-brand-border flex justify-between items-center">
         <div>
           <h2 class="text-lg font-bold text-stone-800">Ejemplares Registrados</h2>
-          <p class="text-xs text-stone-500 mt-1">Listado completo sincronizado desde Firebase</p>
+          <p class="text-xs text-stone-500 mt-1">Sincronización en tiempo real con la nube</p>
         </div>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs">
           <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b border-brand-border">
             <tr>
-              <th class="px-6 py-4">Anilla Metálica</th>
-              <th class="px-6 py-4">Código PVC</th>
-              <th class="px-6 py-4">Sexo</th>
-              <th class="px-6 py-4">Edad</th>
-              <th class="px-6 py-4">Nido / Ubicación</th>
-              <th class="px-6 py-4">Fecha Anillamiento</th>
-              <th class="px-6 py-4 text-right">Acciones</th>
+              <th class="px-4 py-3">Anilla Metálica</th>
+              <th class="px-4 py-3">PVC</th>
+              <th class="px-4 py-3">Nido / Lloc</th>
+              <th class="px-4 py-3">Edad / Sexo</th>
+              <th class="px-4 py-3">Ala (mm)</th>
+              <th class="px-4 py-3">Peso (g)</th>
+              <th class="px-4 py-3">Fecha</th>
+              <th class="px-4 py-3 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody id="ringed-table-body" class="divide-y divide-brand-border font-medium text-stone-700"></tbody>
@@ -114,66 +115,107 @@
 
   </main>
 
-  <!-- MODAL PARA AÑADIR / EDITAR ANILLADO -->
+  <!-- MODAL COMPLETO DE FORMULARIO BIOMÉTRICO -->
   <div id="ringModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-6 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b pb-4">
-        <h3 id="modal-title" class="text-lg font-bold text-stone-900">Registrar Nuevo Ejemplar</h3>
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-stone-200 space-y-6 max-h-[92vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 id="modal-title" class="text-lg font-bold text-stone-900">Ficha de Anillamiento y Biometría</h3>
         <button onclick="closeAddModal()" class="text-stone-400 hover:text-stone-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
 
-      <form id="ringForm" onsubmit="saveRingedRecord(event)" class="space-y-4">
+      <form id="ringForm" onsubmit="saveRingedRecord(event)" class="space-y-6">
         <input type="hidden" id="editKey" value="">
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica *</label>
-            <input type="text" id="metalRing" required placeholder="Ej. A12345" class="w-full px-3 py-2 border rounded-xl text-sm font-mono uppercase bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Código PVC (Color)</label>
-            <input type="text" id="pvcCode" placeholder="Ej. AB12" class="w-full px-3 py-2 border rounded-xl text-sm font-mono uppercase bg-white">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Edad *</label>
-            <select id="edad" class="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold">
-              <option value="Pollo">Pollo (Nestling)</option>
-              <option value="Inmaduro">Inmaduro</option>
-              <option value="Adulto">Adulto</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Sexo *</label>
-            <select id="sexo" class="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold">
-              <option value="Desconocido">Desconocido</option>
-              <option value="Macho">Macho</option>
-              <option value="Hembra">Hembra</option>
-            </select>
+        <!-- BLOQUE 1: IDENTIFICACIÓN -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5"><i data-lucide="tag" class="w-3.5 h-3.5 text-brand-accent"></i> 1. Identificación y Nido</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Nido / Lloc *</label>
+              <select id="nestSelect" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="">Seleccionar Nido...</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica *</label>
+              <input type="text" id="metalRing" required placeholder="Ej. 1234567" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Código PVC</label>
+              <input type="text" id="pvcCode" placeholder="Ej. A1" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+            </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">ID Nido Asociado</label>
-            <input type="text" id="nestId" placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-sm bg-white font-mono">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Anillamiento *</label>
-            <input type="date" id="ringDate" required class="w-full px-3 py-2 border rounded-xl text-sm bg-white">
+        <!-- BLOQUE 2: EDAD Y SEXO -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5"><i data-lucide="user" class="w-3.5 h-3.5 text-brand-accent"></i> 2. Edad y Sexo</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Edad (EURING) *</label>
+              <select id="edad" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="1 - Polluelo / Nestling">1 - Polluelo (Nestling)</option>
+                <option value="3 - Volantón año en curso">3 - Volantón año en curso</option>
+                <option value="5 - Adulto (+1 año)">5 - Adulto (+1 año)</option>
+                <option value="4 - Desconocido tras volar">4 - Desconocido tras volar</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Sexo *</label>
+              <select id="sexo" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Desconocido">Desconocido (U)</option>
+                <option value="Macho">Macho (M)</option>
+                <option value="Hembra">Hembra (F)</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones / Medidas Biométricas</label>
-          <textarea id="observaciones" rows="2" placeholder="Peso, cuerda alar, tarsos..." class="w-full px-3 py-2 border rounded-xl text-sm bg-white"></textarea>
+        <!-- BLOQUE 3: BIOMETRÍA COMPLETA -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5"><i data-lucide="ruler" class="w-3.5 h-3.5 text-brand-accent"></i> 3. Parámetros Biométricos</h4>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Ala (mm)</label>
+              <input type="number" step="0.1" id="ala" placeholder="Ej. 290" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-mono">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Tarso (mm)</label>
+              <input type="number" step="0.1" id="tarso" placeholder="Ej. 65.2" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-mono">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Peso (g)</label>
+              <input type="number" step="0.1" id="peso" placeholder="Ej. 310" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-mono">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Grasa (0-8)</label>
+              <input type="number" min="0" max="8" id="grasa" placeholder="0" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-mono">
+            </div>
+          </div>
+        </div>
+
+        <!-- BLOQUE 4: FECHA Y OBSERVACIONES -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-accent"></i> 4. Control de Campo</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Fecha *</label>
+              <input type="date" id="ringDate" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Anillador / Taller</label>
+              <input type="text" id="anillador" placeholder="Ej. GER / Nombre" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones</label>
+            <textarea id="observaciones" rows="2" placeholder="Detalles de plumaje, estado de salud..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
+          </div>
         </div>
 
         <div class="flex justify-end gap-3 pt-4 border-t">
           <button type="button" onclick="closeAddModal()" class="px-4 py-2 border rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-50">Cancelar</button>
-          <button type="submit" class="bg-brand-accent hover:bg-brand-accentHover text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-md">Guardar Ejemplar</button>
+          <button type="submit" class="bg-brand-accent hover:bg-brand-accentHover text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-md">Guardar en la Nube</button>
         </div>
       </form>
     </div>
@@ -196,26 +238,43 @@
     const db = firebase.database();
 
     let allRingedData = [];
+    let allNestsData = [];
+
+    // Cargar nidos para la selección
+    db.ref('nidos').on('value', snapshot => {
+      const val = snapshot.val();
+      allNestsData = val ? Object.values(val) : [];
+      const sel = document.getElementById('nestSelect');
+      sel.innerHTML = '<option value="">Seleccionar Nido...</option>';
+      allNestsData.forEach(n => {
+        sel.innerHTML += `<option value="${n.nestId}">${n.nestId} (${n.locationName})</option>`;
+      });
+    });
 
     function openAddModal(key = '') {
       document.getElementById('ringModal').classList.remove('hidden');
       document.getElementById('ringForm').reset();
       document.getElementById('editKey').value = '';
-      document.getElementById('modal-title').textContent = 'Registrar Nuevo Ejemplar';
+      document.getElementById('modal-title').textContent = 'Ficha de Anillamiento y Biometría';
       document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
 
       if (key !== '') {
         const item = allRingedData.find(d => String(d.id) === String(key));
         if (item) {
           document.getElementById('editKey').value = item.id;
+          document.getElementById('nestSelect').value = item.nestId || '';
           document.getElementById('metalRing').value = item.metalRing || '';
           document.getElementById('pvcCode').value = item.pvcCode || '';
-          document.getElementById('edad').value = item.edad || 'Pollo';
+          document.getElementById('edad').value = item.edad || '1 - Polluelo / Nestling';
           document.getElementById('sexo').value = item.sexo || 'Desconocido';
-          document.getElementById('nestId').value = item.nestId || '';
+          document.getElementById('ala').value = item.ala || '';
+          document.getElementById('tarso').value = item.tarso || '';
+          document.getElementById('peso').value = item.peso || '';
+          document.getElementById('grasa').value = item.grasa || '';
           document.getElementById('ringDate').value = item.ringDate || new Date().toISOString().split('T')[0];
+          document.getElementById('anillador').value = item.anillador || '';
           document.getElementById('observaciones').value = item.observaciones || '';
-          document.getElementById('modal-title').textContent = 'Editar Ejemplar Anillado';
+          document.getElementById('modal-title').textContent = 'Editar Registro Biométrico';
         }
       }
     }
@@ -230,12 +289,17 @@
       const metalRing = document.getElementById('metalRing').value.trim().toUpperCase();
 
       const record = {
+        nestId: document.getElementById('nestSelect').value,
         metalRing,
         pvcCode: document.getElementById('pvcCode').value.trim().toUpperCase(),
         edad: document.getElementById('edad').value,
         sexo: document.getElementById('sexo').value,
-        nestId: document.getElementById('nestId').value.trim(),
+        ala: document.getElementById('ala').value,
+        tarso: document.getElementById('tarso').value,
+        peso: document.getElementById('peso').value,
+        grasa: document.getElementById('grasa').value,
         ringDate: document.getElementById('ringDate').value,
+        anillador: document.getElementById('anillador').value,
         observaciones: document.getElementById('observaciones').value.trim()
       };
 
@@ -252,7 +316,7 @@
     }
 
     function deleteRingedRecord(key) {
-      if (confirm('¿Deseas eliminar este registro de anillamiento?')) {
+      if (confirm('¿Deseas eliminar este registro biométrico de la nube?')) {
         db.ref('anillados/' + key).remove();
       }
     }
@@ -276,20 +340,21 @@
       tbody.innerHTML = '';
 
       if (allRingedData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-6 text-center text-stone-400 italic">No hay ejemplares anillados registrados todavía en Firebase.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-6 text-center text-stone-400 italic">No hay ejemplares anillados registrados todavía en Firebase.</td></tr>`;
       } else {
         allRingedData.forEach(item => {
           tbody.innerHTML += `
             <tr class="hover:bg-stone-50 transition-colors">
-              <td class="px-6 py-4 font-mono font-bold text-stone-900">${item.metalRing || 'Sin anilla'}</td>
-              <td class="px-6 py-4 font-mono text-sky-700 font-semibold">${item.pvcCode || '-'}</td>
-              <td class="px-6 py-4">${item.sexo || 'Desconocido'}</td>
-              <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">${item.edad || '-'}</span></td>
-              <td class="px-6 py-4 font-mono">${item.nestId || 'General'}</td>
-              <td class="px-6 py-4">${item.ringDate || '-'}</td>
-              <td class="px-6 py-4 text-right space-x-2">
-                <button onclick="openAddModal('${item.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-2.5 py-1 rounded-lg">Editar</button>
-                <button onclick="deleteRingedRecord('${item.id}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold px-2.5 py-1 rounded-lg">Borrar</button>
+              <td class="px-4 py-3 font-mono font-bold text-stone-900">${item.metalRing || 'Sin anilla'}</td>
+              <td class="px-4 py-3 font-mono text-sky-700 font-semibold">${item.pvcCode || '-'}</td>
+              <td class="px-4 py-3 font-mono">${item.nestId || 'General'}</td>
+              <td class="px-4 py-3">${item.sexo || 'U'} / <span class="text-xs font-semibold">${item.edad || '-'}</span></td>
+              <td class="px-4 py-3 font-mono">${item.ala ? item.ala + ' mm' : '-'}</td>
+              <td class="px-4 py-3 font-mono">${item.peso ? item.peso + ' g' : '-'}</td>
+              <td class="px-4 py-3">${item.ringDate || '-'}</td>
+              <td class="px-4 py-3 text-right space-x-1">
+                <button onclick="openAddModal('${item.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-2 py-1 rounded-lg text-xs">Editar</button>
+                <button onclick="deleteRingedRecord('${item.id}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold px-2 py-1 rounded-lg text-xs">Borrar</button>
               </td>
             </tr>
           `;
