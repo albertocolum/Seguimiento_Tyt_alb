@@ -234,7 +234,6 @@
         return;
       }
 
-      // Ordenar por fecha más reciente primero
       data.sort((a, b) => new Date(b.ringDate) - new Date(a.ringDate));
 
       data.forEach(item => {
@@ -283,15 +282,19 @@
     function handleRingSubmit(e) {
       e.preventDefault();
       const metalRing = document.getElementById('metalRing').value.trim().toUpperCase();
+      const pvcRing = document.getElementById('pvcRing').value.trim().toUpperCase();
       const currentNest = document.getElementById('nestSelect').value;
+      const ringDate = document.getElementById('ringDate').value;
+      const birdAge = document.getElementById('birdAge').value;
+      const sex = document.getElementById('sex').value;
       
       const ringRecord = {
         metalRing,
         nestId: currentNest,
-        ringDate: document.getElementById('ringDate').value,
-        birdAge: document.getElementById('birdAge').value,
-        pvcRing: document.getElementById('pvcRing').value.trim().toUpperCase(),
-        sex: document.getElementById('sex').value,
+        ringDate,
+        birdAge,
+        pvcRing,
+        sex,
         wingChord: parseFloat(document.getElementById('wingChord').value) || null,
         p8: parseFloat(document.getElementById('p8').value) || null,
         tarsus: parseFloat(document.getElementById('tarsus').value) || null,
@@ -299,24 +302,58 @@
         ringNotes: document.getElementById('ringNotes').value
       };
 
+      // 1. Guardar el registro de anillamiento
       db.ref('anillados/' + metalRing.replace(/[\/\.#$\[\]]/g, '_')).set(ringRecord, err => {
         if (err) {
           alert('Error al guardar el registro: ' + err.message);
+          return;
+        }
+
+        // 2. Sincronizar automáticamente con la ficha del Nido correspondiente
+        if (currentNest) {
+          db.ref('nidos/' + currentNest).once('value', snapshot => {
+            const nestData = snapshot.val() || {};
+            
+            // Construir la nueva entrada para el historial del nido
+            const pvcText = pvcRing ? ` (PVC: ${pvcRing})` : '';
+            const historyEntry = `[${ringDate}] 🏷️ Anillado ${birdAge}: Anilla ${metalRing}${pvcText} | Sexo: ${sex}`;
+            
+            const updatedNotes = nestData.notes 
+              ? `${historyEntry}\n---\n${nestData.notes}` 
+              : historyEntry;
+
+            const updates = { notes: updatedNotes };
+
+            // Si es Adulto y se ha indicado Sexo Macho o Hembra, asignarlo a la Pareja del Nido
+            if (birdAge === 'Adulto') {
+              if (sex === 'Macho') {
+                updates.maleRing = metalRing;
+                if (pvcRing) updates.malePvcCode = pvcRing;
+              } else if (sex === 'Hembra') {
+                updates.femaleRing = metalRing;
+                if (pvcRing) updates.femalePvcCode = pvcRing;
+              }
+            }
+
+            // Guardar cambios en el nido
+            db.ref('nidos/' + currentNest).update(updates);
+          });
+        }
+
+        // 3. Confirmar y preguntar al usuario
+        const keepInNest = confirm('¡Anillamiento registrado y sincronizado en el nido con éxito!\n\n¿Deseas anillar otra ave en este mismo nido?');
+        
+        if (keepInNest) {
+          document.getElementById('metalRing').value = '';
+          document.getElementById('pvcRing').value = '';
+          document.getElementById('weight').value = '';
+          document.getElementById('wingChord').value = '';
+          document.getElementById('p8').value = '';
+          document.getElementById('tarsus').value = '';
+          document.getElementById('ringNotes').value = '';
+          document.getElementById('metalRing').focus();
         } else {
-          const keepInNest = confirm('¡Registro guardado con éxito!\n\n¿Deseas anillar otra ave en este mismo nido?');
-          
-          if (keepInNest) {
-            document.getElementById('metalRing').value = '';
-            document.getElementById('pvcRing').value = '';
-            document.getElementById('weight').value = '';
-            document.getElementById('wingChord').value = '';
-            document.getElementById('p8').value = '';
-            document.getElementById('tarsus').value = '';
-            document.getElementById('ringNotes').value = '';
-            document.getElementById('metalRing').focus();
-          } else {
-            window.location.href = 'index.html';
-          }
+          window.location.href = 'index.html';
         }
       });
     }
