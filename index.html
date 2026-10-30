@@ -3,21 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Iniciar Sesión</title>
+  <title>Tyto Alba | Dashboard Principal</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- LIBRERÍA DE ICONOS LUCIDE -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- LIBRERÍAS DE LEAFLET (MAPA) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <!-- LIBRERÍAS DE FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  
+  <!-- LIBRERÍA SHEETJS PARA EXCEL -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            brand: { dark: '#1e382b', hover: '#162b20', accent: '#c88a4b', accentHover: '#b5793e', bg: '#f4f3ed', border: '#e5e3d7' }
+            brand: {
+              dark: '#1e382b',
+              hover: '#162b20',
+              accent: '#c88a4b',
+              accentHover: '#b5793e',
+              bg: '#f4f3ed',
+              border: '#e5e3d7'
+            }
           }
         }
       }
@@ -25,41 +40,141 @@
   </script>
   <style>
     body {
-      background-image: linear-gradient(rgba(30, 41, 59, 0.6), rgba(30, 41, 59, 0.6)), url('https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/fondo.jpg');
+      background-image: linear-gradient(rgba(30, 41, 59, 0.45), rgba(30, 41, 59, 0.45)), url('https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/fondo.jpg');
       background-attachment: fixed;
-      background-position: center;
+      background-position: center 25%;
+      background-repeat: no-repeat;
       background-size: cover;
     }
+    .leaflet-popup-content-wrapper { border-radius: 0.75rem; padding: 0.25rem; }
+    #overview-map { min-height: 320px; width: 100%; }
   </style>
 </head>
-<body class="text-stone-800 font-sans min-h-screen flex items-center justify-center p-4">
+<body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
 
-  <div class="bg-white/95 backdrop-blur-md p-8 rounded-2xl border border-brand-border shadow-xl w-full max-w-md space-y-6">
-    <div class="text-center space-y-2">
-      <div class="inline-flex p-3 bg-brand-dark rounded-2xl text-emerald-400 mb-2">
-        <i data-lucide="bird" class="w-8 h-8"></i>
+  <!-- CABECERA CON EL LOGOTIPO DEL GER ADAPTADO -->
+  <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+      
+      <div class="flex items-center space-x-3">
+        <!-- Logotipo adaptado en un contenedor circular elegante -->
+        <div class="w-10 h-10 rounded-full bg-white p-0.5 border-2 border-emerald-500/30 flex items-center justify-center overflow-hidden shadow-inner">
+          <img src="https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/logo_ger.png" alt="Grupo Naturalista GER" class="w-full h-full object-cover rounded-full" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%231e382b\' stroke-width=\'2\'><circle cx=\'12\' cy=\'12\' r=\'10\'/><path d=\'M12 8v8m-4-4h8\'/></svg>'">
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span class="text-lg font-bold tracking-tight">Tyto Alba</span>
+          <span class="text-white/40 font-light">|</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">GER</span>
+        </div>
       </div>
-      <h1 class="text-2xl font-bold text-brand-dark">Tyto Alba Monitoreo</h1>
-      <p class="text-xs text-stone-500">Inicia sesión para acceder al sistema de campo</p>
+
+      <nav class="flex items-center space-x-1 sm:space-x-2">
+        <a href="index.html" class="px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span>
+        </a>
+        <a href="control.html" class="px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+          <i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span>
+        </a>
+        <a href="anillados.html" class="px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+          <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
+        </a>
+      </nav>
+
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
+    
+    <div class="bg-brand-dark/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div class="max-w-2xl z-10">
+        <span class="inline-block bg-white/10 text-emerald-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-emerald-500/20">Sincronización Cloud Activa</span>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Resumen de Inspecciones de Campo</h1>
+        <p class="text-white/70 text-sm mt-2 leading-relaxed">Consulte los datos sincronizados en tiempo real o gestione copias de seguridad mediante Excel.</p>
+      </div>
+      
+      <!-- BOTONES DE ACCIÓN RÁPIDA (CON FLECHAS DE EXCEL) -->
+      <div class="z-10 shrink-0 flex flex-wrap items-center gap-1.5">
+        <a href="control.html" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-3 py-2 rounded-lg transition-all shadow-sm inline-flex items-center space-x-1 text-[11px]">
+          <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i><span>Nuevo Nido</span>
+        </a>
+        <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-2 rounded-lg transition-all shadow-sm inline-flex items-center space-x-1 text-[11px]" title="Exportar a Excel">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i><span>Exportar</span>
+        </button>
+        <label class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-3 py-2 rounded-lg transition-all shadow-sm inline-flex items-center space-x-1 text-[11px] cursor-pointer" title="Importar desde Excel">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i><span>Importar</span>
+          <input type="file" id="excelFileIn" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)" class="hidden">
+        </label>
+      </div>
     </div>
 
-    <form onsubmit="handleLogin(event)" class="space-y-4">
-      <div>
-        <label class="block text-xs font-bold text-stone-600 mb-1">Correo Electrónico</label>
-        <input type="email" id="email" required placeholder="tu_correo@ejemplo.com" class="w-full px-3.5 py-2.5 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark bg-white">
+    <!-- TARJETAS KPI -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Activos</span><div class="p-2 bg-emerald-50 rounded-xl text-emerald-700"><i data-lucide="home" class="w-5 h-5"></i></div></div>
+        <div><div id="kpi-nests" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-stone-500 mt-1">Ocupación en caja</div></div>
       </div>
-      <div>
-        <label class="block text-xs font-bold text-stone-600 mb-1">Contraseña</label>
-        <input type="password" id="password" required placeholder="••••••••" class="w-full px-3.5 py-2.5 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-brand-dark bg-white">
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Inactivos</span><div class="p-2 bg-rose-50 rounded-xl text-rose-700"><i data-lucide="home-off" class="w-5 h-5"></i></div></div>
+        <div><div id="kpi-inactive" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-rose-700 mt-1">Inactivos / Abandonados</div></div>
       </div>
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Parejas</span><div class="p-2 bg-amber-50 rounded-xl text-amber-700"><i data-lucide="heart" class="w-5 h-5"></i></div></div>
+        <div><div id="kpi-pairs" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-amber-700 mt-1">Identificadas</div></div>
+      </div>
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Crías</span><div class="p-2 bg-teal-50 rounded-xl text-teal-700"><i data-lucide="smile" class="w-5 h-5"></i></div></div>
+        <div><div id="kpi-chicks" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-teal-700 mt-1">Eclosionadas</div></div>
+      </div>
+      <a href="anillados.html" class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between cursor-pointer hover:border-sky-400 hover:ring-2 hover:ring-sky-200 transition-all group col-span-2 md:col-span-1">
+        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400 group-hover:text-sky-700">Anillados</span><div class="p-2 bg-sky-50 rounded-xl text-sky-700 group-hover:bg-sky-500 group-hover:text-white transition-colors"><i data-lucide="tag" class="w-5 h-5"></i></div></div>
+        <div><div id="kpi-ringed" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-sky-700 mt-1 font-semibold flex items-center gap-1">Ver Biometría →</div></div>
+      </a>
+    </div>
 
-      <div id="error-msg" class="text-xs text-rose-600 font-semibold hidden text-center"></div>
+    <!-- TABLA RESUMEN CON PAREJAS Y ACCIONES -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
+      <div class="p-6 border-b border-brand-border flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-bold text-stone-800">Resumen de Nidos y Parejas Asignadas</h2>
+          <p class="text-xs text-stone-500 mt-1">Estado actual y adultos anillados en cada caja</p>
+        </div>
+        <a href="control.html" class="text-xs font-bold text-brand-dark hover:underline flex items-center gap-1">
+          Gestionar nidos <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b border-brand-border">
+            <tr>
+              <th class="px-6 py-4">ID Nido</th>
+              <th class="px-6 py-4">Ubicación</th>
+              <th class="px-6 py-4">Estado</th>
+              <th class="px-6 py-4">Macho (Anilla / PVC)</th>
+              <th class="px-6 py-4">Hembra (Anilla / PVC)</th>
+              <th class="px-6 py-4 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="dash-table-body" class="divide-y divide-brand-border font-medium text-stone-700"></tbody>
+        </table>
+      </div>
+    </div>
 
-      <button type="submit" class="w-full bg-brand-accent hover:bg-brand-accentHover text-white font-semibold py-3 rounded-xl shadow-md transition-all text-sm flex items-center justify-center gap-2">
-        <i data-lucide="log-in" class="w-4 h-4"></i> Entrar al Sistema
-      </button>
-    </form>
-  </div>
+    <!-- MAPA GENERAL -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
+      <div class="p-6 border-b border-brand-border">
+        <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2">
+          <i data-lucide="map" class="w-5 h-5 text-brand-dark"></i> 
+          Mapa de Localización de Nidos
+        </h2>
+      </div>
+      <div id="overview-map"></div>
+    </div>
+
+  </main>
+
+  <footer class="bg-white/90 backdrop-blur-md border-t border-brand-border py-4 mt-auto text-center text-xs text-stone-500 font-medium">
+    Tyto Alba Monitoreo — Sincronización Nube Activa
+  </footer>
 
   <script>
     const firebaseConfig = {
@@ -73,30 +188,211 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+    const db = firebase.database();
 
-    function handleLogin(e) {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const errorDiv = document.getElementById('error-msg');
+    let overviewMap = null;
+    let overviewMarkersGroup = null;
+    let globalNestsData = [];
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          window.location.href = 'index.html';
-        })
-        .catch(err => {
-          errorDiv.textContent = 'Credenciales incorrectas o usuario no registrado.';
-          errorDiv.classList.remove('hidden');
-        });
+    function initOverviewMap() {
+      if (overviewMap) return;
+      overviewMap = L.map('overview-map').setView([39.95, -0.10], 10);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+        attribution: '&copy; OpenStreetMap' 
+      }).addTo(overviewMap);
+      overviewMarkersGroup = L.layerGroup().addTo(overviewMap);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      lucide.createIcons();
-      // Si ya está logueado, redirigir directo al index
-      auth.onAuthStateChanged(user => {
-        if (user) window.location.href = 'index.html';
+    db.ref('anillados').on('value', snapshot => {
+      const val = snapshot.val();
+      const ringedArray = val ? Object.values(val) : [];
+      document.getElementById('kpi-ringed').textContent = ringedArray.length;
+    });
+
+    function deleteNestRecord(nestId) {
+      if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el ${nestId} de la base de datos?`)) {
+        db.ref('nidos/' + nestId).remove()
+          .then(() => alert(`El nido ${nestId} ha sido eliminado.`))
+          .catch(err => alert('Error al eliminar: ' + err.message));
+      }
+    }
+
+    function exportToExcel() {
+      if (!globalNestsData || globalNestsData.length === 0) {
+        alert('No hay datos de nidos para exportar.');
+        return;
+      }
+
+      const excelData = globalNestsData.map(item => ({
+        "ID Nido": item.nestId || '',
+        "Tipo de Nido": item.nestType || '',
+        "Ubicación": item.locationName || '',
+        "Estado": item.status || '',
+        "Latitud": item.lat || '',
+        "Longitud": item.lng || '',
+        "Cámara Fototrampeo": item.hasCamera || 'No',
+        "Anilla Macho": item.maleRing || '',
+        "PVC Macho": item.malePvcCode || '',
+        "Anilla Hembra": item.femaleRing || '',
+        "PVC Hembra": item.femalePvcCode || '',
+        "Fecha de Visita": item.layDate || '',
+        "Estado Nidada": item.visitationState || '',
+        "Salud General": item.healthStatus || '',
+        "Bajas Pollos": item.chickDeaths || 0,
+        "Adulto Muerto": item.adultDeath || 'Ninguno',
+        "Pollos Volados": item.fledgedChicks || 0,
+        "Última revisión": item.lastReview || ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Nidos Tyto Alba");
+      XLSX.writeFile(workbook, "Seguimiento_Nidos_TytoAlba.xlsx");
+    }
+
+    function importFromExcel(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+
+          if (jsonRows.length === 0) {
+            alert('El archivo Excel está vacío.');
+            return;
+          }
+
+          let importedCount = 0;
+          jsonRows.forEach(row => {
+            const nestId = row["ID Nido"] || row["nestId"] || row["ID"];
+            if (nestId) {
+              const record = {
+                nestId: String(nestId).trim(),
+                nestType: row["Tipo de Nido"] || row["nestType"] || "Nido Artificial",
+                locationName: row["Ubicación"] || row["locationName"] || "Sin ubicación",
+                status: row["Estado"] || row["status"] || "Activo",
+                lat: parseFloat(row["Latitud"] || row["lat"]) || null,
+                lng: parseFloat(row["Longitud"] || row["lng"]) || null,
+                hasCamera: row["Cámara Fototrampeo"] || row["hasCamera"] || "No",
+                maleRing: row["Anilla Macho"] || row["maleRing"] || "Sin anillar",
+                malePvcCode: row["PVC Macho"] || row["malePvcCode"] || "",
+                femaleRing: row["Anilla Hembra"] || row["femaleRing"] || "Sin anillar",
+                femalePvcCode: row["PVC Hembra"] || row["femalePvcCode"] || "",
+                layDate: row["Fecha de Visita"] || row["layDate"] || new Date().toISOString().split('T')[0],
+                visitationState: row["Estado Nidada"] || row["visitationState"] || "Huevos",
+                healthStatus: row["Salud General"] || row["healthStatus"] || "Excelente",
+                chickDeaths: parseInt(row["Bajas Pollos"] || row["chickDeaths"]) || 0,
+                adultDeath: row["Adulto Muerto"] || row["adultDeath"] || "Ninguno",
+                fledgedChicks: parseInt(row["Pollos Volados"] || row["fledgedChicks"]) || 0,
+                notes: row["Notas"] || row["notes"] || "Importado desde Excel",
+                lastReview: new Date().toISOString().split('T')[0]
+              };
+
+              db.ref('nidos/' + record.nestId).set(record);
+              importedCount++;
+            }
+          });
+
+          alert(`¡Se han importado/actualizado ${importedCount} nidos con éxito en la nube!`);
+          document.getElementById('excelFileIn').value = '';
+        } catch (err) {
+          alert('Error al procesar el archivo Excel: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function renderData(data) {
+      globalNestsData = data;
+
+      document.getElementById('kpi-nests').textContent = data.filter(d => d.status === 'Activo').length;
+      document.getElementById('kpi-inactive').textContent = data.filter(d => d.status === 'Inactivo' || d.status === 'Abandonado').length;
+      document.getElementById('kpi-pairs').textContent = data.filter(d => (d.maleRing && d.maleRing !== 'Sin anillar') || (d.femaleRing && d.femaleRing !== 'Sin anillar') || d.malePvcCode || d.femalePvcCode).length;
+      document.getElementById('kpi-chicks').textContent = data.filter(d => d.visitationState === 'Pollos').length;
+
+      const tbody = document.getElementById('dash-table-body');
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-stone-400">No hay nidos guardados en la nube. Añade uno o importa un Excel.</td></tr>`;
+      } else {
+        data.forEach(item => {
+          const badgeColor = item.status === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
+          
+          const maleInfo = (item.maleRing && item.maleRing !== 'Sin anillar') ? `${item.maleRing} ${item.malePvcCode ? '('+item.malePvcCode+')' : ''}` : '<span class="text-stone-400 italic">Sin anillar</span>';
+          const femaleInfo = (item.femaleRing && item.femaleRing !== 'Sin anillar') ? `${item.femaleRing} ${item.femalePvcCode ? '('+item.femalePvcCode+')' : ''}` : '<span class="text-stone-400 italic">Sin anillar</span>';
+
+          tbody.innerHTML += `
+            <tr class="hover:bg-stone-50 transition-colors">
+              <td class="px-6 py-4 font-bold text-stone-900">${item.nestId}</td>
+              <td class="px-6 py-4">${item.locationName}</td>
+              <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeColor}">${item.status}</span></td>
+              <td class="px-6 py-4 font-mono text-stone-700">${maleInfo}</td>
+              <td class="px-6 py-4 font-mono text-stone-700">${femaleInfo}</td>
+              <td class="px-6 py-4 text-right space-x-2">
+                <a href="control.html?edit=${item.nestId}&mode=view" class="inline-block bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold px-2.5 py-1 rounded-lg">Ver</a>
+                <a href="control.html?edit=${item.nestId}&mode=edit" class="inline-block bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-2.5 py-1 rounded-lg">Editar</a>
+                <button onclick="deleteNestRecord('${item.nestId}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold px-2.5 py-1 rounded-lg">Borrar</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      if (!overviewMap) {
+        initOverviewMap();
+      } else {
+        overviewMap.invalidateSize();
+      }
+
+      overviewMarkersGroup.clearLayers();
+      const bounds = [];
+
+      data.forEach(item => {
+        if (item.lat && item.lng) {
+          const isActive = item.status === 'Activo';
+          const pinColor = isActive ? '#10b981' : '#94a3b8';
+
+          const customIcon = L.divIcon({
+            className: 'custom-pin',
+            html: `<div style="background-color: ${pinColor}; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+          });
+
+          L.marker([item.lat, item.lng], { icon: customIcon })
+            .addTo(overviewMarkersGroup)
+            .bindPopup(`<strong>${item.nestId}</strong><br>${item.locationName}<br><span style="color: ${pinColor}; font-weight: bold;">Estado: ${item.status}</span>`);
+          
+          bounds.push([item.lat, item.lng]);
+        }
       });
+
+      if (bounds.length > 0) overviewMap.fitBounds(bounds, { padding: [30, 30] });
+      
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+
+    db.ref('nidos').on('value', snapshot => {
+      const val = snapshot.val();
+      const nestsArray = val ? Object.values(val) : [];
+      renderData(nestsArray);
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initOverviewMap();
+      setTimeout(() => {
+        if (overviewMap) overviewMap.invalidateSize();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }, 300);
     });
   </script>
 </body>
