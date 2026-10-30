@@ -34,6 +34,12 @@
       background-size: cover;
     }
     .leaflet-popup-content-wrapper { border-radius: 0.75rem; padding: 0.25rem; }
+    .disabled-form input, .disabled-form select, .disabled-form textarea {
+      background-color: #f3f4f6 !important;
+      color: #4b5563 !important;
+      cursor: not-allowed !important;
+      pointer-events: none !important;
+    }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
@@ -57,8 +63,11 @@
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     <div class="bg-white/95 backdrop-blur-sm p-6 rounded-2xl border border-brand-border shadow-md flex justify-between items-center">
       <div>
-        <h2 class="text-2xl font-bold text-brand-dark">Gestión y Registro de Inspecciones</h2>
-        <p class="text-stone-500 text-sm mt-1">Sincronización en tiempo real activa en la nube.</p>
+        <h2 id="form-title" class="text-2xl font-bold text-brand-dark">Gestión y Registro de Inspecciones</h2>
+        <p id="form-subtitle" class="text-stone-500 text-sm mt-1">Sincronización en tiempo real activa en la nube.</p>
+      </div>
+      <div id="view-mode-badge" class="hidden">
+        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider border border-amber-300">Modo Solo Lectura</span>
       </div>
     </div>
 
@@ -77,7 +86,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Código ID del Nido *</label>
-            <input type="text" id="nestId" required placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm">
+            <input type="text" id="nestId" required placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido *</label>
@@ -119,7 +128,7 @@
               <span class="text-xs font-bold text-brand-dark block">Coordenadas GPS (Latitud, Longitud)</span>
               <span class="text-[11px] text-stone-500">Acepta formato decimal (<code>39.9381, -0.1012</code>) o grados (<code>39°56'17.2"N 0°06'04.3"W</code>)</span>
             </div>
-            <button type="button" onclick="getGPSLocation()" class="bg-brand-dark text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm hover:bg-brand-hover">
+            <button type="button" id="gps-btn" onclick="getGPSLocation()" class="bg-brand-dark text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm hover:bg-brand-hover">
               <i data-lucide="locate-fixed" class="w-3.5 h-3.5 text-emerald-400"></i> Usar mi GPS
             </button>
           </div>
@@ -223,7 +232,7 @@
           <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> 5. Observaciones y Notas de Campo (Historial)
         </h3>
         
-        <div class="space-y-2">
+        <div id="current-note-box" class="space-y-2">
           <label class="block text-xs font-bold text-stone-600">Comentario para la Visita Actual</label>
           <textarea id="currentNote" rows="2" placeholder="Ej. Se anillan ambos adultos, se observa buena actividad..." class="w-full px-3 py-2 border rounded-xl text-sm bg-white"></textarea>
         </div>
@@ -233,12 +242,11 @@
           <div id="notesHistory" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs font-mono text-stone-700 max-h-48 overflow-y-auto space-y-2">
             <span class="text-stone-400 italic">No hay visitas anteriores registradas.</span>
           </div>
-          <!-- Campo oculto para conservar el historial completo en Firebase -->
           <input type="hidden" id="notes" value="">
         </div>
       </div>
 
-      <div class="flex justify-end pt-4 border-t">
+      <div id="submit-btn-container" class="flex justify-end pt-4 border-t">
         <button type="submit" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-6 py-3 rounded-xl shadow-md flex items-center gap-2 text-sm"><i data-lucide="save" class="w-4 h-4"></i> Guardar en la Nube</button>
       </div>
     </form>
@@ -263,6 +271,7 @@
     let allNests = [];
     let pickerMap = null, pickerMarker = null;
     let initialLoadDone = false;
+    let currentMode = 'edit';
 
     db.ref('nidos').on('value', snapshot => {
       const val = snapshot.val();
@@ -273,15 +282,52 @@
         initialLoadDone = true;
         const urlParams = new URLSearchParams(window.location.search);
         const editId = urlParams.get('edit');
+        currentMode = urlParams.get('mode') || 'edit';
+
         if (editId) {
           document.getElementById('nestSelect').value = editId;
           onNestSelectChange(editId);
         }
+
+        applyModeRestrictions();
       }
     });
 
+    function applyModeRestrictions() {
+      if (currentMode === 'view') {
+        document.getElementById('form-title').textContent = 'Visualización de Ficha de Nido (Solo Lectura)';
+        document.getElementById('form-subtitle').textContent = 'Modo de consulta activo. No es posible editar ningún parámetro.';
+        document.getElementById('view-mode-badge').classList.remove('hidden');
+
+        // Bloquear todos los inputs, selects y textareas
+        const formElements = document.querySelectorAll('#nest-form input, #nest-form select, #nest-form textarea');
+        formElements.forEach(el => {
+          el.disabled = true;
+          el.setAttribute('readonly', 'readonly');
+        });
+
+        document.getElementById('nest-form').classList.add('disabled-form');
+
+        // Ocultar botones interactivos
+        const gpsBtn = document.getElementById('gps-btn');
+        if (gpsBtn) gpsBtn.style.display = 'none';
+        
+        const submitBtnContainer = document.getElementById('submit-btn-container');
+        if (submitBtnContainer) submitBtnContainer.style.display = 'none';
+
+        const currentNoteBox = document.getElementById('current-note-box');
+        if (currentNoteBox) currentNoteBox.style.display = 'none';
+      } else {
+        // Modo edición: asegurarse de que el ID sea editable
+        const nestIdInput = document.getElementById('nestId');
+        nestIdInput.disabled = false;
+        nestIdInput.removeAttribute('readonly');
+      }
+    }
+
     let geoTimeout = null;
     function fetchLocationName(lat, lng) {
+      if (currentMode === 'view') return;
       const loader = document.getElementById('geo-loader');
       if (loader) loader.classList.remove('hidden');
 
@@ -308,15 +354,18 @@
       if (pickerMap) return;
       pickerMap = L.map('picker-map').setView([39.95, -0.10], 10);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(pickerMap);
-      pickerMap.on('click', e => {
-        const lat = e.latlng.lat.toFixed(6);
-        const lng = e.latlng.lng.toFixed(6);
-        document.getElementById('lat').value = lat;
-        document.getElementById('lng').value = lng;
-        document.getElementById('coordsInput').value = `${lat}, ${lng}`;
-        setPickerMarker(lat, lng);
-        fetchLocationName(lat, lng);
-      });
+      
+      if (currentMode !== 'view') {
+        pickerMap.on('click', e => {
+          const lat = e.latlng.lat.toFixed(6);
+          const lng = e.latlng.lng.toFixed(6);
+          document.getElementById('lat').value = lat;
+          document.getElementById('lng').value = lng;
+          document.getElementById('coordsInput').value = `${lat}, ${lng}`;
+          setPickerMarker(lat, lng);
+          fetchLocationName(lat, lng);
+        });
+      }
     }
 
     function setPickerMarker(lat, lng) {
@@ -333,6 +382,7 @@
     }
 
     function parseAndSetCoordinates(inputStr) {
+      if (currentMode === 'view') return;
       if (!inputStr || !inputStr.trim()) return;
 
       const dmsRegex = /(\d+)[\°\s]+(\d+)[\'\s]+([\d\.]+)[\"\s]*([NnSsEeOoWw])[\s,]+(\d+)[\°\s]+(\d+)[\'\s]+([\d\.]+)[\"\s]*([NnSsEeOoWw])/;
@@ -364,6 +414,7 @@
     }
 
     function getGPSLocation() {
+      if (currentMode === 'view') return;
       navigator.geolocation.getCurrentPosition(pos => {
         const lat = pos.coords.latitude.toFixed(6), lng = pos.coords.longitude.toFixed(6);
         document.getElementById('lat').value = lat; 
@@ -399,7 +450,8 @@
     function onNestSelectChange(val) {
       if (val === 'NEW') {
         document.getElementById('nest-form').reset();
-        document.getElementById('nestId').readOnly = false;
+        document.getElementById('nestId').disabled = false;
+        document.getElementById('nestId').removeAttribute('readonly');
         document.getElementById('lat').value = '';
         document.getElementById('lng').value = '';
         document.getElementById('coordsInput').value = '';
@@ -411,8 +463,14 @@
       } else {
         const found = allNests.find(d => d.nestId === val);
         if (found) {
-          document.getElementById('nestId').value = found.nestId;
-          document.getElementById('nestId').readOnly = true;
+          const nestIdInput = document.getElementById('nestId');
+          nestIdInput.value = found.nestId;
+          
+          if (currentMode !== 'view') {
+            nestIdInput.disabled = false;
+            nestIdInput.removeAttribute('readonly');
+          }
+
           document.getElementById('nestType').value = found.nestType || 'Nido Artificial';
           document.getElementById('hasCamera').value = found.hasCamera || 'No';
           document.getElementById('locationName').value = found.locationName || '';
@@ -444,36 +502,36 @@
           renderHistoryView(found.notes || '');
         }
       }
+
+      applyModeRestrictions();
     }
 
     function handleFormSubmit(e) {
       e.preventDefault();
+      if (currentMode === 'view') return;
+
       const nestId = document.getElementById('nestId').value;
       const visitDate = document.getElementById('layDate').value;
       const currentNoteText = document.getElementById('currentNote').value.trim();
       
       let existingNotes = document.getElementById('notes').value;
 
-      // Recoger automáticamente los valores clave modificados hoy
       const state = document.getElementById('visitationState').value;
       const health = document.getElementById('healthStatus').value;
       const deaths = document.getElementById('chickDeaths').value;
       const fledged = document.getElementById('fledgedChicks').value;
       const adultDeath = document.getElementById('adultDeath').value;
 
-      // Construir la línea automática con los datos de la visita
       let autoSummary = `[Visita: ${visitDate}] Nidada: ${state} | Salud: ${health}`;
       if (deaths > 0) autoSummary += ` | Bajas pollos: ${deaths}`;
       if (fledged > 0) autoSummary += ` | Volantones: ${fledged}`;
       if (adultDeath !== 'Ninguno') autoSummary += ` | Adulto muerto: ${adultDeath}`;
 
-      // Si el usuario añadió un comentario personal, lo adjuntamos debajo
       let finalEntry = autoSummary;
       if (currentNoteText) {
         finalEntry += `\n💬 Comentario: "${currentNoteText}"`;
       }
 
-      // Añadir al principio del historial general
       existingNotes = existingNotes ? `${finalEntry}\n---\n${existingNotes}` : finalEntry;
 
       const record = {
