@@ -85,16 +85,16 @@
         <p class="text-white/70 text-sm mt-2 leading-relaxed">Consulte los datos sincronizados en tiempo real o gestione copias de seguridad mediante Excel.</p>
       </div>
       
-      <!-- BOTONES DE ACCIÓN RÁPIDA Y EXCEL -->
-      <div class="z-10 shrink-0 flex flex-wrap items-center gap-2">
-        <a href="control.html" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-1.5 text-xs">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Nuevo Nido</span>
+      <!-- BOTONES MÁS PEQUEÑOS CON FLECHAS AJUSTADAS -->
+      <div class="z-10 shrink-0 flex flex-wrap items-center gap-1.5">
+        <a href="control.html" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-3 py-2 rounded-lg transition-all shadow-sm inline-flex items-center space-x-1 text-[11px]">
+          <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i><span>Nuevo Nido</span>
         </a>
-        <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-1.5 text-xs">
-          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i><span>Exportar Excel</span>
+        <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-2 rounded-lg transition-all shadow-sm inline-flex items-center space-x-1 text-[11px]" title="Exportar a Excel (Flecha abajo)">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i><span>Exportar</span>
         </button>
-        <label class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-1.5 text-xs cursor-pointer">
-          <i data-lucide="upload" class="w-4 h-4"></i><span>Importar Excel</span>
+        <label class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-3 py-2 rounded-lg transition-all shadow-sm inline-flex items-center space-x-1 text-[11px] cursor-pointer" title="Importar desde Excel (Flecha arriba)">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i><span>Importar</span>
           <input type="file" id="excelFileIn" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)" class="hidden">
         </label>
       </div>
@@ -189,6 +189,7 @@
 
     function initOverviewMap() {
       overviewMap = L.map('overview-map').setView([39.95, -0.10], 10);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}ʽ/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).catch(()=>{});
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(overviewMap);
       overviewMarkersGroup = L.layerGroup().addTo(overviewMap);
     }
@@ -214,7 +215,6 @@
         return;
       }
 
-      // Preparar datos limpios para la hoja de Excel
       const excelData = globalNestsData.map(item => ({
         "ID Nido": item.nestId || '',
         "Tipo de Nido": item.nestType || '',
@@ -240,7 +240,6 @@
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Nidos Tyto Alba");
 
-      // Descargar archivo
       XLSX.writeFile(workbook, "Seguimiento_Nidos_TytoAlba.xlsx");
     }
 
@@ -295,7 +294,7 @@
           });
 
           alert(`¡Se han importado/actualizado ${importedCount} nidos con éxito en la nube!`);
-          document.getElementById('excelFileIn').value = ''; // Resetear input
+          document.getElementById('excelFileIn').value = '';
         } catch (err) {
           alert('Error al procesar el archivo Excel: ' + err.message);
         }
@@ -304,7 +303,7 @@
     }
 
     function renderData(data) {
-      globalNestsData = data; // Guardar referencia global para exportar
+      globalNestsData = data;
 
       document.getElementById('kpi-nests').textContent = data.filter(d => d.status === 'Activo').length;
       document.getElementById('kpi-inactive').textContent = data.filter(d => d.status === 'Inactivo' || d.status === 'Abandonado').length;
