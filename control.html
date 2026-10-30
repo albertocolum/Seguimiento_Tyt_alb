@@ -87,6 +87,8 @@
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Código ID del Nido *</label>
             <input type="text" id="nestId" required placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
+            <!-- Campo oculto para recordar el ID original si se edita el nombre -->
+            <input type="hidden" id="originalNestId" value="">
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido *</label>
@@ -299,7 +301,6 @@
         document.getElementById('form-subtitle').textContent = 'Modo de consulta activo. No es posible editar ningún parámetro.';
         document.getElementById('view-mode-badge').classList.remove('hidden');
 
-        // Bloquear todos los inputs, selects y textareas
         const formElements = document.querySelectorAll('#nest-form input, #nest-form select, #nest-form textarea');
         formElements.forEach(el => {
           el.disabled = true;
@@ -308,7 +309,6 @@
 
         document.getElementById('nest-form').classList.add('disabled-form');
 
-        // Ocultar botones interactivos
         const gpsBtn = document.getElementById('gps-btn');
         if (gpsBtn) gpsBtn.style.display = 'none';
         
@@ -318,7 +318,6 @@
         const currentNoteBox = document.getElementById('current-note-box');
         if (currentNoteBox) currentNoteBox.style.display = 'none';
       } else {
-        // Modo edición: asegurarse de que el ID sea editable
         const nestIdInput = document.getElementById('nestId');
         nestIdInput.disabled = false;
         nestIdInput.removeAttribute('readonly');
@@ -452,6 +451,7 @@
         document.getElementById('nest-form').reset();
         document.getElementById('nestId').disabled = false;
         document.getElementById('nestId').removeAttribute('readonly');
+        document.getElementById('originalNestId').value = '';
         document.getElementById('lat').value = '';
         document.getElementById('lng').value = '';
         document.getElementById('coordsInput').value = '';
@@ -465,6 +465,7 @@
         if (found) {
           const nestIdInput = document.getElementById('nestId');
           nestIdInput.value = found.nestId;
+          document.getElementById('originalNestId').value = found.nestId; // Guardar ID original para evitar duplicados al renombrar
           
           if (currentMode !== 'view') {
             nestIdInput.disabled = false;
@@ -510,7 +511,8 @@
       e.preventDefault();
       if (currentMode === 'view') return;
 
-      const nestId = document.getElementById('nestId').value;
+      const nestId = document.getElementById('nestId').value.trim();
+      const originalNestId = document.getElementById('originalNestId').value.trim();
       const visitDate = document.getElementById('layDate').value;
       const currentNoteText = document.getElementById('currentNote').value.trim();
       
@@ -558,13 +560,24 @@
         lastReview: new Date().toISOString().split('T')[0]
       };
 
-      db.ref('nidos/' + nestId).set(record, err => {
-        if (err) {
-          alert('Error al guardar en la nube: ' + err.message);
-        } else {
-          window.location.href = 'index.html';
-        }
-      });
+      // Si cambió el ID, borrar el registro antiguo para evitar duplicados
+      const saveOperation = () => {
+        db.ref('nidos/' + nestId).set(record, err => {
+          if (err) {
+            alert('Error al guardar en la nube: ' + err.message);
+          } else {
+            if (originalNestId && originalNestId !== nestId) {
+              db.ref('nidos/' + originalNestId).remove().then(() => {
+                window.location.href = 'index.html';
+              });
+            } else {
+              window.location.href = 'index.html';
+            }
+          }
+        });
+      };
+
+      saveOperation();
     }
 
     function renderControl() {
