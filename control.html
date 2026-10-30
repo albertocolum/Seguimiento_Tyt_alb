@@ -46,16 +46,32 @@
 
   <!-- NAVBAR -->
   <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-      <div class="flex items-center space-x-3">
-        <div class="border border-white/20 p-2 rounded-xl flex items-center justify-center bg-white/5"><i data-lucide="bird" class="w-5 h-5 text-emerald-400"></i></div>
-        <div class="flex items-baseline space-x-2"><span class="text-lg font-bold">Tyto Alba</span><span class="text-white/40">|</span><span class="text-sm font-medium text-emerald-400">Monitoreo Cloud</span></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
+      
+      <div class="flex items-center space-x-3.5">
+        <div class="w-12 h-12 rounded-full bg-white p-0.5 border-2 border-emerald-500/30 flex items-center justify-center overflow-hidden shadow-inner shrink-0">
+          <img src="logo.png" alt="Grupo Naturalista GER" class="w-full h-full object-cover rounded-full" onerror="this.src='https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/logo_ger.png'">
+        </div>
+        <div class="flex items-baseline space-x-2.5">
+          <span class="text-xl font-bold tracking-tight">Tyto Alba</span>
+          <span class="text-white/40 font-light hidden sm:inline">|</span>
+          <span class="text-xs font-semibold tracking-wide text-emerald-400 hidden sm:inline">GER (Grup d'Estudi i Protecció dels Rapinyaires)</span>
+          <span class="text-xs font-semibold tracking-wide text-emerald-400 sm:hidden">GER</span>
+        </div>
       </div>
-      <nav class="flex space-x-1 sm:space-x-2">
-        <a href="index.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10"><i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span></a>
-        <a href="control.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm"><i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span></a>
-        <a href="anillados.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10"><i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span></a>
+
+      <nav class="flex items-center space-x-1.5 sm:space-x-2">
+        <a href="index.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span>
+        </a>
+        <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm">
+          <i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span>
+        </a>
+        <a href="anillados.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+          <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
+        </a>
       </nav>
+
     </div>
   </header>
 
@@ -87,7 +103,6 @@
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Código ID del Nido *</label>
             <input type="text" id="nestId" required placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
-            <!-- Campo oculto para recordar el ID original si se edita el nombre -->
             <input type="hidden" id="originalNestId" value="">
           </div>
           <div>
@@ -465,7 +480,7 @@
         if (found) {
           const nestIdInput = document.getElementById('nestId');
           nestIdInput.value = found.nestId;
-          document.getElementById('originalNestId').value = found.nestId; // Guardar ID original para evitar duplicados al renombrar
+          document.getElementById('originalNestId').value = found.nestId;
           
           if (currentMode !== 'view') {
             nestIdInput.disabled = false;
@@ -560,24 +575,19 @@
         lastReview: new Date().toISOString().split('T')[0]
       };
 
-      // Si cambió el ID, borrar el registro antiguo para evitar duplicados
-      const saveOperation = () => {
-        db.ref('nidos/' + nestId).set(record, err => {
-          if (err) {
-            alert('Error al guardar en la nube: ' + err.message);
-          } else {
-            if (originalNestId && originalNestId !== nestId) {
-              db.ref('nidos/' + originalNestId).remove().then(() => {
-                window.location.href = 'index.html';
-              });
-            } else {
+      db.ref('nidos/' + nestId).set(record, err => {
+        if (err) {
+          alert('Error al guardar en la nube: ' + err.message);
+        } else {
+          if (originalNestId && originalNestId !== nestId) {
+            db.ref('nidos/' + originalNestId).remove().then(() => {
               window.location.href = 'index.html';
-            }
+            });
+          } else {
+            window.location.href = 'index.html';
           }
-        });
-      };
-
-      saveOperation();
+        }
+      });
     }
 
     function renderControl() {
