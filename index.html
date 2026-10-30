@@ -80,7 +80,7 @@
       <div class="max-w-2xl z-10">
         <span class="inline-block bg-white/10 text-emerald-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-emerald-500/20">Sincronización Cloud Activa</span>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Resumen de Inspecciones de Campo</h1>
-        <p class="text-white/70 text-sm mt-2 leading-relaxed">Consulte los datos sincronizados en tiempo real entre móvil y ordenador.</p>
+        <p class="text-white/70 text-sm mt-2 leading-relaxed">Consulte los datos sincronizados ininterrumpidamente en tiempo real.</p>
       </div>
       <div class="z-10 shrink-0">
         <a href="control.html" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-5 py-3 rounded-xl transition-all shadow-md inline-flex items-center space-x-2 text-sm">
@@ -113,7 +113,7 @@
       </a>
     </div>
 
-    <!-- TABLA RESUMEN CON PAREJAS Y ACCIONES (VER/EDITAR Y BORRAR) -->
+    <!-- TABLA RESUMEN CON LOS 3 BOTONES -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
       <div class="p-6 border-b border-brand-border flex justify-between items-center">
         <div>
@@ -220,9 +220,10 @@
               <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeColor}">${item.status}</span></td>
               <td class="px-6 py-4 font-mono text-stone-700">${maleInfo}</td>
               <td class="px-6 py-4 font-mono text-stone-700">${femaleInfo}</td>
-              <td class="px-6 py-4 text-right space-x-3">
-                <a href="control.html?edit=${item.nestId}" class="text-brand-dark font-semibold hover:underline">Ver / Editar</a>
-                <button onclick="deleteNestRecord('${item.nestId}')" class="text-rose-600 font-semibold hover:underline">Borrar</button>
+              <td class="px-6 py-4 text-right space-x-2">
+                <a href="control.html?edit=${item.nestId}&mode=view" class="inline-block bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold px-2.5 py-1 rounded-lg">Ver</a>
+                <a href="control.html?edit=${item.nestId}&mode=edit" class="inline-block bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-2.5 py-1 rounded-lg">Editar</a>
+                <button onclick="deleteNestRecord('${item.nestId}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold px-2.5 py-1 rounded-lg">Borrar</button>
               </td>
             </tr>
           `;
