@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Gestión de Nidos</title>
+  <title>Tyto Alba | Control y Gestión de Nidos</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- LIBRERÍAS DE LEAFLET (MAPA) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -33,13 +35,7 @@
       background-repeat: no-repeat;
       background-size: cover;
     }
-    .leaflet-popup-content-wrapper { border-radius: 0.75rem; padding: 0.25rem; }
-    .disabled-form input, .disabled-form select, .disabled-form textarea {
-      background-color: #f3f4f6 !important;
-      color: #4b5563 !important;
-      cursor: not-allowed !important;
-      pointer-events: none !important;
-    }
+    #nest-map { height: 320px; width: 100%; border-radius: 0.75rem; z-index: 10; }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
@@ -75,210 +71,183 @@
     </div>
   </header>
 
-  <!-- CONTENIDO -->
+  <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
-    <div class="bg-white/95 backdrop-blur-sm p-6 rounded-2xl border border-brand-border shadow-md flex justify-between items-center">
+    
+    <div class="bg-brand-dark/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
-        <h2 id="form-title" class="text-2xl font-bold text-brand-dark">Gestión y Registro de Inspecciones</h2>
-        <p id="form-subtitle" class="text-stone-500 text-sm mt-1">Sincronización en tiempo real activa en la nube.</p>
+        <span class="inline-block bg-white/10 text-emerald-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-emerald-500/20">Módulo de Inspección</span>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Gestión y Control de Nidos</h1>
+        <p class="text-white/70 text-sm mt-2">Añade o edita fichas de nidos, parejas reproductoras y seguimiento de nidadas.</p>
       </div>
-      <div id="view-mode-badge" class="hidden">
-        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider border border-amber-300">Modo Solo Lectura</span>
+
+      <div class="shrink-0">
+        <button onclick="resetFormForNew()" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow-sm inline-flex items-center space-x-2 text-xs">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Registrar Nuevo Nido</span>
+        </button>
       </div>
     </div>
 
-    <form id="nest-form" onsubmit="handleFormSubmit(event)" class="bg-white/95 backdrop-blur-sm p-6 md:p-8 rounded-2xl border border-brand-border shadow-md space-y-8">
-      
-      <!-- UBICACIÓN, TIPO DE NIDO, FOTOTRAMPEO Y COORDENADAS -->
-      <div class="space-y-4">
-        <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i> 1. Identificación y Ubicación GPS</h3>
+    <!-- FORMULARIO PRINCIPAL DE GESTIÓN -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-8">
+      <div class="border-b pb-4 flex justify-between items-center">
+        <h2 id="form-section-title" class="text-lg font-bold text-stone-900">Registrar / Editar Ficha de Nido</h2>
+        <span id="edit-mode-badge" class="hidden bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">Modo Edición</span>
+      </div>
+
+      <form id="nestForm" onsubmit="saveNestRecord(event)" class="space-y-8">
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Seleccionar o Crear Nido</label>
-            <select id="nestSelect" onchange="onNestSelectChange(this.value)" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white font-semibold">
-              <option value="NEW">+ Registrar nuevo ID de nido...</option>
-            </select>
+        <!-- 1. IDENTIFICACIÓN Y UBICACIÓN -->
+        <div class="space-y-4">
+          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i> 1. Identificación y Ubicación</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido *</label>
+              <input type="text" id="nestId" required placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido</label>
+              <select id="nestType" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Nido Artificial">Nido Artificial / Caja Nido</option>
+                <option value="Nido Natural">Nido Natural</option>
+                <option value="Construcción">Construcción / Masía</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Ubicación / Paraje *</label>
+              <input type="text" id="locationName" required placeholder="Ej. Cabanes (Comunidad Valenciana)" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Estado del Nido</label>
+              <select id="status" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+                <option value="Abandonado">Abandonado</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Código ID del Nido *</label>
-            <input type="text" id="nestId" required placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
-            <input type="hidden" id="originalNestId" value="">
+
+          <!-- MAPA PARA SELECCIONAR COORDENADAS -->
+          <div class="space-y-2 pt-2">
+            <label class="block text-xs font-bold text-stone-600">Seleccionar ubicación en el mapa (Haz clic para mover el marcador):</label>
+            <div id="nest-map"></div>
+            <div class="grid grid-cols-2 gap-4 pt-1">
+              <div>
+                <label class="block text-[11px] font-semibold text-stone-500">Latitud</label>
+                <input type="number" step="0.000001" id="lat" readonly class="w-full px-3 py-1.5 border rounded-lg text-xs bg-stone-50 font-mono">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-stone-500">Longitud</label>
+                <input type="number" step="0.000001" id="lng" readonly class="w-full px-3 py-1.5 border rounded-lg text-xs bg-stone-50 font-mono">
+              </div>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido *</label>
-            <select id="nestType" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white font-semibold text-brand-dark">
-              <option value="Nido Artificial">Nido Artificial (Caja)</option>
-              <option value="Nido Natural">Nido Natural</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Cámara Fototrampeo *</label>
-            <select id="hasCamera" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white font-semibold">
+
+          <div class="pt-2">
+            <label class="block text-xs font-bold text-stone-600 mb-1">¿Dispone de Cámara de Fototrampeo?</label>
+            <select id="hasCamera" class="w-full sm:w-1/4 px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
               <option value="No">No</option>
               <option value="Sí">Sí</option>
             </select>
           </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Estado Actual *</label>
-            <select id="status" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-              <option value="Abandonado">Abandonado</option>
-            </select>
-          </div>
         </div>
 
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs font-bold text-stone-600">Ubicación / Población *</label>
-            <span id="geo-loader" class="text-[11px] text-brand-accent font-medium hidden flex items-center gap-1">
-              <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Detectando municipio...
-            </span>
-          </div>
-          <input type="text" id="locationName" required placeholder="Ej. Masía del Sur (Vila-real)" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm">
-        </div>
-
-        <div class="bg-stone-50/80 p-4 rounded-xl border border-brand-border space-y-3">
-          <div class="flex justify-between items-center flex-wrap gap-2">
-            <div>
-              <span class="text-xs font-bold text-brand-dark block">Coordenadas GPS (Latitud, Longitud)</span>
-              <span class="text-[11px] text-stone-500">Acepta formato decimal (<code>39.9381, -0.1012</code>) o grados (<code>39°56'17.2"N 0°06'04.3"W</code>)</span>
+        <!-- 2. PAREJA REPRODUCTORA -->
+        <div class="space-y-4">
+          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5"><i data-lucide="heart" class="w-4 h-4 text-brand-accent"></i> 2. Pareja Reproductora</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-stone-50/70 p-4 rounded-xl border">
+            <!-- Macho -->
+            <div class="space-y-3">
+              <h4 class="text-xs font-bold text-stone-700 uppercase">Macho</h4>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-stone-600 mb-1">Anilla Metálica</label>
+                  <input type="text" id="maleRing" placeholder="Ej. G-12345" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-stone-600 mb-1">Anilla PVC (Color)</label>
+                  <input type="text" id="malePvcCode" placeholder="Ej. A-12" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+                </div>
+              </div>
             </div>
-            <button type="button" id="gps-btn" onclick="getGPSLocation()" class="bg-brand-dark text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm hover:bg-brand-hover">
-              <i data-lucide="locate-fixed" class="w-3.5 h-3.5 text-emerald-400"></i> Usar mi GPS
-            </button>
-          </div>
-
-          <div>
-            <input type="text" id="coordsInput" oninput="parseAndSetCoordinates(this.value)" placeholder="Ej. 39.9381, -0.1012  o  39°56'17.2&quot;N 0°06'04.3&quot;W" class="w-full px-3 py-2 border rounded-xl text-sm font-mono bg-white focus:ring-2 focus:ring-brand-dark">
-            <input type="hidden" id="lat">
-            <input type="hidden" id="lng">
-          </div>
-
-          <div id="picker-map" class="w-full h-56 rounded-xl border z-10"></div>
-        </div>
-      </div>
-
-      <!-- PAREJA -->
-      <div class="space-y-4">
-        <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-brand-accent"></i> 2. Identificación de la Pareja</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-stone-50/80 p-4 rounded-xl border">
-          <div class="space-y-3 bg-white p-4 rounded-xl border shadow-sm">
-            <span class="text-xs font-bold text-brand-dark">Adulto Macho</span>
-            <input type="text" id="maleRing" placeholder="Anilla Metálica" class="w-full px-3 py-2 border rounded-xl text-sm">
-            <input type="text" id="malePvcCode" placeholder="Código PVC" class="w-full px-3 py-2 border rounded-xl text-sm uppercase font-mono">
-          </div>
-          <div class="space-y-3 bg-white p-4 rounded-xl border shadow-sm">
-            <span class="text-xs font-bold text-brand-dark">Adulta Hembra</span>
-            <input type="text" id="femaleRing" placeholder="Anilla Metálica" class="w-full px-3 py-2 border rounded-xl text-sm">
-            <input type="text" id="femalePvcCode" placeholder="Código PVC" class="w-full px-3 py-2 border rounded-xl text-sm uppercase font-mono">
+            <!-- Hembra -->
+            <div class="space-y-3">
+              <h4 class="text-xs font-bold text-stone-700 uppercase">Hembra</h4>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-stone-600 mb-1">Anilla Metálica</label>
+                  <input type="text" id="femaleRing" placeholder="Ej. G-54321" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-stone-600 mb-1">Anilla PVC (Color)</label>
+                  <input type="text" id="femalePvcCode" placeholder="Ej. B-34" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- REPRODUCCIÓN Y SALUD GENERAL -->
-      <div class="space-y-4">
-        <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2"><i data-lucide="egg" class="w-4 h-4 text-brand-accent"></i> 3. Reproducción y Salud General</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Visita</label>
-            <input type="date" id="layDate" class="w-full px-3 py-2 border rounded-xl text-sm bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Estado de Nidada</label>
-            <select id="visitationState" class="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold">
-              <option value="Huevos">Huevos</option>
-              <option value="Pollos">Pollos</option>
-              <option value="Desconocido">Desconocido</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Salud General Nidada</label>
-            <select id="healthStatus" class="w-full px-3 py-2 border rounded-xl text-sm bg-white">
-              <option value="Excelente">Excelente</option>
-              <option value="Bueno">Bueno</option>
-              <option value="Alerta / Riesgo">Alerta / Riesgo</option>
-              <option value="N/A (Sin Crías)">N/A (Sin Crías)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- EVENTOS DE LA NIDADA, BAJAS Y VOLANTONES -->
-      <div class="space-y-4">
-        <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
-          <i data-lucide="activity" class="w-4 h-4 text-rose-600"></i> 4. Eventos de la Nidada, Bajas y Vuelos
-        </h3>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-stone-50/80 p-4 rounded-xl border border-brand-border">
-          
-          <!-- MUERTE DE POLLOS (ACTUALIZADO CON DESPLEGABLE DE ANILLADOS Y SIN ANILLAR) -->
-          <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-2">
-            <span class="text-xs font-bold text-rose-800 flex items-center gap-1.5">
-              <i data-lucide="skull" class="w-3.5 h-3.5 text-rose-600"></i> Muerte de Pollos
-            </span>
-            
+        <!-- 3. SEGUIMIENTO DE LA NIDADA -->
+        <div class="space-y-4">
+          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5"><i data-lucide="activity" class="w-4 h-4 text-brand-accent"></i> 3. Seguimiento de la Nidada y Estado</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label class="block text-[11px] text-stone-500 mb-1">Pollo Anillado Muerto</label>
-              <select id="deadRingedChick" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-xs font-semibold bg-white font-mono">
-                <option value="Ninguno">Ninguno / N/A</option>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de la Visita *</label>
+              <input type="date" id="layDate" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Estado de la Visita / Nidada</label>
+              <select id="visitationState" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Huevos">Huevos</option>
+                <option value="Pollos">Pollos</option>
+                <option value="Fracaso">Fracaso Reproductor</option>
+                <option value="Vacío">Vacío / Sin ocupación</option>
               </select>
             </div>
-
             <div>
-              <label class="block text-[11px] text-stone-500 mb-1">Pollos Sin Anillar (Cantidad)</label>
-              <input type="number" id="chickDeaths" min="0" value="0" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-xs font-semibold bg-white">
+              <label class="block text-xs font-bold text-stone-600 mb-1">Salud General</label>
+              <select id="healthStatus" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Excelente">Excelente</option>
+                <option value="Buena">Buena</option>
+                <option value="Regular">Regular</option>
+                <option value="Crítica">Crítica</option>
+              </select>
             </div>
           </div>
 
-          <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-1">
-            <span class="text-xs font-bold text-stone-800 flex items-center gap-1.5">
-              <i data-lucide="user-x" class="w-3.5 h-3.5 text-stone-600"></i> Muerte de Adulto
-            </span>
-            <label class="block text-[11px] text-stone-500">Indicar si ha muerto un progenitor</label>
-            <select id="adultDeath" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-sm font-semibold bg-white">
-              <option value="Ninguno">Ninguno</option>
-              <option value="Macho">Macho</option>
-              <option value="Hembra">Hembra</option>
-              <option value="Ambos">Ambos</option>
-            </select>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Bajas de Pollos (Mortandad)</label>
+              <input type="number" min="0" id="chickDeaths" value="0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Adulto Muerto / Incidencias</label>
+              <select id="adultDeath" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Ninguno">Ninguno</option>
+                <option value="Macho Muerto">Macho Muerto</option>
+                <option value="Hembra Muerta">Hembra Muerta</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Pollos Volados / Exitosos</label>
+              <input type="number" min="0" id="fledgedChicks" value="0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+            </div>
           </div>
 
-          <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-1">
-            <span class="text-xs font-bold text-sky-800 flex items-center gap-1.5">
-              <i data-lucide="wind" class="w-3.5 h-3.5 text-sky-600"></i> Pollos Volados
-            </span>
-            <label class="block text-[11px] text-stone-500">Volantones independizados</label>
-            <input type="number" id="fledgedChicks" min="0" value="0" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-sm font-semibold bg-white">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo</label>
+            <textarea id="notes" rows="2" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
           </div>
         </div>
-      </div>
 
-      <!-- OBSERVACIONES E HISTORIAL -->
-      <div class="space-y-4">
-        <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2">
-          <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> 5. Observaciones y Notas de Campo (Historial)
-        </h3>
-        
-        <div id="current-note-box" class="space-y-2">
-          <label class="block text-xs font-bold text-stone-600">Comentario para la Visita Actual</label>
-          <textarea id="currentNote" rows="2" placeholder="Ej. Se anillan ambos adultos, se observa buena actividad..." class="w-full px-3 py-2 border rounded-xl text-sm bg-white"></textarea>
+        <div class="flex justify-end pt-4 border-t space-x-3">
+          <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-2 text-xs">
+            <i data-lucide="save" class="w-4 h-4"></i><span>Guardar Ficha de Nido</span>
+          </button>
         </div>
+      </form>
+    </div>
 
-        <div class="space-y-2">
-          <label class="block text-xs font-bold text-stone-500">Historial de Visitas Anteriores (Automático con cambios del día)</label>
-          <div id="notesHistory" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs font-mono text-stone-700 max-h-48 overflow-y-auto space-y-2">
-            <span class="text-stone-400 italic">No hay visitas anteriores registradas.</span>
-          </div>
-          <input type="hidden" id="notes" value="">
-        </div>
-      </div>
-
-      <div id="submit-btn-container" class="flex justify-end pt-4 border-t">
-        <button type="submit" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-6 py-3 rounded-xl shadow-md flex items-center gap-2 text-sm"><i data-lucide="save" class="w-4 h-4"></i> Guardar en la Nube</button>
-      </div>
-    </form>
   </main>
 
   <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo — Firebase Cloud Mode</footer>
@@ -297,354 +266,134 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let allNests = [];
-    let allRingedChicks = [];
-    let pickerMap = null, pickerMarker = null;
-    let initialLoadDone = false;
-    let currentMode = 'edit';
+    let nestMap = null;
+    let nestMarker = null;
 
-    // Cargar lista de anillados para el desplegable
-    db.ref('anillados').on('value', snapshot => {
-      const val = snapshot.val();
-      allRingedChicks = val ? Object.values(val) : [];
-      updateRingedChicksDropdown();
-    });
-
-    db.ref('nidos').on('value', snapshot => {
-      const val = snapshot.val();
-      allNests = val ? Object.values(val) : [];
-      updateNestSelectOptions(allNests);
-
-      if (!initialLoadDone) {
-        initialLoadDone = true;
-        const urlParams = new URLSearchParams(window.location.search);
-        const editId = urlParams.get('edit');
-        currentMode = urlParams.get('mode') || 'edit';
-
-        if (editId) {
-          document.getElementById('nestSelect').value = editId;
-          onNestSelectChange(editId);
-        }
-
-        applyModeRestrictions();
-      }
-    });
-
-    function updateRingedChicksDropdown(selectedNestId = '') {
-      const sel = document.getElementById('deadRingedChick');
-      const currentSelected = sel.value;
-      sel.innerHTML = '<option value="Ninguno">Ninguno / N/A</option>';
-
-      // Filtrar pollos anillados de este nido (o mostrar todos si se prefiere)
-      const targetNest = selectedNestId || document.getElementById('nestId').value;
-      
-      allRingedChicks.forEach(item => {
-        // Comprobar si el anillado pertenece a este nido
-        if (!targetNest || item.nestId === targetNest || item.lugar === targetNest) {
-          const label = `${item.metalRing || item.ringNumber || 'Sin anilla'} ${item.pvcCode ? '('+item.pvcCode+')' : ''} - ${item.edad || 'Pollo'}`;
-          sel.innerHTML += `<option value="${label}">${label}</option>`;
-        }
-      });
-      sel.value = currentSelected;
-    }
-
-    function applyModeRestrictions() {
-      if (currentMode === 'view') {
-        document.getElementById('form-title').textContent = 'Visualización de Ficha de Nido (Solo Lectura)';
-        document.getElementById('form-subtitle').textContent = 'Modo de consulta activo. No es posible editar ningún parámetro.';
-        document.getElementById('view-mode-badge').classList.remove('hidden');
-
-        const formElements = document.querySelectorAll('#nest-form input, #nest-form select, #nest-form textarea');
-        formElements.forEach(el => {
-          el.disabled = true;
-          el.setAttribute('readonly', 'readonly');
-        });
-
-        document.getElementById('nest-form').classList.add('disabled-form');
-
-        const gpsBtn = document.getElementById('gps-btn');
-        if (gpsBtn) gpsBtn.style.display = 'none';
-        
-        const submitBtnContainer = document.getElementById('submit-btn-container');
-        if (submitBtnContainer) submitBtnContainer.style.display = 'none';
-
-        const currentNoteBox = document.getElementById('current-note-box');
-        if (currentNoteBox) currentNoteBox.style.display = 'none';
-      } else {
-        const nestIdInput = document.getElementById('nestId');
-        nestIdInput.disabled = false;
-        nestIdInput.removeAttribute('readonly');
-      }
-    }
-
-    let geoTimeout = null;
-    function fetchLocationName(lat, lng) {
-      if (currentMode === 'view') return;
-      const loader = document.getElementById('geo-loader');
-      if (loader) loader.classList.remove('hidden');
-
-      clearTimeout(geoTimeout);
-      geoTimeout = setTimeout(() => {
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-          .then(res => res.json())
-          .then(data => {
-            if (loader) loader.classList.add('hidden');
-            if (data && data.address) {
-              const town = data.address.village || data.address.town || data.address.city || data.address.municipality || data.address.county || '';
-              const state = data.address.province || data.address.state || '';
-              let detectedName = town ? (state ? `${town} (${state})` : town) : data.display_name.split(',')[0];
-              
-              const currentLocInput = document.getElementById('locationName');
-              if (currentLocInput) currentLocInput.value = detectedName;
-            }
-          })
-          .catch(() => { if (loader) loader.classList.add('hidden'); });
-      }, 350);
-    }
-
-    function initPickerMap() {
-      if (pickerMap) return;
-      pickerMap = L.map('picker-map').setView([39.95, -0.10], 10);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(pickerMap);
-      
-      if (currentMode !== 'view') {
-        pickerMap.on('click', e => {
-          const lat = e.latlng.lat.toFixed(6);
-          const lng = e.latlng.lng.toFixed(6);
-          document.getElementById('lat').value = lat;
-          document.getElementById('lng').value = lng;
-          document.getElementById('coordsInput').value = `${lat}, ${lng}`;
-          setPickerMarker(lat, lng);
-          fetchLocationName(lat, lng);
-        });
-      }
-    }
-
-    function setPickerMarker(lat, lng) {
-      if (!pickerMap) initPickerMap();
-      if (pickerMarker) pickerMap.removeLayer(pickerMarker);
-      pickerMarker = L.marker([lat, lng]).addTo(pickerMap);
-      pickerMap.setView([lat, lng], 13);
-    }
-
-    function dmsToDecimal(degrees, minutes, seconds, direction) {
-      let dd = Number(degrees) + Number(minutes)/60 + Number(seconds)/3600;
-      if (direction === "S" || direction === "W" || direction === "O") dd = dd * -1;
-      return dd;
-    }
-
-    function parseAndSetCoordinates(inputStr) {
-      if (currentMode === 'view') return;
-      if (!inputStr || !inputStr.trim()) return;
-
-      const dmsRegex = /(\d+)[\°\s]+(\d+)[\'\s]+([\d\.]+)[\"\s]*([NnSsEeOoWw])[\s,]+(\d+)[\°\s]+(\d+)[\'\s]+([\d\.]+)[\"\s]*([NnSsEeOoWw])/;
-      const dmsMatch = inputStr.match(dmsRegex);
-
-      if (dmsMatch) {
-        const lat = dmsToDecimal(dmsMatch[1], dmsMatch[2], dmsMatch[3], dmsMatch[4].toUpperCase()).toFixed(6);
-        const lng = dmsToDecimal(dmsMatch[5], dmsMatch[6], dmsMatch[7], dmsMatch[8].toUpperCase()).toFixed(6);
-        
-        document.getElementById('lat').value = lat;
-        document.getElementById('lng').value = lng;
-        setPickerMarker(lat, lng);
-        fetchLocationName(lat, lng);
+    function initNestMap(lat = 39.98, lng = -0.05) {
+      if (nestMap) {
+        nestMap.setView([lat, lng], 12);
+        if (nestMarker) nestMarker.setLatLng([lat, lng]);
         return;
       }
 
-      const parts = inputStr.split(/[\s,]+/);
-      if (parts.length >= 2) {
-        const lat = parseFloat(parts[0]);
-        const lng = parseFloat(parts[1]);
+      nestMap = L.map('nest-map').setView([lat, lng], 12);
 
-        if (!isNaN(lat) && !isNaN(lng)) {
-          document.getElementById('lat').value = lat.toFixed(6);
-          document.getElementById('lng').value = lng.toFixed(6);
-          setPickerMarker(lat, lng);
-          fetchLocationName(lat, lng);
-        }
-      }
-    }
+      // Capa de mapas de Esri libre y sin errores de clave
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, and the GIS User Community'
+      }).addTo(nestMap);
 
-    function getGPSLocation() {
-      if (currentMode === 'view') return;
-      navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude.toFixed(6), lng = pos.coords.longitude.toFixed(6);
-        document.getElementById('lat').value = lat; 
-        document.getElementById('lng').value = lng;
-        document.getElementById('coordsInput').value = `${lat}, ${lng}`;
-        setPickerMarker(lat, lng);
-        fetchLocationName(lat, lng);
+      nestMarker = L.marker([lat, lng], { draggable: true }).addTo(nestMap);
+
+      nestMarker.on('dragend', function(e) {
+        const pos = nestMarker.getLatLng();
+        document.getElementById('lat').value = pos.lat.toFixed(6);
+        document.getElementById('lng').value = pos.lng.toFixed(6);
       });
-    }
 
-    function updateNestSelectOptions(data) {
-      const sel = document.getElementById('nestSelect');
-      const currentVal = sel.value;
-      sel.innerHTML = '<option value="NEW">+ Registrar nuevo ID de nido...</option>';
-      data.forEach(item => sel.innerHTML += `<option value="${item.nestId}">${item.nestId} (${item.locationName})</option>`);
-      sel.value = currentVal;
-    }
-
-    function renderHistoryView(notesString) {
-      const historyDiv = document.getElementById('notesHistory');
-      if (!notesString || !notesString.trim()) {
-        historyDiv.innerHTML = `<span class="text-stone-400 italic">No hay visitas anteriores registradas.</span>`;
-        return;
-      }
-      
-      const entries = notesString.split('---').filter(e => e.trim() !== '');
-      historyDiv.innerHTML = '';
-      entries.forEach(entry => {
-        historyDiv.innerHTML += `<div class="p-2 bg-white rounded border border-stone-200 whitespace-pre-line">${entry.trim()}</div>`;
+      nestMap.on('click', function(e) {
+        nestMarker.setLatLng(e.latlng);
+        document.getElementById('lat').value = e.latlng.lat.toFixed(6);
+        document.getElementById('lng').value = e.latlng.lng.toFixed(6);
       });
+
+      document.getElementById('lat').value = lat.toFixed(6);
+      document.getElementById('lng').value = lng.toFixed(6);
+
+      setTimeout(() => {
+        if (nestMap) nestMap.invalidateSize();
+      }, 300);
     }
 
-    function onNestSelectChange(val) {
-      if (val === 'NEW') {
-        document.getElementById('nest-form').reset();
-        document.getElementById('nestId').disabled = false;
-        document.getElementById('nestId').removeAttribute('readonly');
-        document.getElementById('originalNestId').value = '';
-        document.getElementById('lat').value = '';
-        document.getElementById('lng').value = '';
-        document.getElementById('coordsInput').value = '';
-        document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('notes').value = '';
-        document.getElementById('currentNote').value = '';
-        renderHistoryView('');
-        if (pickerMarker) pickerMap.removeLayer(pickerMarker);
-        updateRingedChicksDropdown('');
-      } else {
-        const found = allNests.find(d => d.nestId === val);
-        if (found) {
-          const nestIdInput = document.getElementById('nestId');
-          nestIdInput.value = found.nestId;
-          document.getElementById('originalNestId').value = found.nestId;
-          
-          if (currentMode !== 'view') {
-            nestIdInput.disabled = false;
-            nestIdInput.removeAttribute('readonly');
-          }
-
-          document.getElementById('nestType').value = found.nestType || 'Nido Artificial';
-          document.getElementById('hasCamera').value = found.hasCamera || 'No';
-          document.getElementById('locationName').value = found.locationName || '';
-          document.getElementById('status').value = found.status || 'Activo';
-          
-          if (found.lat && found.lng) {
-            document.getElementById('lat').value = found.lat;
-            document.getElementById('lng').value = found.lng;
-            document.getElementById('coordsInput').value = `${found.lat}, ${found.lng}`;
-            setPickerMarker(found.lat, found.lng);
-          } else {
-            document.getElementById('coordsInput').value = '';
-          }
-
-          document.getElementById('maleRing').value = found.maleRing || '';
-          document.getElementById('malePvcCode').value = found.malePvcCode || '';
-          document.getElementById('femaleRing').value = found.femaleRing || '';
-          document.getElementById('femalePvcCode').value = found.femalePvcCode || '';
-          document.getElementById('layDate').value = found.layDate || new Date().toISOString().split('T')[0];
-          document.getElementById('visitationState').value = found.visitationState || 'Huevos';
-          document.getElementById('healthStatus').value = found.healthStatus || 'Excelente';
-          
-          document.getElementById('deadRingedChick').value = found.deadRingedChick || 'Ninguno';
-          document.getElementById('chickDeaths').value = found.chickDeaths ?? 0;
-          document.getElementById('adultDeath').value = found.adultDeath || 'Ninguno';
-          document.getElementById('fledgedChicks').value = found.fledgedChicks ?? 0;
-
-          document.getElementById('notes').value = found.notes || '';
-          document.getElementById('currentNote').value = '';
-          renderHistoryView(found.notes || '');
-          updateRingedChicksDropdown(found.nestId);
-        }
-      }
-
-      applyModeRestrictions();
+    function resetFormForNew() {
+      document.getElementById('nestForm').reset();
+      document.getElementById('nestId').removeAttribute('readonly');
+      document.getElementById('edit-mode-badge').classList.add('hidden');
+      document.getElementById('form-section-title').textContent = 'Registrar Nuevo Nido';
+      document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
+      initNestMap(39.98, -0.05);
     }
 
-    function handleFormSubmit(e) {
+    function saveNestRecord(e) {
       e.preventDefault();
-      if (currentMode === 'view') return;
-
-      const nestId = document.getElementById('nestId').value.trim();
-      const originalNestId = document.getElementById('originalNestId').value.trim();
-      const visitDate = document.getElementById('layDate').value;
-      const currentNoteText = document.getElementById('currentNote').value.trim();
-      
-      let existingNotes = document.getElementById('notes').value;
-
-      const state = document.getElementById('visitationState').value;
-      const health = document.getElementById('healthStatus').value;
-      const deadRinged = document.getElementById('deadRingedChick').value;
-      const deaths = document.getElementById('chickDeaths').value;
-      const fledged = document.getElementById('fledgedChicks').value;
-      const adultDeath = document.getElementById('adultDeath').value;
-
-      let autoSummary = `[Visita: ${visitDate}] Nidada: ${state} | Salud: ${health}`;
-      if (deadRinged !== 'Ninguno') autoSummary += ` | Pollo anillado muerto: ${deadRinged}`;
-      if (deaths > 0) autoSummary += ` | Bajas pollos sin anillar: ${deaths}`;
-      if (fledged > 0) autoSummary += ` | Volantones: ${fledged}`;
-      if (adultDeath !== 'Ninguno') autoSummary += ` | Adulto muerto: ${adultDeath}`;
-
-      let finalEntry = autoSummary;
-      if (currentNoteText) {
-        finalEntry += `\n💬 Comentario: "${currentNoteText}"`;
-      }
-
-      existingNotes = existingNotes ? `${finalEntry}\n---\n${existingNotes}` : finalEntry;
+      const nestId = document.getElementById('nestId').value.trim().toUpperCase();
 
       const record = {
-        nestId, 
+        nestId,
         nestType: document.getElementById('nestType').value,
+        locationName: document.getElementById('locationName').value.trim(),
+        status: document.getElementById('status').value,
+        lat: parseFloat(document.getElementById('lat').value) || null,
+        lng: parseFloat(document.getElementById('lng').value) || null,
         hasCamera: document.getElementById('hasCamera').value,
-        locationName: document.getElementById('locationName').value,
-        lat: parseFloat(document.getElementById('lat').value)||null, 
-        lng: parseFloat(document.getElementById('lng').value)||null,
-        status: document.getElementById('status').value, 
-        maleRing: document.getElementById('maleRing').value||"Sin anillar",
-        malePvcCode: document.getElementById('malePvcCode').value, 
-        femaleRing: document.getElementById('femaleRing').value||"Sin anillar",
-        femalePvcCode: document.getElementById('femalePvcCode').value, 
-        layDate: visitDate,
-        visitationState: state,
-        healthStatus: health, 
-        
-        deadRingedChick: deadRinged,
-        chickDeaths: parseInt(deaths)||0,
-        adultDeath: adultDeath,
-        fledgedChicks: parseInt(fledged)||0,
-
-        notes: existingNotes,
+        maleRing: document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar',
+        malePvcCode: document.getElementById('malePvcCode').value.trim().toUpperCase(),
+        femaleRing: document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar',
+        femalePvcCode: document.getElementById('femalePvcCode').value.trim().toUpperCase(),
+        layDate: document.getElementById('layDate').value,
+        visitationState: document.getElementById('visitationState').value,
+        healthStatus: document.getElementById('healthStatus').value,
+        chickDeaths: parseInt(document.getElementById('chickDeaths').value) || 0,
+        adultDeath: document.getElementById('adultDeath').value,
+        fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
+        notes: document.getElementById('notes').value.trim(),
         lastReview: new Date().toISOString().split('T')[0]
       };
 
       db.ref('nidos/' + nestId).set(record, err => {
         if (err) {
-          alert('Error al guardar en la nube: ' + err.message);
+          alert('Error al guardar: ' + err.message);
         } else {
-          if (originalNestId && originalNestId !== nestId) {
-            db.ref('nidos/' + originalNestId).remove().then(() => {
-              window.location.href = 'index.html';
-            });
-          } else {
-            window.location.href = 'index.html';
-          }
+          alert('¡Ficha de nido guardada con éxito en la nube!');
+          window.location.href = 'index.html';
         }
       });
     }
 
-    function renderControl() {
-      initPickerMap();
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const editId = urlParams.get('edit');
+      const mode = urlParams.get('mode');
 
-      if (!document.getElementById('layDate').value) {
-        document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
+      if (editId) {
+        db.ref('nidos/' + editId).once('value', snapshot => {
+          const item = snapshot.val();
+          if (item) {
+            document.getElementById('nestId').value = item.nestId || editId;
+            document.getElementById('nestId').setAttribute('readonly', true);
+            document.getElementById('nestType').value = item.nestType || 'Nido Artificial';
+            document.getElementById('locationName').value = item.locationName || '';
+            document.getElementById('status').value = item.status || 'Activo';
+            document.getElementById('lat').value = item.lat || 39.98;
+            document.getElementById('lng').value = item.lng || -0.05;
+            document.getElementById('hasCamera').value = item.hasCamera || 'No';
+            document.getElementById('maleRing').value = item.maleRing === 'Sin anillar' ? '' : (item.maleRing || '');
+            document.getElementById('malePvcCode').value = item.malePvcCode || '';
+            document.getElementById('femaleRing').value = item.femaleRing === 'Sin anillar' ? '' : (item.femaleRing || '');
+            document.getElementById('femalePvcCode').value = item.femalePvcCode || '';
+            document.getElementById('layDate').value = item.layDate || new Date().toISOString().split('T')[0];
+            document.getElementById('visitationState').value = item.visitationState || 'Huevos';
+            document.getElementById('healthStatus').value = item.healthStatus || 'Excelente';
+            document.getElementById('chickDeaths').value = item.chickDeaths || 0;
+            document.getElementById('adultDeath').value = item.adultDeath || 'Ninguno';
+            document.getElementById('fledgedChicks').value = item.fledgedChicks || 0;
+            document.getElementById('notes').value = item.notes || '';
+
+            document.getElementById('edit-mode-badge').classList.remove('hidden');
+            document.getElementById('form-section-title').textContent = mode === 'view' ? 'Ver Ficha de Nido' : 'Editar Ficha de Nido';
+
+            initNestMap(item.lat || 39.98, item.lng || -0.05);
+          } else {
+            initNestMap(39.98, -0.05);
+          }
+        });
+      } else {
+        resetFormForNew();
       }
 
-      lucide.createIcons();
-    }
-
-    window.addEventListener('DOMContentLoaded', renderControl);
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
   </script>
 </body>
 </html>
