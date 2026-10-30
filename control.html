@@ -212,12 +212,24 @@
         </h3>
         
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-stone-50/80 p-4 rounded-xl border border-brand-border">
-          <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-1">
+          
+          <!-- MUERTE DE POLLOS (ACTUALIZADO CON DESPLEGABLE DE ANILLADOS Y SIN ANILLAR) -->
+          <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-2">
             <span class="text-xs font-bold text-rose-800 flex items-center gap-1.5">
               <i data-lucide="skull" class="w-3.5 h-3.5 text-rose-600"></i> Muerte de Pollos
             </span>
-            <label class="block text-[11px] text-stone-500">Bajas de crías en el nido</label>
-            <input type="number" id="chickDeaths" min="0" value="0" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-sm font-semibold bg-white">
+            
+            <div>
+              <label class="block text-[11px] text-stone-500 mb-1">Pollo Anillado Muerto</label>
+              <select id="deadRingedChick" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-xs font-semibold bg-white font-mono">
+                <option value="Ninguno">Ninguno / N/A</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] text-stone-500 mb-1">Pollos Sin Anillar (Cantidad)</label>
+              <input type="number" id="chickDeaths" min="0" value="0" class="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-xs font-semibold bg-white">
+            </div>
           </div>
 
           <div class="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm space-y-1">
@@ -286,9 +298,17 @@
     const db = firebase.database();
 
     let allNests = [];
+    let allRingedChicks = [];
     let pickerMap = null, pickerMarker = null;
     let initialLoadDone = false;
     let currentMode = 'edit';
+
+    // Cargar lista de anillados para el desplegable
+    db.ref('anillados').on('value', snapshot => {
+      const val = snapshot.val();
+      allRingedChicks = val ? Object.values(val) : [];
+      updateRingedChicksDropdown();
+    });
 
     db.ref('nidos').on('value', snapshot => {
       const val = snapshot.val();
@@ -309,6 +329,24 @@
         applyModeRestrictions();
       }
     });
+
+    function updateRingedChicksDropdown(selectedNestId = '') {
+      const sel = document.getElementById('deadRingedChick');
+      const currentSelected = sel.value;
+      sel.innerHTML = '<option value="Ninguno">Ninguno / N/A</option>';
+
+      // Filtrar pollos anillados de este nido (o mostrar todos si se prefiere)
+      const targetNest = selectedNestId || document.getElementById('nestId').value;
+      
+      allRingedChicks.forEach(item => {
+        // Comprobar si el anillado pertenece a este nido
+        if (!targetNest || item.nestId === targetNest || item.lugar === targetNest) {
+          const label = `${item.metalRing || item.ringNumber || 'Sin anilla'} ${item.pvcCode ? '('+item.pvcCode+')' : ''} - ${item.edad || 'Pollo'}`;
+          sel.innerHTML += `<option value="${label}">${label}</option>`;
+        }
+      });
+      sel.value = currentSelected;
+    }
 
     function applyModeRestrictions() {
       if (currentMode === 'view') {
@@ -475,6 +513,7 @@
         document.getElementById('currentNote').value = '';
         renderHistoryView('');
         if (pickerMarker) pickerMap.removeLayer(pickerMarker);
+        updateRingedChicksDropdown('');
       } else {
         const found = allNests.find(d => d.nestId === val);
         if (found) {
@@ -509,6 +548,7 @@
           document.getElementById('visitationState').value = found.visitationState || 'Huevos';
           document.getElementById('healthStatus').value = found.healthStatus || 'Excelente';
           
+          document.getElementById('deadRingedChick').value = found.deadRingedChick || 'Ninguno';
           document.getElementById('chickDeaths').value = found.chickDeaths ?? 0;
           document.getElementById('adultDeath').value = found.adultDeath || 'Ninguno';
           document.getElementById('fledgedChicks').value = found.fledgedChicks ?? 0;
@@ -516,6 +556,7 @@
           document.getElementById('notes').value = found.notes || '';
           document.getElementById('currentNote').value = '';
           renderHistoryView(found.notes || '');
+          updateRingedChicksDropdown(found.nestId);
         }
       }
 
@@ -535,12 +576,14 @@
 
       const state = document.getElementById('visitationState').value;
       const health = document.getElementById('healthStatus').value;
+      const deadRinged = document.getElementById('deadRingedChick').value;
       const deaths = document.getElementById('chickDeaths').value;
       const fledged = document.getElementById('fledgedChicks').value;
       const adultDeath = document.getElementById('adultDeath').value;
 
       let autoSummary = `[Visita: ${visitDate}] Nidada: ${state} | Salud: ${health}`;
-      if (deaths > 0) autoSummary += ` | Bajas pollos: ${deaths}`;
+      if (deadRinged !== 'Ninguno') autoSummary += ` | Pollo anillado muerto: ${deadRinged}`;
+      if (deaths > 0) autoSummary += ` | Bajas pollos sin anillar: ${deaths}`;
       if (fledged > 0) autoSummary += ` | Volantones: ${fledged}`;
       if (adultDeath !== 'Ninguno') autoSummary += ` | Adulto muerto: ${adultDeath}`;
 
@@ -567,6 +610,7 @@
         visitationState: state,
         healthStatus: health, 
         
+        deadRingedChick: deadRinged,
         chickDeaths: parseInt(deaths)||0,
         adultDeath: adultDeath,
         fledgedChicks: parseInt(fledged)||0,
