@@ -100,7 +100,7 @@
             <tr>
               <th class="px-6 py-4">Anilla Metálica</th>
               <th class="px-6 py-4">Código PVC</th>
-              <th class="px-6 py-4">Especie / Sexo</th>
+              <th class="px-6 py-4">Sexo</th>
               <th class="px-6 py-4">Edad</th>
               <th class="px-6 py-4">Nido / Ubicación</th>
               <th class="px-6 py-4">Fecha Anillamiento</th>
@@ -204,8 +204,8 @@
       document.getElementById('modal-title').textContent = 'Registrar Nuevo Ejemplar';
       document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
 
-      if (key) {
-        const item = allRingedData.find(d => d.id === key);
+      if (key !== '') {
+        const item = allRingedData.find(d => String(d.id) === String(key));
         if (item) {
           document.getElementById('editKey').value = item.id;
           document.getElementById('metalRing').value = item.metalRing || '';
@@ -239,7 +239,7 @@
         observaciones: document.getElementById('observaciones').value.trim()
       };
 
-      const key = editKey ? editKey : db.ref('anillados').push().key;
+      const key = editKey !== '' ? editKey : (metalRing ? metalRing.replace(/[^a-zA-Z0-9]/g, '_') : 'ring_' + Date.now());
       record.id = key;
 
       db.ref('anillados/' + key).set(record, err => {
@@ -259,21 +259,32 @@
 
     db.ref('anillados').on('value', snapshot => {
       const val = snapshot.val();
-      allRingedData = val ? Object.values(val) : [];
+      allRingedData = [];
+      
+      if (val) {
+        Object.keys(val).forEach(key => {
+          if (val[key] && typeof val[key] === 'object') {
+            allRingedData.push({
+              id: key,
+              ...val[key]
+            });
+          }
+        });
+      }
       
       const tbody = document.getElementById('ringed-table-body');
       tbody.innerHTML = '';
 
       if (allRingedData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-6 text-center text-stone-400 italic">No hay ejemplares anillados registrados todavía.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-6 text-center text-stone-400 italic">No hay ejemplares anillados registrados todavía en Firebase.</td></tr>`;
       } else {
         allRingedData.forEach(item => {
           tbody.innerHTML += `
             <tr class="hover:bg-stone-50 transition-colors">
               <td class="px-6 py-4 font-mono font-bold text-stone-900">${item.metalRing || 'Sin anilla'}</td>
               <td class="px-6 py-4 font-mono text-sky-700 font-semibold">${item.pvcCode || '-'}</td>
-              <td class="px-6 py-4">${item.sexo}</td>
-              <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">${item.edad}</span></td>
+              <td class="px-6 py-4">${item.sexo || 'Desconocido'}</td>
+              <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">${item.edad || '-'}</span></td>
               <td class="px-6 py-4 font-mono">${item.nestId || 'General'}</td>
               <td class="px-6 py-4">${item.ringDate || '-'}</td>
               <td class="px-6 py-4 text-right space-x-2">
@@ -284,11 +295,11 @@
           `;
         });
       }
-      lucide.createIcons();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-      lucide.createIcons();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     });
   </script>
 </body>
