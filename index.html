@@ -46,7 +46,6 @@
       background-size: cover;
     }
     .leaflet-popup-content-wrapper { border-radius: 0.75rem; padding: 0.25rem; }
-    #overview-map { height: 400px; width: 100%; border-radius: 0 0 1rem 1rem; }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
@@ -158,7 +157,7 @@
       </div>
     </div>
 
-    <!-- MAPA GENERAL LIBRE DE BLOQUEOS -->
+    <!-- MAPA GENERAL CON ALTURA FORZADA EN LÍNEA -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
       <div class="p-6 border-b border-brand-border">
         <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2">
@@ -166,7 +165,7 @@
           Mapa de Localización de Nidos
         </h2>
       </div>
-      <div id="overview-map"></div>
+      <div id="overview-map" style="height: 420px; width: 100%; position: relative;"></div>
     </div>
 
   </main>
@@ -195,20 +194,22 @@
 
     function initOverviewMap() {
       if (overviewMap) return;
+
+      const mapEl = document.getElementById('overview-map');
+      if (!mapEl) return;
       
       overviewMap = L.map('overview-map').setView([39.98, -0.05], 10);
       
-      // Capa de mapas optimizada y libre de errores 403
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
       }).addTo(overviewMap);
 
       overviewMarkersGroup = L.layerGroup().addTo(overviewMap);
 
-      setTimeout(() => {
-        if (overviewMap) overviewMap.invalidateSize();
-      }, 250);
+      // Múltiples reintentos de redimensión para asegurar que Leaflet pinte las baldosas correctamente
+      setTimeout(() => { if (overviewMap) overviewMap.invalidateSize(); }, 200);
+      setTimeout(() => { if (overviewMap) overviewMap.invalidateSize(); }, 600);
     }
 
     db.ref('anillados').on('value', snapshot => {
@@ -357,7 +358,7 @@
         initOverviewMap();
       }
 
-      if (overviewMarkersGroup) {
+      if (overviewMarkersGroup && overviewMap) {
         overviewMarkersGroup.clearLayers();
         const bounds = [];
 
@@ -381,9 +382,11 @@
           }
         });
 
-        if (bounds.length > 0 && overviewMap) {
+        if (bounds.length > 0) {
           overviewMap.fitBounds(bounds, { padding: [40, 40] });
         }
+        
+        overviewMap.invalidateSize();
       }
       
       if (typeof lucide !== 'undefined') {
@@ -399,10 +402,12 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       initOverviewMap();
-      setTimeout(() => {
-        if (overviewMap) overviewMap.invalidateSize();
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-      }, 300);
+    });
+
+    window.addEventListener('load', () => {
+      if (overviewMap) {
+        overviewMap.invalidateSize();
+      }
     });
   </script>
 </body>
