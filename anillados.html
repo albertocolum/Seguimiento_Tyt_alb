@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Biometría y Anillados</title>
+  <title>Tyto Alba | Registro de Anillamiento y Biometría</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -69,20 +69,117 @@
     </div>
   </header>
 
+  <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
-    <div class="bg-brand-dark/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-white/10">
-      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Registro de Anillamiento y Biometría</h1>
-      <p class="text-white/70 text-sm mt-2">Gestión de anillas metálicas, códigos PVC y parámetros biométricos.</p>
+    
+    <div class="bg-brand-dark/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div>
+        <span class="inline-block bg-white/10 text-sky-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-sky-500/20">Base de Datos Biométrica</span>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Registro de Anillamiento</h1>
+        <p class="text-white/70 text-sm mt-2">Control de ejemplares, anillas metálicas, códigos PVC y medidas biométricas en la nube.</p>
+      </div>
+
+      <div class="shrink-0 flex items-center gap-2">
+        <button onclick="openAddModal()" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow-sm inline-flex items-center space-x-2 text-xs">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Nuevo Ejemplar</span>
+        </button>
+      </div>
     </div>
 
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border p-6 shadow-md text-center py-16">
-      <i data-lucide="tag" class="w-12 h-12 text-sky-500 mx-auto mb-4"></i>
-      <h2 class="text-xl font-bold text-stone-800">Módulo de Anillados Activo</h2>
-      <p class="text-stone-500 text-sm mt-2">Aquí puedes consultar y registrar los datos biométricos de los ejemplares.</p>
+    <!-- TABLA DE ANILLADOS -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
+      <div class="p-6 border-b border-brand-border flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-bold text-stone-800">Ejemplares Registrados</h2>
+          <p class="text-xs text-stone-500 mt-1">Listado completo sincronizado desde Firebase</p>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b border-brand-border">
+            <tr>
+              <th class="px-6 py-4">Anilla Metálica</th>
+              <th class="px-6 py-4">Código PVC</th>
+              <th class="px-6 py-4">Especie / Sexo</th>
+              <th class="px-6 py-4">Edad</th>
+              <th class="px-6 py-4">Nido / Ubicación</th>
+              <th class="px-6 py-4">Fecha Anillamiento</th>
+              <th class="px-6 py-4 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="ringed-table-body" class="divide-y divide-brand-border font-medium text-stone-700"></tbody>
+        </table>
+      </div>
     </div>
+
   </main>
 
-  <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo — Sincronización Nube Activa</footer>
+  <!-- MODAL PARA AÑADIR / EDITAR ANILLADO -->
+  <div id="ringModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-4">
+        <h3 id="modal-title" class="text-lg font-bold text-stone-900">Registrar Nuevo Ejemplar</h3>
+        <button onclick="closeAddModal()" class="text-stone-400 hover:text-stone-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <form id="ringForm" onsubmit="saveRingedRecord(event)" class="space-y-4">
+        <input type="hidden" id="editKey" value="">
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica *</label>
+            <input type="text" id="metalRing" required placeholder="Ej. A12345" class="w-full px-3 py-2 border rounded-xl text-sm font-mono uppercase bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Código PVC (Color)</label>
+            <input type="text" id="pvcCode" placeholder="Ej. AB12" class="w-full px-3 py-2 border rounded-xl text-sm font-mono uppercase bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Edad *</label>
+            <select id="edad" class="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold">
+              <option value="Pollo">Pollo (Nestling)</option>
+              <option value="Inmaduro">Inmaduro</option>
+              <option value="Adulto">Adulto</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Sexo *</label>
+            <select id="sexo" class="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold">
+              <option value="Desconocido">Desconocido</option>
+              <option value="Macho">Macho</option>
+              <option value="Hembra">Hembra</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">ID Nido Asociado</label>
+            <input type="text" id="nestId" placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-sm bg-white font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Anillamiento *</label>
+            <input type="date" id="ringDate" required class="w-full px-3 py-2 border rounded-xl text-sm bg-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones / Medidas Biométricas</label>
+          <textarea id="observaciones" rows="2" placeholder="Peso, cuerda alar, tarsos..." class="w-full px-3 py-2 border rounded-xl text-sm bg-white"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t">
+          <button type="button" onclick="closeAddModal()" class="px-4 py-2 border rounded-xl text-xs font-semibold text-stone-600 hover:bg-stone-50">Cancelar</button>
+          <button type="submit" class="bg-brand-accent hover:bg-brand-accentHover text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-md">Guardar Ejemplar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo — Firebase Cloud Mode</footer>
 
   <script>
     const firebaseConfig = {
@@ -94,8 +191,105 @@
       messagingSenderId: "770240286093",
       appId: "1:770240286093:web:5d389a48e7580face9c1c4"
     };
+
     firebase.initializeApp(firebaseConfig);
-    window.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
+    const db = firebase.database();
+
+    let allRingedData = [];
+
+    function openAddModal(key = '') {
+      document.getElementById('ringModal').classList.remove('hidden');
+      document.getElementById('ringForm').reset();
+      document.getElementById('editKey').value = '';
+      document.getElementById('modal-title').textContent = 'Registrar Nuevo Ejemplar';
+      document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
+
+      if (key) {
+        const item = allRingedData.find(d => d.id === key);
+        if (item) {
+          document.getElementById('editKey').value = item.id;
+          document.getElementById('metalRing').value = item.metalRing || '';
+          document.getElementById('pvcCode').value = item.pvcCode || '';
+          document.getElementById('edad').value = item.edad || 'Pollo';
+          document.getElementById('sexo').value = item.sexo || 'Desconocido';
+          document.getElementById('nestId').value = item.nestId || '';
+          document.getElementById('ringDate').value = item.ringDate || new Date().toISOString().split('T')[0];
+          document.getElementById('observaciones').value = item.observaciones || '';
+          document.getElementById('modal-title').textContent = 'Editar Ejemplar Anillado';
+        }
+      }
+    }
+
+    function closeAddModal() {
+      document.getElementById('ringModal').classList.add('hidden');
+    }
+
+    function saveRingedRecord(e) {
+      e.preventDefault();
+      const editKey = document.getElementById('editKey').value;
+      const metalRing = document.getElementById('metalRing').value.trim().toUpperCase();
+
+      const record = {
+        metalRing,
+        pvcCode: document.getElementById('pvcCode').value.trim().toUpperCase(),
+        edad: document.getElementById('edad').value,
+        sexo: document.getElementById('sexo').value,
+        nestId: document.getElementById('nestId').value.trim(),
+        ringDate: document.getElementById('ringDate').value,
+        observaciones: document.getElementById('observaciones').value.trim()
+      };
+
+      const key = editKey ? editKey : db.ref('anillados').push().key;
+      record.id = key;
+
+      db.ref('anillados/' + key).set(record, err => {
+        if (err) {
+          alert('Error al guardar: ' + err.message);
+        } else {
+          closeAddModal();
+        }
+      });
+    }
+
+    function deleteRingedRecord(key) {
+      if (confirm('¿Deseas eliminar este registro de anillamiento?')) {
+        db.ref('anillados/' + key).remove();
+      }
+    }
+
+    db.ref('anillados').on('value', snapshot => {
+      const val = snapshot.val();
+      allRingedData = val ? Object.values(val) : [];
+      
+      const tbody = document.getElementById('ringed-table-body');
+      tbody.innerHTML = '';
+
+      if (allRingedData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-6 text-center text-stone-400 italic">No hay ejemplares anillados registrados todavía.</td></tr>`;
+      } else {
+        allRingedData.forEach(item => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-stone-50 transition-colors">
+              <td class="px-6 py-4 font-mono font-bold text-stone-900">${item.metalRing || 'Sin anilla'}</td>
+              <td class="px-6 py-4 font-mono text-sky-700 font-semibold">${item.pvcCode || '-'}</td>
+              <td class="px-6 py-4">${item.sexo}</td>
+              <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">${item.edad}</span></td>
+              <td class="px-6 py-4 font-mono">${item.nestId || 'General'}</td>
+              <td class="px-6 py-4">${item.ringDate || '-'}</td>
+              <td class="px-6 py-4 text-right space-x-2">
+                <button onclick="openAddModal('${item.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-2.5 py-1 rounded-lg">Editar</button>
+                <button onclick="deleteRingedRecord('${item.id}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold px-2.5 py-1 rounded-lg">Borrar</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+      lucide.createIcons();
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
   </script>
 </body>
 </html>
