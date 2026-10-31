@@ -169,7 +169,7 @@
           <p class="text-xs text-stone-500">Estado actual y adultos anillados en cada caja</p>
         </div>
         <a href="control.html" class="text-xs font-bold text-brand-dark hover:text-brand-accent flex items-center gap-1 transition-colors">
-          Gestionar nidos <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          Registrar nido <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
         </a>
       </div>
 
@@ -293,10 +293,9 @@
               <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${nest.status === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${nest.status || 'Activo'}</span></td>
               <td class="p-3">${maleInfo}</td>
               <td class="p-3">${femaleInfo}</td>
-              <td class="p-3 text-right space-x-1.5">
-                <a href="control.html?edit=${nest.nestId}&mode=view" class="px-2 py-1 rounded-lg hover:bg-stone-100 text-stone-600 font-bold">Ver</a>
-                <a href="control.html?edit=${nest.nestId}" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">Editar</a>
-                <button onclick="deleteNest('${nest.nestId}')" class="px-2.5 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
+              <td class="p-3 text-right space-x-2">
+                <a href="control.html?edit=${nest.nestId}" class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">Editar</a>
+                <button onclick="deleteNest('${nest.nestId}')" class="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
               </td>
             `;
             tbody.appendChild(tr);
