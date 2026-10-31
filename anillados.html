@@ -103,7 +103,7 @@
         </div>
       </div>
 
-      <!-- DATOS BIOMÉTRICOS (ORDEN: Sexo, Ala Max, P8, Tarso, Peso) -->
+      <!-- DATOS BIOMÉTRICOS -->
       <div class="space-y-4">
         <h3 class="text-sm font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-sky-600"></i> 3. Biometría Científica</h3>
         
@@ -200,7 +200,6 @@
 
     let allRings = [];
 
-    // Cargar nidos desde Firebase para el desplegable
     db.ref('nidos').on('value', snapshot => {
       const val = snapshot.val();
       const nests = val ? Object.values(val) : [];
@@ -218,7 +217,6 @@
       if (currentSelected) sel.value = currentSelected;
     });
 
-    // Cargar historial de anillamientos desde Firebase
     db.ref('anillados').on('value', snapshot => {
       const val = snapshot.val();
       allRings = val ? Object.values(val) : [];
@@ -234,7 +232,6 @@
         return;
       }
 
-      // Ordenar por fecha más reciente primero
       data.sort((a, b) => new Date(b.ringDate) - new Date(a.ringDate));
 
       data.forEach(item => {
@@ -253,7 +250,7 @@
             <td class="px-4 py-3">${item.tarsus ? item.tarsus + ' mm' : '-'}</td>
             <td class="px-4 py-3 font-semibold">${item.weight ? item.weight + ' g' : '-'}</td>
             <td class="px-4 py-3 text-right">
-              <button onclick="deleteRingRecord('${item.metalRing}')" class="text-rose-600 hover:text-rose-800 font-semibold text-xs">Eliminar</button>
+              <button onclick="deleteRingRecord('${item.metalRing}', '${item.nestId}', '${item.birdAge}', '${item.sex}')" class="text-rose-600 hover:text-rose-800 font-semibold text-xs">Eliminar</button>
             </td>
           </tr>
         `;
@@ -271,9 +268,28 @@
       renderRingHistory(filtered);
     }
 
-    function deleteRingRecord(metalRing) {
+    function deleteRingRecord(metalRing, nestId, birdAge, sex) {
       if (confirm(`¿Estás seguro de que deseas eliminar el registro de la anilla ${metalRing}?`)) {
         const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
+        
+        // Si era adulto y estaba vinculado a un nido, limpiamos su ranura en el nido
+        if (birdAge === 'Adulto' && nestId && nestId !== 'N/A') {
+          db.ref('nidos/' + nestId).once('value', snapshot => {
+            const nest = snapshot.val();
+            if (nest) {
+              let updates = {};
+              if (sex === 'Macho' || nest.maleRing === metalRing) {
+                updates.maleRing = 'Sin anillar';
+                updates.malePvcCode = '';
+              } else if (sex === 'Hembra' || nest.femaleRing === metalRing) {
+                updates.femaleRing = 'Sin anillar';
+                updates.femalePvcCode = '';
+              }
+              db.ref('nidos/' + nestId).update(updates);
+            }
+          });
+        }
+
         db.ref('anillados/' + safeKey).remove()
           .then(() => alert('Registro eliminado con éxito.'))
           .catch(err => alert('Error al eliminar: ' + err.message));
@@ -284,14 +300,17 @@
       e.preventDefault();
       const metalRing = document.getElementById('metalRing').value.trim().toUpperCase();
       const currentNest = document.getElementById('nestSelect').value;
+      const birdAge = document.getElementById('birdAge').value;
+      const sex = document.getElementById('sex').value;
+      const pvcRing = document.getElementById('pvcRing').value.trim().toUpperCase();
       
       const ringRecord = {
         metalRing,
         nestId: currentNest,
         ringDate: document.getElementById('ringDate').value,
-        birdAge: document.getElementById('birdAge').value,
-        pvcRing: document.getElementById('pvcRing').value.trim().toUpperCase(),
-        sex: document.getElementById('sex').value,
+        birdAge,
+        pvcRing,
+        sex,
         wingChord: parseFloat(document.getElementById('wingChord').value) || null,
         p8: parseFloat(document.getElementById('p8').value) || null,
         tarsus: parseFloat(document.getElementById('tarsus').value) || null,
@@ -299,24 +318,55 @@
         ringNotes: document.getElementById('ringNotes').value
       };
 
-      db.ref('anillados/' + metalRing.replace(/[\/\.#$\[\]]/g, '_')).set(ringRecord, err => {
+      const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
+
+      // Guardar biometría
+      db.ref('anillados/' + safeKey).set(ringRecord, err => {
         if (err) {
           alert('Error al guardar el registro: ' + err.message);
+          return;
+        }
+
+        // SI ES ADULTO, ACTUALIZAR AUTOMÁTICAMENTE EL NIDO ASOCIADO
+        if (birdAge === 'Adulto' && currentNest) {
+          db.ref('nidos/' + currentNest).once('value', snapshot => {
+            const nestData = snapshot.val() || {};
+            let nestUpdates = {};
+
+            if (sex === 'Macho') {
+              nestUpdates.maleRing = metalRing;
+              nestUpdates.malePvcCode = pvcRing;
+            } else if (sex === 'Hembra') {
+              nestUpdates.femaleRing = metalRing;
+              nestUpdates.femalePvcCode = pvcRing;
+            } else {
+              // Si el sexo es desconocido, asignarlo al primer hueco libre o macho por defecto
+              if (!nestData.maleRing || nestData.maleRing === 'Sin anillar') {
+                nestUpdates.maleRing = metalRing;
+                nestUpdates.malePvcCode = pvcRing;
+              } else {
+                nestUpdates.femaleRing = metalRing;
+                nestUpdates.femalePvcCode = pvcRing;
+              }
+            }
+
+            db.ref('nidos/' + currentNest).update(nestUpdates);
+          });
+        }
+
+        const keepInNest = confirm('¡Registro guardado con éxito y sincronizado con el nido!\n\n¿Deseas anillar otra ave en este mismo nido?');
+        
+        if (keepInNest) {
+          document.getElementById('metalRing').value = '';
+          document.getElementById('pvcRing').value = '';
+          document.getElementById('weight').value = '';
+          document.getElementById('wingChord').value = '';
+          document.getElementById('p8').value = '';
+          document.getElementById('tarsus').value = '';
+          document.getElementById('ringNotes').value = '';
+          document.getElementById('metalRing').focus();
         } else {
-          const keepInNest = confirm('¡Registro guardado con éxito!\n\n¿Deseas anillar otra ave en este mismo nido?');
-          
-          if (keepInNest) {
-            document.getElementById('metalRing').value = '';
-            document.getElementById('pvcRing').value = '';
-            document.getElementById('weight').value = '';
-            document.getElementById('wingChord').value = '';
-            document.getElementById('p8').value = '';
-            document.getElementById('tarsus').value = '';
-            document.getElementById('ringNotes').value = '';
-            document.getElementById('metalRing').focus();
-          } else {
-            window.location.href = 'index.html';
-          }
+          window.location.href = 'index.html';
         }
       });
     }

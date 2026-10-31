@@ -74,7 +74,7 @@
   <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     
-    <!-- TARJETAS DE ESTADÍSTICAS KPI (SECCIÓN RECUPERADA) -->
+    <!-- TARJETAS DE ESTADÍSTICAS KPI -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
       
       <!-- Nidos Activos -->
@@ -125,7 +125,7 @@
         </div>
       </div>
 
-      <!-- Anillados -->
+      <!-- Anillados (Sincronizado) -->
       <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between col-span-2 sm:col-span-1">
         <div class="flex justify-between items-start">
           <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Anillados</span>
@@ -139,7 +139,7 @@
 
     </div>
 
-    <!-- SECCIÓN DE TABLA DETALLADA (SECCIÓN RECUPERADA) -->
+    <!-- SECCIÓN DE TABLA DETALLADA -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
         <div>
@@ -209,7 +209,6 @@
 
       dashboardMap = L.map('dashboard-map').setView([39.98, -0.05], 11);
 
-      // CAPA TOPOGRÁFICA Y DE RELIEVE DE ESRI
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
         attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
@@ -218,77 +217,78 @@
       markersLayer = L.layerGroup().addTo(dashboardMap);
     }
 
-    function loadNestsData() {
+    function loadDashboardData() {
       initDashboardMap();
 
-      db.ref('nidos').on('value', snapshot => {
-        const data = snapshot.val();
-        const tbody = document.getElementById('nests-table-body');
-        tbody.innerHTML = '';
-        markersLayer.clearLayers();
+      // Cargar anillados y nidos simultáneamente para cruzar la información
+      db.ref('anillados').on('value', ringSnapshot => {
+        const ringsData = ringSnapshot.val() || {};
+        const totalRingedCount = Object.keys(ringsData).length;
+        document.getElementById('stat-ringed').textContent = totalRingedCount;
 
-        if (!data) {
-          tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-stone-400">No hay nidos registrados todavía.</td></tr>';
-          document.getElementById('total-nests-badge').textContent = '0 nidos';
-          updateKpis([]);
-          return;
-        }
+        db.ref('nidos').on('value', nestSnapshot => {
+          const nestData = nestSnapshot.val();
+          const tbody = document.getElementById('nests-table-body');
+          tbody.innerHTML = '';
+          markersLayer.clearLayers();
 
-        const nests = Object.values(data);
-        document.getElementById('total-nests-badge').textContent = `${nests.length} nidos`;
-
-        updateKpis(nests);
-
-        const latLngs = [];
-
-        nests.forEach(nest => {
-          // Formatear Anillas Macho/Hembra
-          const maleInfo = nest.maleRing && nest.maleRing !== 'Sin anillar' ? `${nest.maleRing} ${nest.malePvcCode ? '('+nest.malePvcCode+')' : ''}` : '<span class="italic text-stone-400">Sin anillar</span>';
-          const femaleInfo = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? `${nest.femaleRing} ${nest.femalePvcCode ? '('+nest.femalePvcCode+')' : ''}` : '<span class="italic text-stone-400">Sin anillar</span>';
-
-          // Fila de la tabla
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-stone-50/60 transition-colors';
-          tr.innerHTML = `
-            <td class="p-3 font-extrabold text-stone-900">${nest.nestId}</td>
-            <td class="p-3 font-medium text-stone-600">${nest.locationName || 'Sin paraje'}</td>
-            <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${nest.status === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${nest.status || 'Activo'}</span></td>
-            <td class="p-3 text-stone-600">${maleInfo}</td>
-            <td class="p-3 text-stone-600">${femaleInfo}</td>
-            <td class="p-3 text-right space-x-1.5">
-              <a href="control.html?edit=${nest.nestId}&mode=view" class="px-2 py-1 rounded-lg hover:bg-stone-100 text-stone-600 font-bold">Ver</a>
-              <a href="control.html?edit=${nest.nestId}" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">Editar</a>
-              <button onclick="deleteNest('${nest.nestId}')" class="px-2.5 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-
-          // Marcador en el mapa de relieve
-          if (nest.lat && nest.lng) {
-            const marker = L.marker([nest.lat, nest.lng]);
-            marker.bindPopup(`<b>${nest.nestId}</b><br>${nest.locationName || ''}<br>Estado: ${nest.status || ''}`);
-            markersLayer.addLayer(marker);
-            latLngs.push([nest.lat, nest.lng]);
+          if (!nestData) {
+            tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-stone-400">No hay nidos registrados todavía.</td></tr>';
+            document.getElementById('total-nests-badge').textContent = '0 nidos';
+            updateKpis([], totalRingedCount);
+            return;
           }
+
+          const nests = Object.values(nestData);
+          document.getElementById('total-nests-badge').textContent = `${nests.length} nidos`;
+          updateKpis(nests, totalRingedCount);
+
+          const latLngs = [];
+
+          nests.forEach(nest => {
+            const maleInfo = nest.maleRing && nest.maleRing !== 'Sin anillar' ? `<span class="font-mono font-bold text-sky-700">${nest.maleRing}</span> ${nest.malePvcCode ? '<span class="text-stone-500 font-mono">('+nest.malePvcCode+')</span>' : ''}` : '<span class="italic text-stone-400">Sin anillar</span>';
+            const femaleInfo = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? `<span class="font-mono font-bold text-sky-700">${nest.femaleRing}</span> ${nest.femalePvcCode ? '<span class="text-stone-500 font-mono">('+nest.femalePvcCode+')</span>' : ''}` : '<span class="italic text-stone-400">Sin anillar</span>';
+
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-stone-50/60 transition-colors';
+            tr.innerHTML = `
+              <td class="p-3 font-extrabold text-stone-900">${nest.nestId}</td>
+              <td class="p-3 font-medium text-stone-600">${nest.locationName || 'Sin paraje'}</td>
+              <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${nest.status === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${nest.status || 'Activo'}</span></td>
+              <td class="p-3">${maleInfo}</td>
+              <td class="p-3">${femaleInfo}</td>
+              <td class="p-3 text-right space-x-1.5">
+                <a href="control.html?edit=${nest.nestId}&mode=view" class="px-2 py-1 rounded-lg hover:bg-stone-100 text-stone-600 font-bold">Ver</a>
+                <a href="control.html?edit=${nest.nestId}" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">Editar</a>
+                <button onclick="deleteNest('${nest.nestId}')" class="px-2.5 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+
+            if (nest.lat && nest.lng) {
+              const marker = L.marker([nest.lat, nest.lng]);
+              marker.bindPopup(`<b>${nest.nestId}</b><br>${nest.locationName || ''}<br>Estado: ${nest.status || ''}`);
+              markersLayer.addLayer(marker);
+              latLngs.push([nest.lat, nest.lng]);
+            }
+          });
+
+          if (latLngs.length > 0) {
+            dashboardMap.fitBounds(latLngs, { padding: [50, 50], maxZoom: 14 });
+          }
+
+          setTimeout(() => {
+            if (dashboardMap) dashboardMap.invalidateSize();
+          }, 300);
         });
-
-        if (latLngs.length > 0) {
-          dashboardMap.fitBounds(latLngs, { padding: [50, 50], maxZoom: 14 });
-        }
-
-        setTimeout(() => {
-          if (dashboardMap) dashboardMap.invalidateSize();
-        }, 300);
       });
     }
 
-    // Calcular y actualizar estadísticas KPI
-    function updateKpis(nests) {
+    function updateKpis(nests, ringedCount) {
       let active = 0;
       let inactive = 0;
       let pairs = 0;
       let chicks = 0;
-      let ringed = 0;
 
       nests.forEach(n => {
         if (n.status === 'Activo') active++;
@@ -298,9 +298,6 @@
           pairs++;
         }
 
-        if (n.maleRing && n.maleRing !== 'Sin anillar') ringed++;
-        if (n.femaleRing && n.femaleRing !== 'Sin anillar') ringed++;
-
         if (n.fledgedChicks) chicks += parseInt(n.fledgedChicks) || 0;
       });
 
@@ -308,7 +305,7 @@
       document.getElementById('stat-inactive').textContent = inactive;
       document.getElementById('stat-pairs').textContent = pairs;
       document.getElementById('stat-chicks').textContent = chicks;
-      document.getElementById('stat-ringed').textContent = ringed;
+      document.getElementById('stat-ringed').textContent = ringedCount;
     }
 
     function deleteNest(nestId) {
@@ -322,7 +319,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      loadNestsData();
+      loadDashboardData();
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
 
