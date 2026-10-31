@@ -108,7 +108,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido *</label>
-              <input type="text" id="nestId" required oninput="loadNestRings(this.value)" placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
+              <input type="text" id="nestId" required oninput="loadNestRings(this.value); loadNestHistoricalRecords(this.value);" placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido</label>
@@ -244,6 +244,17 @@
             <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo (Auto-ajustable)</label>
             <textarea id="notes" oninput="autoResizeTextarea(this)" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
           </div>
+
+          <!-- HISTORIAL CRONOLÓGICO DE ANILLADOS EN ESTE NIDO -->
+          <div class="space-y-2 pt-3 border-t">
+            <h4 class="text-xs font-bold text-brand-dark uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> Historial Cronológico de Anillados en este Nido
+            </h4>
+            <div id="nest-historical-records" class="bg-stone-50 border rounded-xl p-4 max-h-48 overflow-y-auto text-xs space-y-2">
+              <p class="text-stone-400 italic">Seleccione o cargue un nido para ver sus registros históricos...</p>
+            </div>
+          </div>
+
         </div>
 
         <div class="flex justify-end pt-4 border-t space-x-3">
@@ -310,6 +321,43 @@
             select.appendChild(option);
           }
         });
+      });
+    }
+
+    function loadNestHistoricalRecords(nestId) {
+      const container = document.getElementById('nest-historical-records');
+      if (!container || !nestId) return;
+
+      container.innerHTML = '<p class="text-stone-400 italic">Cargando historial...</p>';
+
+      db.ref('anillados').orderByChild('nestId').equalTo(nestId.toUpperCase()).once('value', snapshot => {
+        const data = snapshot.val();
+        if (!data) {
+          container.innerHTML = '<p class="text-stone-500 italic">No hay aves anilladas registradas previamente en este nido.</p>';
+          return;
+        }
+
+        const records = Object.values(data);
+        records.sort((a, b) => new Date(b.ringDate) - new Date(a.ringDate));
+
+        let html = '<div class="divide-y divide-stone-200">';
+        records.forEach(r => {
+          html += `
+            <div class="py-2 flex justify-between items-center flex-wrap gap-2">
+              <div>
+                <span class="font-bold text-stone-900">${formatDateToEU(r.ringDate)}</span> — 
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${r.birdAge === 'Adulto' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${r.birdAge}</span>
+                <span class="font-mono font-bold text-sky-700 ml-2">Metal: ${r.metalRing}</span>
+                ${r.pvcRing ? `<span class="font-mono text-stone-600 ml-1">(PVC: ${r.pvcRing})</span>` : ''}
+              </div>
+              <div class="text-stone-600 text-[11px]">
+                Sexo: <strong>${r.sex || 'Desconocido'}</strong> | EURING: <strong>${r.euringAge || '-'}</strong> ${r.weight ? '| Peso: <strong>'+r.weight+'g</strong>' : ''}
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
       });
     }
 
@@ -391,6 +439,7 @@
       notesArea.style.height = 'auto';
       document.getElementById('chickDeathRing').value = 'Sin anillar';
       document.getElementById('adultDeath').value = 'Ninguno';
+      document.getElementById('nest-historical-records').innerHTML = '<p class="text-stone-400 italic">Introduzca un ID de nido para ver sus registros históricos...</p>';
       initNestMap(39.98, -0.05);
     }
 
@@ -417,12 +466,10 @@
 
       let alertSnippets = [];
 
-      // Detectar cambios en el estado del nido (Activo, Inactivo, Abandonado)
       if (currentStatus !== initialStatus) {
         alertSnippets.push(`[ESTADO NIDO ${euDate}] El estado del nido ha cambiado a: ${currentStatus}.`);
       }
 
-      // Detectar cambios en la cámara de fototrampeo (Sí / No)
       if (currentCamera !== initialCamera) {
         if (currentCamera === 'Sí') {
           alertSnippets.push(`[CAMARA ${euDate}] Se ha instalado/activado la cámara de fototrampeo.`);
@@ -520,6 +567,7 @@
             document.getElementById('healthStatus').value = item.healthStatus || 'Excelente';
             
             loadNestRings(item.nestId || editId);
+            loadNestHistoricalRecords(item.nestId || editId);
 
             document.getElementById('chickDeathRing').value = 'Sin anillar';
             document.getElementById('adultDeath').value = 'Ninguno';
