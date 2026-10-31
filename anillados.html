@@ -200,18 +200,27 @@
 
     let allRings = [];
 
+    // Carga de nidos robusta y segura
     db.ref('nidos').on('value', snapshot => {
       const val = snapshot.val();
-      const nests = val ? Object.values(val) : [];
       const sel = document.getElementById('nestSelect');
       const currentSelected = sel.value;
       
       sel.innerHTML = '<option value="">-- Seleccionar nido asociado --</option>';
+      
+      if (!val) {
+        sel.innerHTML += '<option value="" disabled>No hay nidos registrados todavía</option>';
+        return;
+      }
+
+      const nests = Object.values(val);
       if (nests.length === 0) {
         sel.innerHTML += '<option value="" disabled>No hay nidos registrados todavía</option>';
       } else {
         nests.forEach(item => {
-          sel.innerHTML += `<option value="${item.nestId}">${item.nestId} (${item.locationName || 'Sin ubicación'})</option>`;
+          if (item && item.nestId) {
+            sel.innerHTML += `<option value="${item.nestId}">${item.nestId} (${item.locationName || 'Sin ubicación'})</option>`;
+          }
         });
       }
       if (currentSelected) sel.value = currentSelected;
@@ -227,7 +236,7 @@
       const tbody = document.getElementById('ring-history-body');
       tbody.innerHTML = '';
 
-      if (data.length === 0) {
+      if (!data || data.length === 0) {
         tbody.innerHTML = `<tr><td colspan="11" class="px-6 py-4 text-center text-stone-400">No hay aves anilladas registradas todavía.</td></tr>`;
         return;
       }
@@ -289,4 +298,105 @@
           });
         }
 
-    anillados.html [generated with file_gen tool]
+        db.ref('anillados/' + safeKey).remove()
+          .then(() => alert('Registro eliminado con éxito.'))
+          .catch(err => alert('Error al eliminar: ' + err.message));
+      }
+    }
+
+    function handleRingSubmit(e) {
+      e.preventDefault();
+      const metalRing = document.getElementById('metalRing').value.trim().toUpperCase();
+      const currentNest = document.getElementById('nestSelect').value;
+      const birdAge = document.getElementById('birdAge').value;
+      const sex = document.getElementById('sex').value;
+      const pvcRing = document.getElementById('pvcRing').value.trim().toUpperCase();
+      const ringDate = document.getElementById('ringDate').value;
+      const weight = document.getElementById('weight').value;
+      const wing = document.getElementById('wingChord').value;
+      const userNotes = document.getElementById('ringNotes').value.trim();
+      
+      if (!currentNest) {
+        alert('Por favor, seleccione un nido de procedencia.');
+        return;
+      }
+
+      const ringRecord = {
+        metalRing,
+        nestId: currentNest,
+        ringDate,
+        birdAge,
+        pvcRing,
+        sex,
+        wingChord: parseFloat(wing) || null,
+        p8: parseFloat(document.getElementById('p8').value) || null,
+        tarsus: parseFloat(document.getElementById('tarsus').value) || null,
+        weight: parseFloat(weight) || null,
+        ringNotes: userNotes
+      };
+
+      const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
+
+      db.ref('anillados/' + safeKey).set(ringRecord, err => {
+        if (err) {
+          alert('Error al guardar el registro: ' + err.message);
+          return;
+        }
+
+        db.ref('nidos/' + currentNest).once('value', snapshot => {
+          const nestData = snapshot.val() || {};
+          let nestUpdates = {};
+
+          if (birdAge === 'Adulto') {
+            if (sex === 'Macho') {
+              nestUpdates.maleRing = metalRing;
+              nestUpdates.malePvcCode = pvcRing;
+            } else if (sex === 'Hembra') {
+              nestUpdates.femaleRing = metalRing;
+              nestUpdates.femalePvcCode = pvcRing;
+            } else {
+              if (!nestData.maleRing || nestData.maleRing === 'Sin anillar') {
+                nestUpdates.maleRing = metalRing;
+                nestUpdates.malePvcCode = pvcRing;
+              } else {
+                nestUpdates.femaleRing = metalRing;
+                nestUpdates.femalePvcCode = pvcRing;
+              }
+            }
+          }
+
+          let ringSummary = `[Anillamiento ${ringDate}] ${birdAge} (${sex}): Metal ${metalRing}${pvcRing ? ' / PVC '+pvcRing : ''}.`;
+          if (weight) ringSummary += ` Peso: ${weight}g.`;
+          if (wing) ringSummary += ` Ala: ${wing}mm.`;
+          if (userNotes) ringSummary += ` Nota: ${userNotes}`;
+
+          const previousNotes = nestData.notes ? nestData.notes.trim() : '';
+          nestUpdates.notes = previousNotes ? previousNotes + '\n' + ringSummary : ringSummary;
+
+          db.ref('nidos/' + currentNest).update(nestUpdates).then(() => {
+            const keepInNest = confirm('¡Registro guardado, nido actualizado y observaciones de campo sincronizadas!\n\n¿Deseas anillar otra ave en este mismo nido?');
+            
+            if (keepInNest) {
+              document.getElementById('metalRing').value = '';
+              document.getElementById('pvcRing').value = '';
+              document.getElementById('weight').value = '';
+              document.getElementById('wingChord').value = '';
+              document.getElementById('p8').value = '';
+              document.getElementById('tarsus').value = '';
+              document.getElementById('ringNotes').value = '';
+              document.getElementById('metalRing').focus();
+            } else {
+              window.location.href = 'index.html';
+            }
+          });
+        });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
