@@ -35,7 +35,7 @@
       background-repeat: no-repeat;
       background-size: cover;
     }
-    #nest-map { height: 320px; width: 100%; border-radius: 0.75rem; z-index: 10; }
+    #nest-map { height: 350px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
@@ -110,12 +110,11 @@
               <select id="nestType" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
                 <option value="Nido Artificial">Nido Artificial / Caja Nido</option>
                 <option value="Nido Natural">Nido Natural</option>
-                <option value="Construcción">Construcción / Masía</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Ubicación / Paraje *</label>
-              <input type="text" id="locationName" required placeholder="Ej. Cabanes (Comunidad Valenciana)" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+              <input type="text" id="locationName" required placeholder="Se autocompleta con el mapa..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Estado del Nido</label>
@@ -127,18 +126,18 @@
             </div>
           </div>
 
-          <!-- MAPA PARA SELECCIONAR COORDENADAS -->
+          <!-- MAPA TOPOGRÁFICO DE RELIEVE Y COORDENADAS SEPARADAS -->
           <div class="space-y-2 pt-2">
-            <label class="block text-xs font-bold text-stone-600">Seleccionar ubicación en el mapa (Haz clic para mover el marcador):</label>
+            <label class="block text-xs font-bold text-stone-600">Seleccionar ubicación en el mapa (Relieve de campo):</label>
             <div id="nest-map"></div>
             <div class="grid grid-cols-2 gap-4 pt-1">
               <div>
                 <label class="block text-[11px] font-semibold text-stone-500">Latitud</label>
-                <input type="number" step="0.000001" id="lat" readonly class="w-full px-3 py-1.5 border rounded-lg text-xs bg-stone-50 font-mono">
+                <input type="number" step="0.000001" id="lat" required class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white font-mono" onchange="updateMarkerFromInputs()">
               </div>
               <div>
                 <label class="block text-[11px] font-semibold text-stone-500">Longitud</label>
-                <input type="number" step="0.000001" id="lng" readonly class="w-full px-3 py-1.5 border rounded-lg text-xs bg-stone-50 font-mono">
+                <input type="number" step="0.000001" id="lng" required class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white font-mono" onchange="updateMarkerFromInputs()">
               </div>
             </div>
           </div>
@@ -269,19 +268,38 @@
     let nestMap = null;
     let nestMarker = null;
 
+    // Obtener ubicación automáticamente con Nominatim
+    function fetchLocationName(lat, lng) {
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`, {
+        headers: { 'Accept-Language': 'es' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data && data.display_name) {
+          const addr = data.address || {};
+          const town = addr.city || addr.town || addr.village || addr.municipality || '';
+          const province = addr.province || addr.state || '';
+          const readable = town ? `${town} (${province})` : data.display_name.split(',')[0];
+          document.getElementById('locationName').value = readable;
+        }
+      })
+      .catch(err => console.error('Error al obtener la ubicación:', err));
+    }
+
     function initNestMap(lat = 39.98, lng = -0.05) {
       if (nestMap) {
         nestMap.setView([lat, lng], 12);
         if (nestMarker) nestMarker.setLatLng([lat, lng]);
+        setTimeout(() => nestMap.invalidateSize(), 200);
         return;
       }
 
       nestMap = L.map('nest-map').setView([lat, lng], 12);
 
-      // Capa de mapas de Esri libre y sin errores de clave
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, and the GIS User Community'
+      // CAPA DE RELIEVE Y TOPOGRAFÍA DE ESRI (World_Terrain_Base)
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 13,
+        attribution: 'Tiles &copy; Esri &mdash; Source: USGS, Esri, TANA, DeLorme, and GIS User Community'
       }).addTo(nestMap);
 
       nestMarker = L.marker([lat, lng], { draggable: true }).addTo(nestMap);
@@ -290,12 +308,14 @@
         const pos = nestMarker.getLatLng();
         document.getElementById('lat').value = pos.lat.toFixed(6);
         document.getElementById('lng').value = pos.lng.toFixed(6);
+        fetchLocationName(pos.lat, pos.lng);
       });
 
       nestMap.on('click', function(e) {
         nestMarker.setLatLng(e.latlng);
         document.getElementById('lat').value = e.latlng.lat.toFixed(6);
         document.getElementById('lng').value = e.latlng.lng.toFixed(6);
+        fetchLocationName(e.latlng.lat, e.latlng.lng);
       });
 
       document.getElementById('lat').value = lat.toFixed(6);
@@ -304,6 +324,16 @@
       setTimeout(() => {
         if (nestMap) nestMap.invalidateSize();
       }, 300);
+    }
+
+    function updateMarkerFromInputs() {
+      const lat = parseFloat(document.getElementById('lat').value);
+      const lng = parseFloat(document.getElementById('lng').value);
+      if (!isNaN(lat) && !isNaN(lng) && nestMap && nestMarker) {
+        nestMarker.setLatLng([lat, lng]);
+        nestMap.setView([lat, lng], 12);
+        fetchLocationName(lat, lng);
+      }
     }
 
     function resetFormForNew() {
@@ -393,6 +423,10 @@
       }
 
       if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+
+    window.addEventListener('load', () => {
+      if (nestMap) nestMap.invalidateSize();
     });
   </script>
 </body>
