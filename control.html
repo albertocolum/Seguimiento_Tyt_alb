@@ -36,7 +36,6 @@
       background-size: cover;
     }
     #nest-map { height: 350px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
-    /* Textarea con auto-crecimiento fluido para evitar scroll */
     textarea#notes {
       resize: none;
       overflow-y: hidden;
@@ -109,7 +108,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido *</label>
-              <input type="text" id="nestId" required placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
+              <input type="text" id="nestId" required oninput="loadNestRings(this.value)" placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido</label>
@@ -222,8 +221,10 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Bajas de Pollos (Mortandad)</label>
-              <input type="number" min="0" id="chickDeaths" value="0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+              <label class="block text-xs font-bold text-stone-600 mb-1">Baja de Pollo por Mortalidad (Anilla / Estado)</label>
+              <select id="chickDeathRing" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Sin anillar">Sin anillar</option>
+              </select>
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Adulto Muerto / Incidencias</label>
@@ -280,6 +281,32 @@
       textarea.style.height = (textarea.scrollHeight + 4) + 'px';
     }
 
+    // Cargar dinámicamente las anillas de los pollos del nido actual
+    function loadNestRings(nestId) {
+      const select = document.getElementById('chickDeathRing');
+      const currentVal = select.value;
+      select.innerHTML = '<option value="Sin anillar">Sin anillar</option>';
+
+      if (!nestId) return;
+
+      db.ref('anillados').once('value', snapshot => {
+        const ringsData = snapshot.val();
+        if (!ringsData) return;
+
+        Object.values(ringsData).forEach(ring => {
+          if (ring.nestId && ring.nestId.toUpperCase() === nestId.toUpperCase() && ring.birdAge === 'Pollo') {
+            const label = `Anilla: ${ring.metalRing}${ring.pvcRing ? ' / PVC: '+ring.pvcRing : ''}`;
+            const option = document.createElement('option');
+            option.value = ring.metalRing;
+            option.textContent = label;
+            select.appendChild(option);
+          }
+        });
+
+        if (currentVal) select.value = currentVal;
+      });
+    }
+
     function fetchLocationName(lat, lng) {
       fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`, {
         headers: { 'Accept-Language': 'es' }
@@ -307,7 +334,6 @@
 
       nestMap = L.map('nest-map').setView([lat, lng], 12);
 
-      // CAPA TOPOGRÁFICA Y DE RELIEVE OFICIAL DE ESRI (World_Topo_Map)
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
         attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
@@ -355,12 +381,14 @@
       document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
       const notesArea = document.getElementById('notes');
       notesArea.style.height = 'auto';
+      document.getElementById('chickDeathRing').innerHTML = '<option value="Sin anillar">Sin anillar</option>';
       initNestMap(39.98, -0.05);
     }
 
     function saveNestRecord(e) {
       e.preventDefault();
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
+      const selectedDeathRing = document.getElementById('chickDeathRing').value;
 
       const record = {
         nestId,
@@ -377,7 +405,7 @@
         layDate: document.getElementById('layDate').value,
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
-        chickDeaths: parseInt(document.getElementById('chickDeaths').value) || 0,
+        chickDeathRing: selectedDeathRing,
         adultDeath: document.getElementById('adultDeath').value,
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         notes: document.getElementById('notes').value.trim(),
@@ -418,7 +446,12 @@
             document.getElementById('layDate').value = item.layDate || new Date().toISOString().split('T')[0];
             document.getElementById('visitationState').value = item.visitationState || 'Huevos';
             document.getElementById('healthStatus').value = item.healthStatus || 'Excelente';
-            document.getElementById('chickDeaths').value = item.chickDeaths || 0;
+            
+            loadNestRings(item.nestId || editId);
+            setTimeout(() => {
+              if (item.chickDeathRing) document.getElementById('chickDeathRing').value = item.chickDeathRing;
+            }, 400);
+
             document.getElementById('adultDeath').value = item.adultDeath || 'Ninguno';
             document.getElementById('fledgedChicks').value = item.fledgedChicks || 0;
             
