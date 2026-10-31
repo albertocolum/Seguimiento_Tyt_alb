@@ -272,7 +272,6 @@
       if (confirm(`¿Estás seguro de que deseas eliminar el registro de la anilla ${metalRing}?`)) {
         const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
         
-        // Si era adulto y estaba vinculado a un nido, limpiamos su ranura en el nido
         if (birdAge === 'Adulto' && nestId && nestId !== 'N/A') {
           db.ref('nidos/' + nestId).once('value', snapshot => {
             const nest = snapshot.val();
@@ -303,36 +302,38 @@
       const birdAge = document.getElementById('birdAge').value;
       const sex = document.getElementById('sex').value;
       const pvcRing = document.getElementById('pvcRing').value.trim().toUpperCase();
+      const ringDate = document.getElementById('ringDate').value;
+      const weight = document.getElementById('weight').value;
+      const wing = document.getElementById('wingChord').value;
+      const userNotes = document.getElementById('ringNotes').value.trim();
       
       const ringRecord = {
         metalRing,
         nestId: currentNest,
-        ringDate: document.getElementById('ringDate').value,
+        ringDate,
         birdAge,
         pvcRing,
         sex,
-        wingChord: parseFloat(document.getElementById('wingChord').value) || null,
+        wingChord: parseFloat(wing) || null,
         p8: parseFloat(document.getElementById('p8').value) || null,
         tarsus: parseFloat(document.getElementById('tarsus').value) || null,
-        weight: parseFloat(document.getElementById('weight').value) || null,
-        ringNotes: document.getElementById('ringNotes').value
+        weight: parseFloat(weight) || null,
+        ringNotes: userNotes
       };
 
       const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
 
-      // Guardar biometría
       db.ref('anillados/' + safeKey).set(ringRecord, err => {
         if (err) {
           alert('Error al guardar el registro: ' + err.message);
           return;
         }
 
-        // SI ES ADULTO, ACTUALIZAR AUTOMÁTICAMENTE EL NIDO ASOCIADO
-        if (birdAge === 'Adulto' && currentNest) {
-          db.ref('nidos/' + currentNest).once('value', snapshot => {
-            const nestData = snapshot.val() || {};
-            let nestUpdates = {};
+        db.ref('nidos/' + currentNest).once('value', snapshot => {
+          const nestData = snapshot.val() || {};
+          let nestUpdates = {};
 
+          if (birdAge === 'Adulto') {
             if (sex === 'Macho') {
               nestUpdates.maleRing = metalRing;
               nestUpdates.malePvcCode = pvcRing;
@@ -340,7 +341,6 @@
               nestUpdates.femaleRing = metalRing;
               nestUpdates.femalePvcCode = pvcRing;
             } else {
-              // Si el sexo es desconocido, asignarlo al primer hueco libre o macho por defecto
               if (!nestData.maleRing || nestData.maleRing === 'Sin anillar') {
                 nestUpdates.maleRing = metalRing;
                 nestUpdates.malePvcCode = pvcRing;
@@ -349,12 +349,20 @@
                 nestUpdates.femalePvcCode = pvcRing;
               }
             }
+          }
 
-            db.ref('nidos/' + currentNest).update(nestUpdates);
-          });
-        }
+          let ringSummary = `[Anillamiento ${ringDate}] ${birdAge} (${sex}): Metal ${metalRing}${pvcRing ? ' / PVC '+pvcRing : ''}.`;
+          if (weight) ringSummary += ` Peso: ${weight}g.`;
+          if (wing) ringSummary += ` Ala: ${wing}mm.`;
+          if (userNotes) ringSummary += ` Nota: ${userNotes}`;
 
-        const keepInNest = confirm('¡Registro guardado con éxito y sincronizado con el nido!\n\n¿Deseas anillar otra ave en este mismo nido?');
+          const existingNotes = nestData.notes ? nestData.notes + '\n' : '';
+          nestUpdates.notes = existingNotes + ringSummary;
+
+          db.ref('nidos/' + currentNest).update(nestUpdates);
+        });
+
+        const keepInNest = confirm('¡Registro guardado, adulto asignado al nido y observaciones de campo actualizadas con éxito!\n\n¿Deseas anillar otra ave en este mismo nido?');
         
         if (keepInNest) {
           document.getElementById('metalRing').value = '';
