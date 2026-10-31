@@ -496,14 +496,17 @@
 
       const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
 
-      // VALIDACIÓN DE ANILLA DUPLICADA ANTES DE GUARDAR
+      // VALIDACIÓN DE ANILLA DUPLICADA (BLOQUEA Y DEVUELVE AL CAMPO DE ANILLA)
       db.ref('anillados/' + safeKey).once('value', snapshot => {
         if (snapshot.exists()) {
           const existingData = snapshot.val();
-          const confirmUpdate = confirm(`⚠️ ¡AVISO DE ANILLA DUPLICADA!\n\nLa anilla metálica "${metalRing}" ya se encuentra registrada en la base de datos (Asociada al nido: ${existingData.nestId || 'N/A'}, Fecha: ${existingData.ringDate || 'N/A'}).\n\n¿Deseas sobrescribir o actualizar este registro existente?`);
-          if (!confirmUpdate) {
-            return;
-          }
+          alert(`⚠️ ¡ATENCIÓN: ANILLA DUPLICADA!\n\nLa anilla metálica "${metalRing}" ya existe en la base de datos (Nido asociado: ${existingData.nestId || 'N/A'}).\n\nPor favor, corrige el número de anilla.`);
+          
+          // Enfocar el campo de la anilla metálica y seleccionarlo para facilitar el cambio
+          const metalInput = document.getElementById('metalRing');
+          metalInput.focus();
+          metalInput.select();
+          return;
         }
 
         const ringRecord = {
