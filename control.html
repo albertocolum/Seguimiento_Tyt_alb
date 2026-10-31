@@ -108,7 +108,10 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido *</label>
-              <input type="text" id="nestId" required oninput="loadNestRings(this.value); loadNestHistoricalRecords(this.value);" placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
+              <!-- CAMBIADO A SELECT (DESPLEGABLE) -->
+              <select id="nestId" required onchange="onNestSelected(this.value)" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
+                <option value="">-- Seleccionar o crear --</option>
+              </select>
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido</label>
@@ -287,6 +290,7 @@
     let nestMarker = null;
     let initialStatus = 'Activo';
     let initialCamera = 'No';
+    let allNestsData = {};
 
     function formatDateToEU(dateStr) {
       if (!dateStr) return '';
@@ -300,6 +304,74 @@
     function autoResizeTextarea(textarea) {
       textarea.style.height = 'auto';
       textarea.style.height = (textarea.scrollHeight + 4) + 'px';
+    }
+
+    // CARGAR EL DESPLEGABLE DE NIDOS DESDE FIREBASE
+    function loadNestDropdown(selectedId = '') {
+      db.ref('nidos').on('value', snapshot => {
+        const val = snapshot.val() || {};
+        allNestsData = val;
+        const select = document.getElementById('nestId');
+        
+        select.innerHTML = '<option value="">-- Seleccionar nido existente --</option>';
+        
+        const nestIds = Object.keys(val).sort();
+        nestIds.forEach(id => {
+          const nest = val[id];
+          select.innerHTML += `<option value="${id}">${id} ${nest.locationName ? '('+nest.locationName+')' : ''}</option>`;
+        });
+
+        if (selectedId && val[selectedId]) {
+          select.value = selectedId;
+        }
+      });
+    }
+
+    function onNestSelected(nestId) {
+      if (!nestId) {
+        resetFormForNew();
+        return;
+      }
+
+      const item = allNestsData[nestId];
+      if (item) {
+        document.getElementById('nestType').value = item.nestType || 'Nido Artificial';
+        document.getElementById('locationName').value = item.locationName || '';
+        
+        initialStatus = item.status || 'Activo';
+        document.getElementById('status').value = initialStatus;
+
+        document.getElementById('lat').value = item.lat || 39.98;
+        document.getElementById('lng').value = item.lng || -0.05;
+        
+        initialCamera = item.hasCamera || 'No';
+        document.getElementById('hasCamera').value = initialCamera;
+
+        document.getElementById('maleRing').value = item.maleRing === 'Sin anillar' ? '' : (item.maleRing || '');
+        document.getElementById('malePvcCode').value = item.malePvcCode || '';
+        document.getElementById('femaleRing').value = item.femaleRing === 'Sin anillar' ? '' : (item.femaleRing || '');
+        document.getElementById('femalePvcCode').value = item.femalePvcCode || '';
+        document.getElementById('layDate').value = item.layDate || new Date().toISOString().split('T')[0];
+        document.getElementById('visitationState').value = item.visitationState || 'Huevos';
+        document.getElementById('healthStatus').value = item.healthStatus || 'Excelente';
+        
+        loadNestRings(nestId);
+        loadNestHistoricalRecords(nestId);
+
+        document.getElementById('chickDeathRing').value = 'Sin anillar';
+        document.getElementById('adultDeath').value = 'Ninguno';
+        document.getElementById('fledgedChicks').value = item.fledgedChicks || 0;
+        
+        const notesArea = document.getElementById('notes');
+        let cleanNotes = (item.notes || '').replace(/<\/?strong>|<span[^>]*>|<\/span>/gi, '');
+        notesArea.value = cleanNotes;
+        autoResizeTextarea(notesArea);
+
+        document.getElementById('edit-mode-badge').classList.remove('hidden');
+        document.getElementById('form-section-title').textContent = 'Editar Ficha de Nido';
+
+        initNestMap(item.lat || 39.98, item.lng || -0.05);
+      }
     }
 
     function loadNestRings(nestId) {
@@ -429,7 +501,7 @@
 
     function resetFormForNew() {
       document.getElementById('nestForm').reset();
-      document.getElementById('nestId').removeAttribute('readonly');
+      document.getElementById('nestId').value = '';
       document.getElementById('edit-mode-badge').classList.add('hidden');
       document.getElementById('form-section-title').textContent = 'Registrar Nuevo Nido';
       document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
@@ -439,13 +511,25 @@
       notesArea.style.height = 'auto';
       document.getElementById('chickDeathRing').value = 'Sin anillar';
       document.getElementById('adultDeath').value = 'Ninguno';
-      document.getElementById('nest-historical-records').innerHTML = '<p class="text-stone-400 italic">Introduzca un ID de nido para ver sus registros históricos...</p>';
+      document.getElementById('nest-historical-records').innerHTML = '<p class="text-stone-400 italic">Seleccione un nido para ver sus registros históricos...</p>';
       initNestMap(39.98, -0.05);
     }
 
     function saveNestRecord(e) {
       e.preventDefault();
-      const nestId = document.getElementById('nestId').value.trim().toUpperCase();
+      
+      // Permitir introducir un nuevo ID si se desea crear uno nuevo escribiéndolo o mediante un prompt si el select no lo permite directamente, 
+      // o mejor aún: si prefieres escribir un ID nuevo, podemos cambiar el select por un campo dinámico o permitir añadir. 
+      // Como estamos usando un <select>, si quieres registrar uno nuevo puedes hacer clic en "Registrar Nuevo Nido" arriba.
+      const nestIdSelect = document.getElementById('nestId');
+      let nestId = nestIdSelect.value.trim().toUpperCase();
+
+      if (!nestId) {
+        nestId = prompt("Introduce el ID del nuevo nido (ej. NIDO-05):");
+        if (!nestId) return;
+        nestId = nestId.trim().toUpperCase();
+      }
+
       const selectedChickDeath = document.getElementById('chickDeathRing').value;
       const adultDeathStatus = document.getElementById('adultDeath').value;
       const currentStatus = document.getElementById('status').value;
@@ -538,55 +622,13 @@
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const editId = urlParams.get('edit');
-      const mode = urlParams.get('mode');
+
+      loadNestDropdown(editId);
 
       if (editId) {
-        db.ref('nidos/' + editId).once('value', snapshot => {
-          const item = snapshot.val();
-          if (item) {
-            document.getElementById('nestId').value = item.nestId || editId;
-            document.getElementById('nestId').setAttribute('readonly', true);
-            document.getElementById('nestType').value = item.nestType || 'Nido Artificial';
-            document.getElementById('locationName').value = item.locationName || '';
-            
-            initialStatus = item.status || 'Activo';
-            document.getElementById('status').value = initialStatus;
-
-            document.getElementById('lat').value = item.lat || 39.98;
-            document.getElementById('lng').value = item.lng || -0.05;
-            
-            initialCamera = item.hasCamera || 'No';
-            document.getElementById('hasCamera').value = initialCamera;
-
-            document.getElementById('maleRing').value = item.maleRing === 'Sin anillar' ? '' : (item.maleRing || '');
-            document.getElementById('malePvcCode').value = item.malePvcCode || '';
-            document.getElementById('femaleRing').value = item.femaleRing === 'Sin anillar' ? '' : (item.femaleRing || '');
-            document.getElementById('femalePvcCode').value = item.femalePvcCode || '';
-            document.getElementById('layDate').value = item.layDate || new Date().toISOString().split('T')[0];
-            document.getElementById('visitationState').value = item.visitationState || 'Huevos';
-            document.getElementById('healthStatus').value = item.healthStatus || 'Excelente';
-            
-            loadNestRings(item.nestId || editId);
-            loadNestHistoricalRecords(item.nestId || editId);
-
-            document.getElementById('chickDeathRing').value = 'Sin anillar';
-            document.getElementById('adultDeath').value = 'Ninguno';
-
-            document.getElementById('fledgedChicks').value = item.fledgedChicks || 0;
-            
-            const notesArea = document.getElementById('notes');
-            let cleanNotes = (item.notes || '').replace(/<\/?strong>|<span[^>]*>|<\/span>/gi, '');
-            notesArea.value = cleanNotes;
-            autoResizeTextarea(notesArea);
-
-            document.getElementById('edit-mode-badge').classList.remove('hidden');
-            document.getElementById('form-section-title').textContent = mode === 'view' ? 'Ver Ficha de Nido' : 'Editar Ficha de Nido';
-
-            initNestMap(item.lat || 39.98, item.lng || -0.05);
-          } else {
-            initNestMap(39.98, -0.05);
-          }
-        });
+        setTimeout(() => {
+          onNestSelected(editId);
+        }, 500);
       } else {
         resetFormForNew();
       }
