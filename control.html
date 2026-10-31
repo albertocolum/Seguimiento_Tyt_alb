@@ -274,6 +274,8 @@
 
     let nestMap = null;
     let nestMarker = null;
+    let initialStatus = 'Activo';
+    let initialCamera = 'No';
 
     function formatDateToEU(dateStr) {
       if (!dateStr) return '';
@@ -383,6 +385,8 @@
       document.getElementById('edit-mode-badge').classList.add('hidden');
       document.getElementById('form-section-title').textContent = 'Registrar Nuevo Nido';
       document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
+      initialStatus = 'Activo';
+      initialCamera = 'No';
       const notesArea = document.getElementById('notes');
       notesArea.style.height = 'auto';
       document.getElementById('chickDeathRing').value = 'Sin anillar';
@@ -395,6 +399,8 @@
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       const selectedChickDeath = document.getElementById('chickDeathRing').value;
       const adultDeathStatus = document.getElementById('adultDeath').value;
+      const currentStatus = document.getElementById('status').value;
+      const currentCamera = document.getElementById('hasCamera').value;
       
       let maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
       let malePvcCode = document.getElementById('malePvcCode').value.trim().toUpperCase();
@@ -411,7 +417,20 @@
 
       let alertSnippets = [];
 
-      // Si se selecciona un pollo muerto con anilla, se genera la observación y SE ELIMINA de la base de datos de anillados
+      // Detectar cambios en el estado del nido (Activo, Inactivo, Abandonado)
+      if (currentStatus !== initialStatus) {
+        alertSnippets.push(`[ESTADO NIDO ${euDate}] El estado del nido ha cambiado a: ${currentStatus}.`);
+      }
+
+      // Detectar cambios en la cámara de fototrampeo (Sí / No)
+      if (currentCamera !== initialCamera) {
+        if (currentCamera === 'Sí') {
+          alertSnippets.push(`[CAMARA ${euDate}] Se ha instalado/activado la cámara de fototrampeo.`);
+        } else {
+          alertSnippets.push(`[CAMARA ${euDate}] Se ha retirado/desactivado la cámara de fototrampeo.`);
+        }
+      }
+
       if (selectedChickDeath && selectedChickDeath !== 'Sin anillar') {
         alertSnippets.push(`[BAJA POLLO ${euDate}] El pollo con anilla ${selectedChickDeath} ha sido registrado como fallecido/baja.`);
         const safeKey = selectedChickDeath.replace(/[\/\.#$\[\]]/g, '_');
@@ -441,10 +460,10 @@
         nestId,
         nestType: document.getElementById('nestType').value,
         locationName: document.getElementById('locationName').value.trim(),
-        status: document.getElementById('status').value,
+        status: currentStatus,
         lat: parseFloat(document.getElementById('lat').value) || null,
         lng: parseFloat(document.getElementById('lng').value) || null,
-        hasCamera: document.getElementById('hasCamera').value,
+        hasCamera: currentCamera,
         maleRing: maleRing,
         malePvcCode: malePvcCode,
         femaleRing: femaleRing,
@@ -452,8 +471,8 @@
         layDate: rawDate,
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
-        chickDeathRing: 'Sin anillar', // Se resetea al guardar para que al volver a editar esté limpio
-        adultDeath: 'Ninguno', // Se resetea al guardar para que al volver a editar esté limpio
+        chickDeathRing: 'Sin anillar',
+        adultDeath: 'Ninguno',
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         notes: currentNotes,
         lastReview: new Date().toISOString().split('T')[0]
@@ -463,7 +482,7 @@
         if (err) {
           alert('Error al guardar: ' + err.message);
         } else {
-          alert('¡Ficha de nido guardada con éxito, baja procesada y anillados actualizados!');
+          alert('¡Ficha de nido guardada con éxito y eventos registrados en observaciones!');
           window.location.href = 'index.html';
         }
       });
@@ -482,10 +501,16 @@
             document.getElementById('nestId').setAttribute('readonly', true);
             document.getElementById('nestType').value = item.nestType || 'Nido Artificial';
             document.getElementById('locationName').value = item.locationName || '';
-            document.getElementById('status').value = item.status || 'Activo';
+            
+            initialStatus = item.status || 'Activo';
+            document.getElementById('status').value = initialStatus;
+
             document.getElementById('lat').value = item.lat || 39.98;
             document.getElementById('lng').value = item.lng || -0.05;
-            document.getElementById('hasCamera').value = item.hasCamera || 'No';
+            
+            initialCamera = item.hasCamera || 'No';
+            document.getElementById('hasCamera').value = initialCamera;
+
             document.getElementById('maleRing').value = item.maleRing === 'Sin anillar' ? '' : (item.maleRing || '');
             document.getElementById('malePvcCode').value = item.malePvcCode || '';
             document.getElementById('femaleRing').value = item.femaleRing === 'Sin anillar' ? '' : (item.femaleRing || '');
@@ -496,7 +521,6 @@
             
             loadNestRings(item.nestId || editId);
 
-            // Al abrir para editar, los desplegables de bajas/incidencias se inician siempre limpios ("Sin anillar" / "Ninguno")
             document.getElementById('chickDeathRing').value = 'Sin anillar';
             document.getElementById('adultDeath').value = 'Ninguno';
 
