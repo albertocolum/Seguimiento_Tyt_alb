@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Control y Gestión de Nidos</title>
+  <title>Tyto Alba | Gestión de Nidos</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -35,216 +35,157 @@
       background-repeat: no-repeat;
       background-size: cover;
     }
-    #nest-map { height: 350px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
+    #control-map { height: 320px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
+    /* Textarea con auto-crecimiento fluido */
+    textarea#notes {
+      resize: none;
+      overflow-y: hidden;
+      min-height: 80px;
+    }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
 
   <!-- NAVBAR -->
   <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
-      
-      <div class="flex items-center space-x-3.5">
-        <div class="w-12 h-12 rounded-full bg-white p-0.5 border-2 border-emerald-500/30 flex items-center justify-center overflow-hidden shadow-inner shrink-0">
-          <img src="logo.png" alt="Grupo Naturalista GER" class="w-full h-full object-cover rounded-full" onerror="this.src='https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/logo_ger.png'">
-        </div>
-        <div class="flex items-baseline space-x-2.5">
-          <span class="text-xl font-bold tracking-tight">Tyto Alba</span>
-          <span class="text-white/40 font-light hidden sm:inline">|</span>
-          <span class="text-xs font-semibold tracking-wide text-emerald-400 hidden sm:inline">GER (Grup d'Estudi i Protecció dels Rapinyaires)</span>
-          <span class="text-xs font-semibold tracking-wide text-emerald-400 sm:hidden">GER</span>
-        </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+      <div class="flex items-center space-x-3">
+        <div class="border border-white/20 p-2 rounded-xl flex items-center justify-center bg-white/5"><i data-lucide="notebook-pen" class="w-5 h-5 text-emerald-400"></i></div>
+        <div class="flex items-baseline space-x-2"><span class="text-lg font-bold">Tyto Alba</span><span class="text-white/40">|</span><span class="text-sm font-medium text-emerald-400">Módulo de Nidos</span></div>
       </div>
-
-      <nav class="flex items-center space-x-1.5 sm:space-x-2">
-        <a href="index.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
-          <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span>
-        </a>
-        <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm">
-          <i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span>
-        </a>
-        <a href="anillados.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
-          <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
-        </a>
+      <nav class="flex space-x-1 sm:space-x-2">
+        <a href="index.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10"><i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span></a>
+        <a href="control.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm"><i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span></a>
+        <a href="anillados.html" class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10"><i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span></a>
       </nav>
-
     </div>
   </header>
 
   <!-- CONTENIDO PRINCIPAL -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
     
-    <div class="bg-brand-dark/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-      <div>
-        <span class="inline-block bg-white/10 text-emerald-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-emerald-500/20">Módulo de Inspección</span>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Gestión y Control de Nidos</h1>
-        <p class="text-white/70 text-sm mt-2">Añade o edita fichas de nidos, parejas reproductoras y seguimiento de nidadas.</p>
-      </div>
-
-      <div class="shrink-0">
-        <button onclick="resetFormForNew()" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow-sm inline-flex items-center space-x-2 text-xs">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Registrar Nuevo Nido</span>
+    <!-- FORMULARIO DE GESTIÓN DE NIDOS (2 columnas) -->
+    <div class="lg:col-span-2 bg-white/95 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border border-brand-border shadow-md space-y-6">
+      
+      <div class="flex justify-between items-center border-b pb-4">
+        <div>
+          <h2 id="form-title" class="text-xl font-bold text-brand-dark">Registrar Nuevo Nido</h2>
+          <p class="text-xs text-stone-500 mt-0.5">Introduce o edita los parámetros de la caja nido</p>
+        </div>
+        <button type="button" onclick="resetForm()" class="text-xs font-bold text-brand-accent hover:underline flex items-center gap-1">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Nuevo / Limpiar
         </button>
       </div>
-    </div>
 
-    <!-- FORMULARIO PRINCIPAL DE GESTIÓN -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-8">
-      <div class="border-b pb-4 flex justify-between items-center">
-        <h2 id="form-section-title" class="text-lg font-bold text-stone-900">Registrar / Editar Ficha de Nido</h2>
-        <span id="edit-mode-badge" class="hidden bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">Modo Edición</span>
-      </div>
-
-      <form id="nestForm" onsubmit="saveNestRecord(event)" class="space-y-8">
+      <form id="nest-form" onsubmit="handleNestSubmit(event)" class="space-y-6">
         
-        <!-- 1. IDENTIFICACIÓN Y UBICACIÓN -->
-        <div class="space-y-4">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i> 1. Identificación y Ubicación</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido *</label>
-              <input type="text" id="nestId" required placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido</label>
-              <select id="nestType" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Nido Artificial">Nido Artificial / Caja Nido</option>
-                <option value="Nido Natural">Nido Natural</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Ubicación / Paraje *</label>
-              <input type="text" id="locationName" required placeholder="Se autocompleta con el mapa..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Estado del Nido</label>
-              <select id="status" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
-                <option value="Abandonado">Abandonado</option>
-              </select>
-            </div>
+        <!-- ID NIDO Y UBICACIÓN -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">ID Nido (Código Único) *</label>
+            <input type="text" id="nestId" required placeholder="Ej. NIDO-01 o CAMPO-ALTO" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm font-mono uppercase bg-white">
           </div>
-
-          <!-- MAPA Y CAMPOS SEPARADOS DE LAT/LNG -->
-          <div class="space-y-2 pt-2">
-            <label class="block text-xs font-bold text-stone-600">Seleccionar ubicación en el mapa (Haz clic o arrastra el marcador):</label>
-            <div id="nest-map"></div>
-            <div class="grid grid-cols-2 gap-4 pt-1">
-              <div>
-                <label class="block text-[11px] font-semibold text-stone-500">Latitud</label>
-                <input type="number" step="0.000001" id="lat" required class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white font-mono" onchange="updateMarkerFromInputs()">
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-stone-500">Longitud</label>
-                <input type="number" step="0.000001" id="lng" required class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white font-mono" onchange="updateMarkerFromInputs()">
-              </div>
-            </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Nombre del Paraje / Ubicación *</label>
+            <input type="text" id="locationName" required placeholder="Ej. Cabanes (Comunidad Valenciana)" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
           </div>
+        </div>
 
-          <div class="pt-2">
-            <label class="block text-xs font-bold text-stone-600 mb-1">¿Dispone de Cámara de Fototrampeo?</label>
-            <select id="hasCamera" class="w-full sm:w-1/4 px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-              <option value="No">No</option>
-              <option value="Sí">Sí</option>
+        <!-- COORDENADAS GPS (Lat/Lng) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-stone-50/80 p-4 rounded-xl border">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Latitud (Decimal) *</label>
+            <input type="number" step="any" id="lat" required placeholder="Ej. 39.9825" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Longitud (Decimal) *</label>
+            <input type="number" step="any" id="lng" required placeholder="Ej. -0.0531" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white font-mono">
+          </div>
+          <div class="sm:col-span-2 text-[11px] text-stone-500 flex justify-between items-center">
+            <span>💡 Haz clic en cualquier punto del mapa de la derecha para fijar las coordenadas automáticamente.</span>
+            <button type="button" onclick="useCurrentLocation()" class="text-brand-dark font-bold hover:underline flex items-center gap-1">
+              <i data-lucide="crosshair" class="w-3 h-3"></i> Usar mi ubicación actual
+            </button>
+          </div>
+        </div>
+
+        <!-- ESTADO Y PAREJA REPRODUCTORA -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Estado de la Caja *</label>
+            <select id="status" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white font-semibold">
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+              <option value="Abandonado">Abandonado</option>
             </select>
           </div>
-        </div>
-
-        <!-- 2. PAREJA REPRODUCTORA -->
-        <div class="space-y-4">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5"><i data-lucide="heart" class="w-4 h-4 text-brand-accent"></i> 2. Pareja Reproductora</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-stone-50/70 p-4 rounded-xl border">
-            <!-- Macho -->
-            <div class="space-y-3">
-              <h4 class="text-xs font-bold text-stone-700 uppercase">Macho</h4>
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-[11px] font-bold text-stone-600 mb-1">Anilla Metálica</label>
-                  <input type="text" id="maleRing" placeholder="Ej. G-12345" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-bold text-stone-600 mb-1">Anilla PVC (Color)</label>
-                  <input type="text" id="malePvcCode" placeholder="Ej. A-12" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
-                </div>
-              </div>
-            </div>
-            <!-- Hembra -->
-            <div class="space-y-3">
-              <h4 class="text-xs font-bold text-stone-700 uppercase">Hembra</h4>
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-[11px] font-bold text-stone-600 mb-1">Anilla Metálica</label>
-                  <input type="text" id="femaleRing" placeholder="Ej. G-54321" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-bold text-stone-600 mb-1">Anilla PVC (Color)</label>
-                  <input type="text" id="femalePvcCode" placeholder="Ej. B-34" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. SEGUIMIENTO DE LA NIDADA -->
-        <div class="space-y-4">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5"><i data-lucide="activity" class="w-4 h-4 text-brand-accent"></i> 3. Seguimiento de la Nidada y Estado</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de la Visita *</label>
-              <input type="date" id="layDate" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Estado de la Visita / Nidada</label>
-              <select id="visitationState" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Huevos">Huevos</option>
-                <option value="Pollos">Pollos</option>
-                <option value="Fracaso">Fracaso Reproductor</option>
-                <option value="Vacío">Vacío / Sin ocupación</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Salud General</label>
-              <select id="healthStatus" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Excelente">Excelente</option>
-                <option value="Buena">Buena</option>
-                <option value="Regular">Regular</option>
-                <option value="Crítica">Crítica</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Bajas de Pollos (Mortandad)</label>
-              <input type="number" min="0" id="chickDeaths" value="0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Adulto Muerto / Incidencias</label>
-              <select id="adultDeath" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Ninguno">Ninguno</option>
-                <option value="Macho Muerto">Macho Muerto</option>
-                <option value="Hembra Muerta">Hembra Muerta</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Pollos Volados / Exitosos</label>
-              <input type="number" min="0" id="fledgedChicks" value="0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-            </div>
-          </div>
-
           <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo</label>
-            <textarea id="notes" rows="2" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Macho (Metálica / PVC)</label>
+            <input type="text" id="maleRing" placeholder="Ej. N111 (04X)" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm uppercase font-mono bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Hembra (Metálica / PVC)</label>
+            <input type="text" id="femaleRing" placeholder="Ej. H-205" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm uppercase font-mono bg-white">
           </div>
         </div>
 
-        <div class="flex justify-end pt-4 border-t space-x-3">
-          <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-2 text-xs">
-            <i data-lucide="save" class="w-4 h-4"></i><span>Guardar Ficha de Nido</span>
+        <!-- DATOS REPRODUCTIVOS (HUEVOS / POLLOS) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-stone-50/80 p-4 rounded-xl border">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Nº Huevos Puestos</label>
+            <input type="number" min="0" id="laidEggs" placeholder="Ej. 5" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Nº Pollos Eclosionados</label>
+            <input type="number" min="0" id="hatchedChicks" placeholder="Ej. 4" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Nº Pollos Volantones (Fledged)</label>
+            <input type="number" min="0" id="fledgedChicks" placeholder="Ej. 3" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
+          </div>
+        </div>
+
+        <!-- OBSERVACIONES DE CAMPO (AUTO-AJUSTABLE) -->
+        <div class="space-y-1">
+          <label class="block text-xs font-bold text-stone-600">Observaciones de Campo (Sincronizado con Anillados)</label>
+          <textarea id="notes" oninput="autoResizeTextarea(this)" placeholder="Notas sobre el entorno, comportamiento o registros automáticos de anillamiento..." class="w-full px-3 py-2 border rounded-xl text-sm bg-white"></textarea>
+        </div>
+
+        <!-- BOTÓN DE GUARDAR -->
+        <div class="flex justify-end pt-4 border-t">
+          <button type="submit" id="submit-btn" class="bg-brand-dark hover:bg-brand-hover text-white font-semibold px-6 py-3 rounded-xl shadow-md flex items-center gap-2 text-sm">
+            <i data-lucide="save" class="w-4 h-4"></i> Guardar Nido en la Nube
           </button>
         </div>
+
       </form>
+    </div>
+
+    <!-- COLUMNA DERECHA: MAPA DE SELECCIÓN Y LISTA RÁPIDA -->
+    <div class="space-y-6">
+      
+      <!-- MAPA DE UBICACIÓN (ESRI TOPOGRAPHIC RELIEF) -->
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-sm font-bold text-brand-dark flex items-center gap-2">
+            <i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i> Seleccionar Ubicación GPS
+          </h3>
+          <span class="text-[10px] text-stone-500 font-medium">Esri World Topo</span>
+        </div>
+        <div id="control-map"></div>
+        <p class="text-[11px] text-stone-500 italic text-center">Haz clic en el mapa para posicionar el nido con exactitud.</p>
+      </div>
+
+      <!-- LISTADO RÁPIDO DE NIDOS EXISTENTES -->
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md space-y-3">
+        <h3 class="text-sm font-bold text-brand-dark flex items-center gap-2">
+          <i data-lucide="list" class="w-4 h-4 text-brand-accent"></i> Nidos Registrados
+        </h3>
+        <div id="nests-list" class="divide-y divide-stone-100 max-h-64 overflow-y-auto text-xs space-y-2 pr-1">
+          <p class="text-stone-400 text-center py-4">Cargando listado...</p>
+        </div>
+      </div>
+
     </div>
 
   </main>
@@ -265,167 +206,200 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let nestMap = null;
-    let nestMarker = null;
+    let controlMap = null;
+    let currentMarker = null;
 
-    function fetchLocationName(lat, lng) {
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`, {
-        headers: { 'Accept-Language': 'es' }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data && data.display_name) {
-          const addr = data.address || {};
-          const town = addr.city || addr.town || addr.village || addr.municipality || '';
-          const province = addr.province || addr.state || '';
-          const readable = town ? `${town} (${province})` : data.display_name.split(',')[0];
-          document.getElementById('locationName').value = readable;
-        }
-      })
-      .catch(err => console.error('Error al obtener la ubicación:', err));
+    // Función para auto-ajustar la altura del textarea dinámicamente
+    function autoResizeTextarea(textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = (textarea.scrollHeight + 4) + 'px';
     }
 
-    function initNestMap(lat = 39.98, lng = -0.05) {
-      if (nestMap) {
-        nestMap.setView([lat, lng], 12);
-        if (nestMarker) nestMarker.setLatLng([lat, lng]);
-        setTimeout(() => nestMap.invalidateSize(), 200);
+    function initControlMap(lat = 39.98, lng = -0.05) {
+      if (controlMap) {
+        controlMap.setView([lat, lng], 12);
+        if (currentMarker) {
+          currentMarker.setLatLng([lat, lng]);
+        } else {
+          currentMarker = L.marker([lat, lng], { draggable: true }).addTo(controlMap);
+          currentMarker.on('dragend', function(e) {
+            const pos = e.target.getLatLng();
+            document.getElementById('lat').value = pos.lat.toFixed(6);
+            document.getElementById('lng').value = pos.lng.toFixed(6);
+          });
+        }
         return;
       }
 
-      nestMap = L.map('nest-map').setView([lat, lng], 12);
+      controlMap = L.map('control-map').setView([lat, lng], 12);
 
-      // CAPA TOPOGRÁFICA Y DE RELIEVE OFICIAL DE ESRI (World_Topo_Map)
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
         attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
-      }).addTo(nestMap);
+      }).addTo(controlMap);
 
-      nestMarker = L.marker([lat, lng], { draggable: true }).addTo(nestMap);
+      currentMarker = L.marker([lat, lng], { draggable: true }).addTo(controlMap);
 
-      nestMarker.on('dragend', function(e) {
-        const pos = nestMarker.getLatLng();
+      controlMap.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        currentMarker.setLatLng([lat, lng]);
+        document.getElementById('lat').value = lat.toFixed(6);
+        document.getElementById('lng').value = lng.toFixed(6);
+      });
+
+      currentMarker.on('dragend', function(e) {
+        const pos = e.target.getLatLng();
         document.getElementById('lat').value = pos.lat.toFixed(6);
         document.getElementById('lng').value = pos.lng.toFixed(6);
-        fetchLocationName(pos.lat, pos.lng);
       });
-
-      nestMap.on('click', function(e) {
-        nestMarker.setLatLng(e.latlng);
-        document.getElementById('lat').value = e.latlng.lat.toFixed(6);
-        document.getElementById('lng').value = e.latlng.lng.toFixed(6);
-        fetchLocationName(e.latlng.lat, e.latlng.lng);
-      });
-
-      document.getElementById('lat').value = lat.toFixed(6);
-      document.getElementById('lng').value = lng.toFixed(6);
-
-      setTimeout(() => {
-        if (nestMap) nestMap.invalidateSize();
-      }, 300);
     }
 
-    function updateMarkerFromInputs() {
-      const lat = parseFloat(document.getElementById('lat').value);
-      const lng = parseFloat(document.getElementById('lng').value);
-      if (!isNaN(lat) && !isNaN(lng) && nestMap && nestMarker) {
-        nestMarker.setLatLng([lat, lng]);
-        nestMap.setView([lat, lng], 12);
-        fetchLocationName(lat, lng);
+    function useCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          document.getElementById('lat').value = lat.toFixed(6);
+          document.getElementById('lng').value = lng.toFixed(6);
+          initControlMap(lat, lng);
+          controlMap.setView([lat, lng], 15);
+        }, () => {
+          alert('No se pudo obtener tu ubicación actual.');
+        });
+      } else {
+        alert('La geolocalización no está soportada en este navegador.');
       }
     }
 
-    function resetFormForNew() {
-      document.getElementById('nestForm').reset();
-      document.getElementById('nestId').removeAttribute('readonly');
-      document.getElementById('edit-mode-badge').classList.add('hidden');
-      document.getElementById('form-section-title').textContent = 'Registrar Nuevo Nido';
-      document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
-      initNestMap(39.98, -0.05);
+    function loadNestsList() {
+      db.ref('nidos').on('value', snapshot => {
+        const data = snapshot.val();
+        const listContainer = document.getElementById('nests-list');
+        listContainer.innerHTML = '';
+
+        if (!data) {
+          listContainer.innerHTML = '<p class="text-stone-400 text-center py-4">No hay nidos registrados.</p>';
+          return;
+        }
+
+        Object.values(data).forEach(nest => {
+          const item = document.createElement('div');
+          item.className = 'flex justify-between items-center py-2 hover:bg-stone-50 px-2 rounded-lg transition-colors';
+          item.innerHTML = `
+            <div>
+              <span class="font-extrabold text-stone-900">${nest.nestId}</span>
+              <p class="text-[10px] text-stone-500">${nest.locationName || 'Sin ubicación'}</p>
+            </div>
+            <div class="space-x-1">
+              <button type="button" onclick="editNest('${nest.nestId}')" class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded">Editar</button>
+              <button type="button" onclick="deleteNest('${nest.nestId}')" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold rounded">Borrar</button>
+            </div>
+          `;
+          listContainer.appendChild(item);
+        });
+      });
     }
 
-    function saveNestRecord(e) {
+    function editNest(nestId) {
+      db.ref('nidos/' + nestId).once('value', snapshot => {
+        const nest = snapshot.val();
+        if (!nest) return;
+
+        document.getElementById('nestId').value = nest.nestId;
+        document.getElementById('nestId').readOnly = true;
+        document.getElementById('nestId').classList.add('bg-stone-100', 'cursor-not-allowed');
+        document.getElementById('locationName').value = nest.locationName || '';
+        document.getElementById('lat').value = nest.lat || '';
+        document.getElementById('lng').value = nest.lng || '';
+        document.getElementById('status').value = nest.status || 'Activo';
+        document.getElementById('maleRing').value = nest.maleRing || '';
+        document.getElementById('femaleRing').value = nest.femaleRing || '';
+        document.getElementById('laidEggs').value = nest.laidEggs || '';
+        document.getElementById('hatchedChicks').value = nest.hatchedChicks || '';
+        document.getElementById('fledgedChicks').value = nest.fledgedChicks || '';
+        
+        const notesArea = document.getElementById('notes');
+        notesArea.value = nest.notes || '';
+        autoResizeTextarea(notesArea); // Ajustar altura al cargar
+
+        document.getElementById('form-title').textContent = `Editando Nido: ${nestId}`;
+        document.getElementById('submit-btn').innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Actualizar Nido';
+
+        if (nest.lat && nest.lng) {
+          initControlMap(nest.lat, nest.lng);
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        lucide.createIcons();
+      });
+    }
+
+    function resetForm() {
+      document.getElementById('nest-form').reset();
+      const nestIdInput = document.getElementById('nestId');
+      nestIdInput.readOnly = false;
+      nestIdInput.classList.remove('bg-stone-100', 'cursor-not-allowed');
+      document.getElementById('form-title').textContent = 'Registrar Nuevo Nido';
+      document.getElementById('submit-btn').innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Guardar Nido en la Nube';
+      const notesArea = document.getElementById('notes');
+      notesArea.style.height = 'auto';
+      initControlMap(39.98, -0.05);
+    }
+
+    function deleteNest(nestId) {
+      if (confirm(`¿Estás seguro de eliminar el nido ${nestId}?`)) {
+        db.ref('nidos/' + nestId).remove().then(() => {
+          alert('Nido eliminado con éxito.');
+          resetForm();
+        }).catch(err => {
+          alert('Error: ' + err.message);
+        });
+      }
+    }
+
+    function handleNestSubmit(e) {
       e.preventDefault();
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
-
-      const record = {
+      
+      const nestData = {
         nestId,
-        nestType: document.getElementById('nestType').value,
         locationName: document.getElementById('locationName').value.trim(),
+        lat: parseFloat(document.getElementById('lat').value),
+        lng: parseFloat(document.getElementById('lng').value),
         status: document.getElementById('status').value,
-        lat: parseFloat(document.getElementById('lat').value) || null,
-        lng: parseFloat(document.getElementById('lng').value) || null,
-        hasCamera: document.getElementById('hasCamera').value,
         maleRing: document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar',
-        malePvcCode: document.getElementById('malePvcCode').value.trim().toUpperCase(),
         femaleRing: document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar',
-        femalePvcCode: document.getElementById('femalePvcCode').value.trim().toUpperCase(),
-        layDate: document.getElementById('layDate').value,
-        visitationState: document.getElementById('visitationState').value,
-        healthStatus: document.getElementById('healthStatus').value,
-        chickDeaths: parseInt(document.getElementById('chickDeaths').value) || 0,
-        adultDeath: document.getElementById('adultDeath').value,
+        laidEggs: parseInt(document.getElementById('laidEggs').value) || 0,
+        hatchedChicks: parseInt(document.getElementById('hatchedChicks').value) || 0,
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
-        notes: document.getElementById('notes').value.trim(),
-        lastReview: new Date().toISOString().split('T')[0]
+        notes: document.getElementById('notes').value.trim()
       };
 
-      db.ref('nidos/' + nestId).set(record, err => {
+      db.ref('nidos/' + nestId).set(nestData, err => {
         if (err) {
           alert('Error al guardar: ' + err.message);
         } else {
-          alert('¡Ficha de nido guardada con éxito en la nube!');
-          window.location.href = 'index.html';
+          alert('¡Nido guardado correctamente en la nube!');
+          resetForm();
         }
       });
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      initControlMap();
+      loadNestsList();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+
+      // Comprobar si viene por URL para editar o ver
       const urlParams = new URLSearchParams(window.location.search);
       const editId = urlParams.get('edit');
-      const mode = urlParams.get('mode');
-
       if (editId) {
-        db.ref('nidos/' + editId).once('value', snapshot => {
-          const item = snapshot.val();
-          if (item) {
-            document.getElementById('nestId').value = item.nestId || editId;
-            document.getElementById('nestId').setAttribute('readonly', true);
-            document.getElementById('nestType').value = item.nestType || 'Nido Artificial';
-            document.getElementById('locationName').value = item.locationName || '';
-            document.getElementById('status').value = item.status || 'Activo';
-            document.getElementById('lat').value = item.lat || 39.98;
-            document.getElementById('lng').value = item.lng || -0.05;
-            document.getElementById('hasCamera').value = item.hasCamera || 'No';
-            document.getElementById('maleRing').value = item.maleRing === 'Sin anillar' ? '' : (item.maleRing || '');
-            document.getElementById('malePvcCode').value = item.malePvcCode || '';
-            document.getElementById('femaleRing').value = item.femaleRing === 'Sin anillar' ? '' : (item.femaleRing || '');
-            document.getElementById('femalePvcCode').value = item.femalePvcCode || '';
-            document.getElementById('layDate').value = item.layDate || new Date().toISOString().split('T')[0];
-            document.getElementById('visitationState').value = item.visitationState || 'Huevos';
-            document.getElementById('healthStatus').value = item.healthStatus || 'Excelente';
-            document.getElementById('chickDeaths').value = item.chickDeaths || 0;
-            document.getElementById('adultDeath').value = item.adultDeath || 'Ninguno';
-            document.getElementById('fledgedChicks').value = item.fledgedChicks || 0;
-            document.getElementById('notes').value = item.notes || '';
-
-            document.getElementById('edit-mode-badge').classList.remove('hidden');
-            document.getElementById('form-section-title').textContent = mode === 'view' ? 'Ver Ficha de Nido' : 'Editar Ficha de Nido';
-
-            initNestMap(item.lat || 39.98, item.lng || -0.05);
-          } else {
-            initNestMap(39.98, -0.05);
-          }
-        });
-      } else {
-        resetFormForNew();
+        setTimeout(() => editNest(editId), 500);
       }
-
-      if (typeof lucide !== 'undefined') lucide.createIcons();
     });
 
     window.addEventListener('load', () => {
-      if (nestMap) nestMap.invalidateSize();
+      if (controlMap) controlMap.invalidateSize();
     });
   </script>
 </body>
