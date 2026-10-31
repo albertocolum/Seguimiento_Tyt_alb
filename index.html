@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- LIBRERÍA DE EXCEL (SheetJS / XLSX) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <!-- LIBRERÍAS DE FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -37,7 +40,6 @@
     }
     #dashboard-map { height: 400px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
     
-    /* Estilo para la anilla metálica (fondo gris claro, texto negro y negrita) */
     .metal-ring-badge {
       background-color: #e5e7eb;
       color: #111827;
@@ -48,7 +50,6 @@
       display: inline-block;
     }
 
-    /* Estilo realista para la anilla de PVC (fondo negro, letras blancas y negrita) */
     .pvc-badge {
       background-color: #000000;
       color: #ffffff;
@@ -96,6 +97,23 @@
   <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     
+    <!-- BARRA DE ACCIONES GLOBALES (EXCEL) -->
+    <div class="bg-white/95 backdrop-blur-sm p-4 rounded-2xl border border-brand-border shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div>
+        <h2 class="text-sm font-bold text-stone-900">Copias de Seguridad y Datos (Excel)</h2>
+        <p class="text-xs text-stone-500">Exporta o importa toda la base de datos de nidos y anillados en un libro de Excel (.xlsx)</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="exportFullExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar Excel
+        </button>
+        <button onclick="document.getElementById('excelFileInput').click()" class="bg-sky-700 hover:bg-sky-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+          <i data-lucide="upload" class="w-4 h-4"></i> Importar Excel
+        </button>
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="importFullExcel(event)">
+      </div>
+    </div>
+
     <!-- TARJETAS DE ESTADÍSTICAS KPI -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
       
@@ -352,6 +370,83 @@
       document.getElementById('stat-pairs').textContent = pairs;
       document.getElementById('stat-chicks').textContent = chicks;
       document.getElementById('stat-ringed').textContent = ringedCount;
+    }
+
+    // Funciones de Exportación e Importación en Excel (.xlsx)
+    function exportFullExcel() {
+      db.ref('/').once('value', snapshot => {
+        const fullData = snapshot.val();
+        if (!fullData) {
+          alert('La base de datos está vacía.');
+          return;
+        }
+
+        const wb = XLSX.utils.book_new();
+
+        // Hoja 1: Nidos
+        if (fullData.nidos) {
+          const nestsArray = Object.values(fullData.nidos);
+          const wsNests = XLSX.utils.json_to_sheet(nestsArray);
+          XLSX.utils.book_append_sheet(wb, wsNests, "Nidos");
+        }
+
+        // Hoja 2: Anillados
+        if (fullData.anillados) {
+          const ringsArray = Object.values(fullData.anillados);
+          const wsRings = XLSX.utils.json_to_sheet(ringsArray);
+          XLSX.utils.book_append_sheet(wb, wsRings, "Anillados");
+        }
+
+        XLSX.writeFile(wb, `TytoAlba_Backup_${new Date().toISOString().split('T')[0]}.xlsx`);
+      });
+    }
+
+    function importFullExcel(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+
+          let importedData = {};
+
+          workbook.SheetNames.forEach(sheetName => {
+            const jsonSheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            if (sheetName.toLowerCase().includes('nido')) {
+              importedData.nidos = {};
+              jsonSheet.forEach(item => {
+                if (item.nestId) importedData.nidos[item.nestId] = item;
+              });
+            } else if (sheetName.toLowerCase().includes('anillado')) {
+              importedData.anillados = {};
+              jsonSheet.forEach(item => {
+                if (item.metalRing) {
+                  const safeKey = item.metalRing.replace(/[\/\.#$\[\]]/g, '_');
+                  importedData.anillados[safeKey] = item;
+                }
+              });
+            }
+          });
+
+          if (confirm('¿Estás seguro de importar este archivo de Excel? Esto actualizará la información en Firebase.')) {
+            db.ref('/').update(importedData, err => {
+              if (err) {
+                alert('Error al importar el Excel: ' + err.message);
+              } else {
+                alert('¡Datos importados y sincronizados con éxito!');
+                window.location.reload();
+              }
+            });
+          }
+        } catch (ex) {
+          alert('Error al procesar el archivo Excel: ' + ex.message);
+        }
+        event.target.value = '';
+      };
+      reader.readAsArrayBuffer(file);
     }
 
     function deleteNest(nestId) {
