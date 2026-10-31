@@ -200,7 +200,16 @@
 
     let allRings = [];
 
-    // Carga de nidos robusta y segura
+    // Función auxiliar para formatear fecha de aaaa-mm-dd a dd/mm/aaaa
+    function formatDateToEU(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return dateStr;
+    }
+
     db.ref('nidos').on('value', snapshot => {
       const val = snapshot.val();
       const sel = document.getElementById('nestSelect');
@@ -249,7 +258,7 @@
         tbody.innerHTML += `
           <tr class="hover:bg-stone-50 transition-colors">
             <td class="px-4 py-3 font-bold text-stone-900">${item.nestId || 'N/A'}</td>
-            <td class="px-4 py-3">${item.ringDate || ''}</td>
+            <td class="px-4 py-3">${formatDateToEU(item.ringDate) || ''}</td>
             <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-[11px] font-semibold ${badgeColor}">${item.birdAge}</span></td>
             <td class="px-4 py-3 font-mono font-bold text-sky-700">${item.metalRing}</td>
             <td class="px-4 py-3 font-mono">${item.pvcRing || '-'}</td>
@@ -347,14 +356,14 @@
           const nestData = snapshot.val() || {};
           let nestUpdates = {};
 
-          if (birdAge === 'Adulto') {
-            if (sex === 'Macho') {
-              nestUpdates.maleRing = metalRing;
-              nestUpdates.malePvcCode = pvcRing;
-            } else if (sex === 'Hembra') {
-              nestUpdates.femaleRing = metalRing;
-              nestUpdates.femalePvcCode = pvcRing;
-            } else {
+          if (sex === 'Macho') {
+            nestUpdates.maleRing = metalRing;
+            nestUpdates.malePvcCode = pvcRing;
+          } else if (sex === 'Hembra') {
+            nestUpdates.femaleRing = metalRing;
+            nestUpdates.femalePvcCode = pvcRing;
+          } else {
+            if (birdAge === 'Adulto') {
               if (!nestData.maleRing || nestData.maleRing === 'Sin anillar') {
                 nestUpdates.maleRing = metalRing;
                 nestUpdates.malePvcCode = pvcRing;
@@ -365,7 +374,8 @@
             }
           }
 
-          let ringSummary = `[Anillamiento ${ringDate}] ${birdAge} (${sex}): Metal ${metalRing}${pvcRing ? ' / PVC '+pvcRing : ''}.`;
+          const euDate = formatDateToEU(ringDate);
+          let ringSummary = `[Anillamiento ${euDate}] ${birdAge} (${sex}): Metal ${metalRing}${pvcRing ? ' / PVC '+pvcRing : ''}.`;
           if (weight) ringSummary += ` Peso: ${weight}g.`;
           if (wing) ringSummary += ` Ala: ${wing}mm.`;
           if (userNotes) ringSummary += ` Nota: ${userNotes}`;
