@@ -126,9 +126,9 @@
             </div>
           </div>
 
-          <!-- MAPA TOPOGRÁFICO DE RELIEVE Y COORDENADAS SEPARADAS -->
+          <!-- MAPA Y CAMPOS SEPARADOS DE LAT/LNG -->
           <div class="space-y-2 pt-2">
-            <label class="block text-xs font-bold text-stone-600">Seleccionar ubicación en el mapa (Relieve de campo):</label>
+            <label class="block text-xs font-bold text-stone-600">Seleccionar ubicación en el mapa (Haz clic o arrastra el marcador):</label>
             <div id="nest-map"></div>
             <div class="grid grid-cols-2 gap-4 pt-1">
               <div>
@@ -268,7 +268,6 @@
     let nestMap = null;
     let nestMarker = null;
 
-    // Obtener ubicación automáticamente con Nominatim
     function fetchLocationName(lat, lng) {
       fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`, {
         headers: { 'Accept-Language': 'es' }
@@ -296,10 +295,10 @@
 
       nestMap = L.map('nest-map').setView([lat, lng], 12);
 
-      // CAPA DE RELIEVE Y TOPOGRAFÍA DE ESRI (World_Terrain_Base)
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 13,
-        attribution: 'Tiles &copy; Esri &mdash; Source: USGS, Esri, TANA, DeLorme, and GIS User Community'
+      // CAPA TOPOGRÁFICA Y DE RELIEVE OFICIAL DE ESRI (World_Topo_Map)
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
       }).addTo(nestMap);
 
       nestMarker = L.marker([lat, lng], { draggable: true }).addTo(nestMap);
