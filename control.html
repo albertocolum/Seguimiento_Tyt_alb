@@ -242,7 +242,9 @@
 
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo (Auto-ajustable)</label>
-            <textarea id="notes" oninput="autoResizeTextarea(this)" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
+            <textarea id="notes" oninput="autoResizeTextarea(this)" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white mb-2"></textarea>
+            <!-- Contenedor visual enriquecido para formatear las bajas en rojo y negrita -->
+            <div id="notes-preview" class="p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs space-y-1"></div>
           </div>
         </div>
 
@@ -278,6 +280,30 @@
     function autoResizeTextarea(textarea) {
       textarea.style.height = 'auto';
       textarea.style.height = (textarea.scrollHeight + 4) + 'px';
+      updateNotesPreview(textarea.value);
+    }
+
+    // Actualiza la vista previa para resaltar en rojo y negrita las líneas de baja
+    function updateNotesPreview(text) {
+      const previewDiv = document.getElementById('notes-preview');
+      if (!text.trim()) {
+        previewDiv.innerHTML = '<span class="text-stone-400 italic">No hay observaciones registradas.</span>';
+        return;
+      }
+      
+      const lines = text.split('\n');
+      previewDiv.innerHTML = '';
+      
+      lines.forEach(line => {
+        const p = document.createElement('div');
+        if (line.includes('[BAJA POLLO]') || line.includes('[BAJA ADULTO]')) {
+          p.className = 'font-bold text-red-600';
+        } else {
+          p.className = 'text-stone-700';
+        }
+        p.textContent = line;
+        previewDiv.appendChild(p);
+      });
     }
 
     function loadNestRings(nestId) {
@@ -379,6 +405,7 @@
       document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
       const notesArea = document.getElementById('notes');
       notesArea.style.height = 'auto';
+      updateNotesPreview('');
       document.getElementById('chickDeathRing').innerHTML = '<option value="Sin anillar">Sin anillar</option>';
       initNestMap(39.98, -0.05);
     }
@@ -400,20 +427,20 @@
 
       let alertSnippets = [];
 
-      // Generar alerta para pollo en ROJO y NEGRITA
+      // Generar alerta limpia sin etiquetas HTML feas dentro del campo de texto
       if (selectedChickDeath && selectedChickDeath !== 'Sin anillar') {
-        alertSnippets.push(`<strong><span style="color:red">[BAJA POLLO] El pollo con anilla ${selectedChickDeath} ha sido registrado como fallecido/baja (Fecha: ${layDate}).</span></strong>`);
+        alertSnippets.push(`[BAJA POLLO] El pollo con anilla ${selectedChickDeath} ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
       }
 
-      // Generar alerta para adulto en ROJO y NEGRITA y limpiar la casilla correspondiente
+      // Generar alerta para adulto y limpiar casillas si se marca su muerte
       if (adultDeathStatus === 'Macho Muerto') {
-        alertSnippets.push(`<strong><span style="color:red">[BAJA ADULTO] El macho reproductor (Anilla: ${maleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).</span></strong>`);
+        alertSnippets.push(`[BAJA ADULTO] El macho reproductor (Anilla: ${maleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
         maleRing = 'Sin anillar';
         malePvcCode = '';
         document.getElementById('maleRing').value = '';
         document.getElementById('malePvcCode').value = '';
       } else if (adultDeathStatus === 'Hembra Muerta') {
-        alertSnippets.push(`<strong><span style="color:red">[BAJA ADULTO] La hembra reproductora (Anilla: ${femaleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).</span></strong>`);
+        alertSnippets.push(`[BAJA ADULTO] La hembra reproductora (Anilla: ${femaleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
         femaleRing = 'Sin anillar';
         femalePvcCode = '';
         document.getElementById('femaleRing').value = '';
@@ -451,7 +478,7 @@
         if (err) {
           alert('Error al guardar: ' + err.message);
         } else {
-          alert('¡Ficha de nido guardada con éxito y casillas de adultos actualizadas!');
+          alert('¡Ficha de nido guardada con éxito, casillas de adultos actualizadas y observaciones limpias!');
           window.location.href = 'index.html';
         }
       });
