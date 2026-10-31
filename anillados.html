@@ -285,6 +285,7 @@
 
       data.forEach(item => {
         const badgeColor = item.birdAge === 'Adulto' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+        const safeKey = item.metalRing.replace(/[\/\.#$\[\]]/g, '_');
         
         tbody.innerHTML += `
           <tr class="hover:bg-stone-50 transition-colors">
@@ -299,13 +300,36 @@
             <td class="px-4 py-3">${item.p8 ? item.p8 + ' mm' : '-'}</td>
             <td class="px-4 py-3">${item.tarsus ? item.tarsus + ' mm' : '-'}</td>
             <td class="px-4 py-3 font-semibold">${item.weight ? item.weight + ' g' : '-'}</td>
-            <td class="px-4 py-3 text-right">
+            <td class="px-4 py-3 text-right space-x-2">
+              <button onclick="editRingRecord('${safeKey}')" class="text-amber-700 hover:text-amber-900 font-semibold text-xs">Editar</button>
               <button onclick="deleteRingRecord('${item.metalRing}', '${item.nestId}', '${item.birdAge}', '${item.sex}')" class="text-rose-600 hover:text-rose-800 font-semibold text-xs">Eliminar</button>
             </td>
           </tr>
         `;
       });
       lucide.createIcons();
+    }
+
+    function editRingRecord(safeKey) {
+      db.ref('anillados/' + safeKey).once('value', snapshot => {
+        const item = snapshot.val();
+        if (!item) return;
+
+        document.getElementById('nestSelect').value = item.nestId || '';
+        document.getElementById('ringDate').value = item.ringDate || '';
+        document.getElementById('birdAge').value = item.birdAge || 'Pollo';
+        document.getElementById('metalRing').value = item.metalRing || '';
+        document.getElementById('pvcRing').value = item.pvcRing || '';
+        document.getElementById('sex').value = item.sex || 'Desconocido';
+        document.getElementById('euringAge').value = item.euringAge || '1';
+        document.getElementById('wingChord').value = item.wingChord || '';
+        document.getElementById('p8').value = item.p8 || '';
+        document.getElementById('tarsus').value = item.tarsus || '';
+        document.getElementById('weight').value = item.weight || '';
+        document.getElementById('ringNotes').value = item.ringNotes || '';
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     }
 
     function filterRingHistory() {
@@ -418,20 +442,9 @@
           nestUpdates.notes = previousNotes ? previousNotes + '\n' + ringSummary : ringSummary;
 
           db.ref('nidos/' + currentNest).update(nestUpdates).then(() => {
-            const keepInNest = confirm('¡Registro guardado, nido actualizado y observaciones de campo sincronizadas!\n\n¿Deseas anillar otra ave en este mismo nido?');
-            
-            if (keepInNest) {
-              document.getElementById('metalRing').value = '';
-              document.getElementById('pvcRing').value = '';
-              document.getElementById('weight').value = '';
-              document.getElementById('wingChord').value = '';
-              document.getElementById('p8').value = '';
-              document.getElementById('tarsus').value = '';
-              document.getElementById('ringNotes').value = '';
-              document.getElementById('metalRing').focus();
-            } else {
-              window.location.href = 'index.html';
-            }
+            alert('¡Registro guardado con éxito!');
+            document.getElementById('ring-form').reset();
+            document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
           });
         });
       });
