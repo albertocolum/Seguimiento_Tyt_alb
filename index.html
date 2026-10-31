@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Dashboard Principal</title>
+  <title>Tyto Alba | Dashboard y Mapa General</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -15,23 +15,13 @@
   <!-- LIBRERÍAS DE FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  
-  <!-- LIBRERÍA SHEETJS PARA EXCEL -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            brand: {
-              dark: '#1e382b',
-              hover: '#162b20',
-              accent: '#c88a4b',
-              accentHover: '#b5793e',
-              bg: '#f4f3ed',
-              border: '#e5e3d7'
-            }
+            brand: { dark: '#1e382b', hover: '#162b20', accent: '#c88a4b', accentHover: '#b5793e', bg: '#f4f3ed', border: '#e5e3d7' }
           }
         }
       }
@@ -45,21 +35,12 @@
       background-repeat: no-repeat;
       background-size: cover;
     }
-    .leaflet-popup-content-wrapper { border-radius: 0.75rem; padding: 0.25rem; }
-    
-    /* ALTURA Y ANCHO FORZADOS PARA EVITAR QUE EL MAPA SE COLAPSE */
-    #overview-map { 
-      height: 420px !important; 
-      width: 100% !important; 
-      border-radius: 0 0 1rem 1rem; 
-      position: relative; 
-      z-index: 1;
-    }
+    #dashboard-map { height: 450px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
 
-  <!-- CABECERA -->
+  <!-- NAVBAR -->
   <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
       
@@ -90,98 +71,66 @@
     </div>
   </header>
 
+  <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     
     <div class="bg-brand-dark/90 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-      <div class="max-w-2xl z-10">
-        <span class="inline-block bg-white/10 text-emerald-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-emerald-500/20">Sincronización Cloud Activa</span>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Resumen de Inspecciones de Campo</h1>
-        <p class="text-white/70 text-sm mt-2 leading-relaxed">Consulte los datos sincronizados en tiempo real o gestione copias de seguridad mediante Excel.</p>
+      <div>
+        <span class="inline-block bg-white/10 text-emerald-300 font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider mb-3 border border-emerald-500/20">Panel General</span>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Monitoreo de Poblaciones de Lechuza</h1>
+        <p class="text-white/70 text-sm mt-2">Visualización cartográfica y listado general de nidos activos y cajas nido.</p>
       </div>
-      
-      <!-- BOTONES DE ACCIÓN RÁPIDA -->
-      <div class="z-10 shrink-0 flex flex-wrap items-center gap-1.5">
-        <a href="control.html" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-3.5 py-2 rounded-xl transition-all shadow-sm inline-flex items-center space-x-1.5 text-xs">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Nuevo Nido</span>
+
+      <div class="shrink-0">
+        <a href="control.html" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow-sm inline-flex items-center space-x-2 text-xs">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i><span>Registrar Nuevo Nido</span>
         </a>
-        <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3.5 py-2 rounded-xl transition-all shadow-sm inline-flex items-center space-x-1.5 text-xs" title="Exportar a Excel">
-          <i data-lucide="download" class="w-4 h-4"></i><span>Exportar</span>
-        </button>
-        <label class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-3.5 py-2 rounded-xl transition-all shadow-sm inline-flex items-center space-x-1.5 text-xs cursor-pointer" title="Importar desde Excel">
-          <i data-lucide="upload" class="w-4 h-4"></i><span>Importar</span>
-          <input type="file" id="excelFileIn" accept=".xlsx, .xls, .csv" onchange="importFromExcel(event)" class="hidden">
-        </label>
       </div>
     </div>
 
-    <!-- TARJETAS KPI -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Activos</span><div class="p-2 bg-emerald-50 rounded-xl text-emerald-700"><i data-lucide="home" class="w-5 h-5"></i></div></div>
-        <div><div id="kpi-nests" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-stone-500 mt-1">Ocupación en caja</div></div>
+    <!-- SECCIÓN DEL MAPA GENERAL -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h2 class="text-lg font-bold text-stone-900 flex items-center gap-2">
+          <i data-lucide="map" class="w-5 h-5 text-brand-accent"></i> Mapa General de Nidos (Relieve)
+        </h2>
+        <span id="total-nests-badge" class="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full">Cargando nidos...</span>
       </div>
-      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Nidos Inactivos</span><div class="p-2 bg-rose-50 rounded-xl text-rose-700"><i data-lucide="home-off" class="w-5 h-5"></i></div></div>
-        <div><div id="kpi-inactive" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-rose-700 mt-1">Inactivos / Abandonados</div></div>
-      </div>
-      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Parejas</span><div class="p-2 bg-amber-50 rounded-xl text-amber-700"><i data-lucide="heart" class="w-5 h-5"></i></div></div>
-        <div><div id="kpi-pairs" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-amber-700 mt-1">Identificadas</div></div>
-      </div>
-      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400">Crías</span><div class="p-2 bg-teal-50 rounded-xl text-teal-700"><i data-lucide="smile" class="w-5 h-5"></i></div></div>
-        <div><div id="kpi-chicks" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-teal-700 mt-1">Eclosionadas</div></div>
-      </div>
-      <a href="anillados.html" class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-md flex flex-col justify-between cursor-pointer hover:border-sky-400 hover:ring-2 hover:ring-sky-200 transition-all group col-span-2 md:col-span-1">
-        <div class="flex items-center justify-between mb-3"><span class="text-xs font-bold uppercase tracking-wider text-stone-400 group-hover:text-sky-700">Anillados</span><div class="p-2 bg-sky-50 rounded-xl text-sky-700 group-hover:bg-sky-500 group-hover:text-white transition-colors"><i data-lucide="tag" class="w-5 h-5"></i></div></div>
-        <div><div id="kpi-ringed" class="text-3xl font-extrabold text-stone-800">0</div><div class="text-xs text-sky-700 mt-1 font-semibold flex items-center gap-1">Ver Biometría →</div></div>
-      </a>
+      <div id="dashboard-map"></div>
     </div>
 
-    <!-- TABLA RESUMEN -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
-      <div class="p-6 border-b border-brand-border flex justify-between items-center">
-        <div>
-          <h2 class="text-lg font-bold text-stone-800">Resumen de Nidos y Parejas Asignadas</h2>
-          <p class="text-xs text-stone-500 mt-1">Estado actual y adultos anillados en cada caja</p>
-        </div>
-        <a href="control.html" class="text-xs font-bold text-brand-dark hover:underline flex items-center gap-1">
-          Gestionar nidos <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-        </a>
+    <!-- SECCIÓN DE LISTADO DE NIDOS -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h2 class="text-lg font-bold text-stone-900 flex items-center gap-2">
+          <i data-lucide="list" class="w-5 h-5 text-brand-accent"></i> Listado de Fichas Registradas
+        </h2>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-stone-50/80 text-stone-500 uppercase font-bold border-b border-brand-border">
+        <table class="w-full text-left text-xs text-stone-700">
+          <thead class="bg-stone-100 text-stone-800 uppercase font-bold">
             <tr>
-              <th class="px-6 py-4">ID Nido</th>
-              <th class="px-6 py-4">Ubicación</th>
-              <th class="px-6 py-4">Estado</th>
-              <th class="px-6 py-4">Macho (Anilla / PVC)</th>
-              <th class="px-6 py-4">Hembra (Anilla / PVC)</th>
-              <th class="px-6 py-4 text-right">Acciones</th>
+              <th class="p-3">ID Nido</th>
+              <th class="p-3">Tipo</th>
+              <th class="p-3">Ubicación / Paraje</th>
+              <th class="p-3">Estado</th>
+              <th class="p-3">Pareja / Anillas</th>
+              <th class="p-3">Estado Nidada</th>
+              <th class="p-3 text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody id="dash-table-body" class="divide-y divide-brand-border font-medium text-stone-700"></tbody>
+          <tbody id="nests-table-body" class="divide-y divide-stone-200">
+            <tr>
+              <td colspan="7" class="p-4 text-center text-stone-500">Conectando con la base de datos en la nube...</td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </div>
 
-    <!-- MAPA GENERAL REPARADO -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md overflow-hidden">
-      <div class="p-6 border-b border-brand-border">
-        <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2">
-          <i data-lucide="map" class="w-5 h-5 text-brand-dark"></i> 
-          Mapa de Localización de Nidos
-        </h2>
-      </div>
-      <div id="overview-map"></div>
-    </div>
-
   </main>
 
-  <footer class="bg-white/90 backdrop-blur-md border-t border-brand-border py-4 mt-auto text-center text-xs text-stone-500 font-medium">
-    Tyto Alba Monitoreo — Sincronización Nube Activa
-  </footer>
+  <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo — Firebase Cloud Mode</footer>
 
   <script>
     const firebaseConfig = {
@@ -197,227 +146,98 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let overviewMap = null;
-    let overviewMarkersGroup = null;
-    let globalNestsData = [];
+    let dashboardMap = null;
+    let markersLayer = null;
 
-    function initOverviewMap() {
-      if (overviewMap) return;
+    function initDashboardMap() {
+      if (dashboardMap) return;
 
-      const mapEl = document.getElementById('overview-map');
-      if (!mapEl) return;
-      
-      overviewMap = L.map('overview-map').setView([39.98, -0.05], 10);
-      
-      // Capa de mapas de Esri (Libre, sin requerir API Key y sin bloqueos)
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      dashboardMap = L.map('dashboard-map').setView([39.98, -0.05], 11);
+
+      // CAPA TOPOGRÁFICA Y DE RELIEVE DE ESRI EN EL DASHBOARD
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, and the GIS User Community'
-      }).addTo(overviewMap);
+        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+      }).addTo(dashboardMap);
 
-      overviewMarkersGroup = L.layerGroup().addTo(overviewMap);
-
-      setTimeout(() => {
-        if (overviewMap) overviewMap.invalidateSize();
-      }, 300);
+      markersLayer = L.layerGroup().addTo(dashboardMap);
     }
 
-    db.ref('anillados').on('value', snapshot => {
-      const val = snapshot.val();
-      const ringedArray = val ? Object.values(val) : [];
-      document.getElementById('kpi-ringed').textContent = ringedArray.length;
-    });
+    function loadNestsData() {
+      initDashboardMap();
 
-    function deleteNestRecord(nestId) {
-      if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el ${nestId} de la base de datos?`)) {
-        db.ref('nidos/' + nestId).remove()
-          .then(() => alert(`El nido ${nestId} ha sido eliminado.`))
-          .catch(err => alert('Error al eliminar: ' + err.message));
-      }
-    }
+      db.ref('nidos').on('value', snapshot => {
+        const data = snapshot.val();
+        const tbody = document.getElementById('nests-table-body');
+        tbody.innerHTML = '';
+        markersLayer.clearLayers();
 
-    function exportToExcel() {
-      if (!globalNestsData || globalNestsData.length === 0) {
-        alert('No hay datos de nidos para exportar.');
-        return;
-      }
-
-      const excelData = globalNestsData.map(item => ({
-        "ID Nido": item.nestId || '',
-        "Tipo de Nido": item.nestType || '',
-        "Ubicación": item.locationName || '',
-        "Estado": item.status || '',
-        "Latitud": item.lat || '',
-        "Longitud": item.lng || '',
-        "Cámara Fototrampeo": item.hasCamera || 'No',
-        "Anilla Macho": item.maleRing || '',
-        "PVC Macho": item.malePvcCode || '',
-        "Anilla Hembra": item.femaleRing || '',
-        "PVC Hembra": item.femalePvcCode || '',
-        "Fecha de Visita": item.layDate || '',
-        "Estado Nidada": item.visitationState || '',
-        "Salud General": item.healthStatus || '',
-        "Bajas Pollos": item.chickDeaths || 0,
-        "Adulto Muerto": item.adultDeath || 'Ninguno',
-        "Pollos Volados": item.fledgedChicks || 0,
-        "Última revisión": item.lastReview || ''
-      }));
-
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Nidos Tyto Alba");
-      XLSX.writeFile(workbook, "Seguimiento_Nidos_TytoAlba.xlsx");
-    }
-
-    function importFromExcel(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const data = new Uint8Array(evt.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const jsonRows = XLSX.utils.sheet_to_json(worksheet);
-
-          if (jsonRows.length === 0) {
-            alert('El archivo Excel está vacío.');
-            return;
-          }
-
-          let importedCount = 0;
-          jsonRows.forEach(row => {
-            const nestId = row["ID Nido"] || row["nestId"] || row["ID"];
-            if (nestId) {
-              const record = {
-                nestId: String(nestId).trim(),
-                nestType: row["Tipo de Nido"] || row["nestType"] || "Nido Artificial",
-                locationName: row["Ubicación"] || row["locationName"] || "Sin ubicación",
-                status: row["Estado"] || row["status"] || "Activo",
-                lat: parseFloat(row["Latitud"] || row["lat"]) || null,
-                lng: parseFloat(row["Longitud"] || row["lng"]) || null,
-                hasCamera: row["Cámara Fototrampeo"] || row["hasCamera"] || "No",
-                maleRing: row["Anilla Macho"] || row["maleRing"] || "Sin anillar",
-                malePvcCode: row["PVC Macho"] || row["malePvcCode"] || "",
-                femaleRing: row["Anilla Hembra"] || row["femaleRing"] || "Sin anillar",
-                femalePvcCode: row["PVC Hembra"] || row["femalePvcCode"] || "",
-                layDate: row["Fecha de Visita"] || row["layDate"] || new Date().toISOString().split('T')[0],
-                visitationState: row["Estado Nidada"] || row["visitationState"] || "Huevos",
-                healthStatus: row["Salud General"] || row["healthStatus"] || "Excelente",
-                chickDeaths: parseInt(row["Bajas Pollos"] || row["chickDeaths"]) || 0,
-                adultDeath: row["Adulto Muerto"] || row["adultDeath"] || "Ninguno",
-                fledgedChicks: parseInt(row["Pollos Volados"] || row["fledgedChicks"]) || 0,
-                notes: row["Notas"] || row["notes"] || "Importado desde Excel",
-                lastReview: new Date().toISOString().split('T')[0]
-              };
-
-              db.ref('nidos/' + record.nestId).set(record);
-              importedCount++;
-            }
-          });
-
-          alert(`¡Se han importado/actualizado ${importedCount} nidos con éxito en la nube!`);
-          document.getElementById('excelFileIn').value = '';
-        } catch (err) {
-          alert('Error al procesar el archivo Excel: ' + err.message);
+        if (!data) {
+          tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-stone-500">No hay nidos registrados todavía. Añade uno desde el módulo de nidos.</td></tr>';
+          document.getElementById('total-nests-badge').textContent = '0 nidos registrados';
+          return;
         }
-      };
-      reader.readAsArrayBuffer(file);
-    }
 
-    function renderData(data) {
-      globalNestsData = data;
+        const nests = Object.values(data);
+        document.getElementById('total-nests-badge').textContent = `${nests.length} nidos registrados`;
 
-      document.getElementById('kpi-nests').textContent = data.filter(d => d.status === 'Activo').length;
-      document.getElementById('kpi-inactive').textContent = data.filter(d => d.status === 'Inactivo' || d.status === 'Abandonado').length;
-      document.getElementById('kpi-pairs').textContent = data.filter(d => (d.maleRing && d.maleRing !== 'Sin anillar') || (d.femaleRing && d.femaleRing !== 'Sin anillar') || d.malePvcCode || d.femalePvcCode).length;
-      document.getElementById('kpi-chicks').textContent = data.filter(d => d.visitationState === 'Pollos').length;
+        const latLngs = [];
 
-      const tbody = document.getElementById('dash-table-body');
-      tbody.innerHTML = '';
-
-      if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-stone-400">No hay nidos guardados en la nube. Añade uno o importa un Excel.</td></tr>`;
-      } else {
-        data.forEach(item => {
-          const badgeColor = item.status === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
-          
-          const maleInfo = (item.maleRing && item.maleRing !== 'Sin anillar') ? `${item.maleRing} ${item.malePvcCode ? '('+item.malePvcCode+')' : ''}` : '<span class="text-stone-400 italic">Sin anillar</span>';
-          const femaleInfo = (item.femaleRing && item.femaleRing !== 'Sin anillar') ? `${item.femaleRing} ${item.femalePvcCode ? '('+item.femalePvcCode+')' : ''}` : '<span class="text-stone-400 italic">Sin anillar</span>';
-
-          tbody.innerHTML += `
-            <tr class="hover:bg-stone-50 transition-colors">
-              <td class="px-6 py-4 font-bold text-stone-900">${item.nestId}</td>
-              <td class="px-6 py-4">${item.locationName}</td>
-              <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${badgeColor}">${item.status}</span></td>
-              <td class="px-6 py-4 font-mono text-stone-700">${maleInfo}</td>
-              <td class="px-6 py-4 font-mono text-stone-700">${femaleInfo}</td>
-              <td class="px-6 py-4 text-right space-x-2">
-                <a href="control.html?edit=${item.nestId}&mode=view" class="inline-block bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold px-2.5 py-1 rounded-lg">Ver</a>
-                <a href="control.html?edit=${item.nestId}&mode=edit" class="inline-block bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold px-2.5 py-1 rounded-lg">Editar</a>
-                <button onclick="deleteNestRecord('${item.nestId}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold px-2.5 py-1 rounded-lg">Borrar</button>
-              </td>
-            </tr>
+        nests.forEach(nest => {
+          // Fila de la tabla
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-stone-50 transition-colors';
+          tr.innerHTML = `
+            <td class="p-3 font-bold text-stone-900">${nest.nestId}</td>
+            <td class="p-3">${nest.nestType || 'N/D'}</td>
+            <td class="p-3">${nest.locationName || 'Sin paraje'}</td>
+            <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${nest.status === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-100 text-stone-600'}">${nest.status || 'Activo'}</span></td>
+            <td class="p-3 text-[11px]">♂ ${nest.maleRing || 'Sin anillar'}<br>♀ ${nest.femaleRing || 'Sin anillar'}</td>
+            <td class="p-3 font-semibold text-emerald-700">${nest.visitationState || 'N/D'}</td>
+            <td class="p-3 text-right space-x-2">
+              <a href="control.html?edit=${nest.nestId}&mode=view" class="text-sky-600 hover:text-sky-800 font-bold">Ver</a>
+              <a href="control.html?edit=${nest.nestId}" class="text-amber-600 hover:text-amber-800 font-bold">Editar</a>
+              <button onclick="deleteNest('${nest.nestId}')" class="text-rose-600 hover:text-rose-800 font-bold">Borrar</button>
+            </td>
           `;
-        });
-      }
+          tbody.appendChild(tr);
 
-      if (!overviewMap) {
-        initOverviewMap();
-      }
-
-      if (overviewMarkersGroup && overviewMap) {
-        overviewMarkersGroup.clearLayers();
-        const bounds = [];
-
-        data.forEach(item => {
-          if (item.lat && item.lng) {
-            const isActive = item.status === 'Activo';
-            const pinColor = isActive ? '#10b981' : '#94a3b8';
-
-            const customIcon = L.divIcon({
-              className: 'custom-pin',
-              html: `<div style="background-color: ${pinColor}; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
-              iconSize: [18, 18],
-              iconAnchor: [9, 9]
-            });
-
-            L.marker([item.lat, item.lng], { icon: customIcon })
-              .addTo(overviewMarkersGroup)
-              .bindPopup(`<strong>${item.nestId}</strong><br>${item.locationName}<br><span style="color: ${pinColor}; font-weight: bold;">Estado: ${item.status}</span>`);
-            
-            bounds.push([item.lat, item.lng]);
+          // Marcador en el mapa de relieve
+          if (nest.lat && nest.lng) {
+            const marker = L.marker([nest.lat, nest.lng]);
+            marker.bindPopup(`<b>${nest.nestId}</b><br>${nest.locationName || ''}<br>Estado: ${nest.visitationState || ''}`);
+            markersLayer.addLayer(marker);
+            latLngs.push([nest.lat, nest.lng]);
           }
         });
 
-        if (bounds.length > 0) {
-          overviewMap.fitBounds(bounds, { padding: [40, 40] });
+        if (latLngs.length > 0) {
+          dashboardMap.fitBounds(latLngs, { padding: [50, 50], maxZoom: 14 });
         }
-        
-        overviewMap.invalidateSize();
-      }
-      
-      if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-      }
+
+        setTimeout(() => {
+          if (dashboardMap) dashboardMap.invalidateSize();
+        }, 300);
+      });
     }
 
-    db.ref('nidos').on('value', snapshot => {
-      const val = snapshot.val();
-      const nestsArray = val ? Object.values(val) : [];
-      renderData(nestsArray);
-    });
+    function deleteNest(nestId) {
+      if (confirm(`¿Estás seguro de que deseas eliminar el nido ${nestId}?`)) {
+        db.ref('nidos/' + nestId).remove().then(() => {
+          alert('Nido eliminado correctamente.');
+        }).catch(err => {
+          alert('Error al eliminar: ' + err.message);
+        });
+      }
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
-      initOverviewMap();
+      loadNestsData();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     });
 
     window.addEventListener('load', () => {
-      if (overviewMap) {
-        overviewMap.invalidateSize();
-      }
+      if (dashboardMap) dashboardMap.invalidateSize();
     });
   </script>
 </body>
