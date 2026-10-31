@@ -242,9 +242,8 @@
 
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo (Auto-ajustable)</label>
-            <textarea id="notes" oninput="autoResizeTextarea(this)" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white mb-2"></textarea>
-            <!-- Contenedor visual enriquecido para formatear las bajas en rojo y negrita -->
-            <div id="notes-preview" class="p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs space-y-1"></div>
+            <!-- ÚNICO CONTENEDOR (Textarea con auto-expansión limpia) -->
+            <textarea id="notes" oninput="autoResizeTextarea(this)" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
           </div>
         </div>
 
@@ -280,30 +279,6 @@
     function autoResizeTextarea(textarea) {
       textarea.style.height = 'auto';
       textarea.style.height = (textarea.scrollHeight + 4) + 'px';
-      updateNotesPreview(textarea.value);
-    }
-
-    // Actualiza la vista previa para resaltar en rojo y negrita las líneas de baja
-    function updateNotesPreview(text) {
-      const previewDiv = document.getElementById('notes-preview');
-      if (!text.trim()) {
-        previewDiv.innerHTML = '<span class="text-stone-400 italic">No hay observaciones registradas.</span>';
-        return;
-      }
-      
-      const lines = text.split('\n');
-      previewDiv.innerHTML = '';
-      
-      lines.forEach(line => {
-        const p = document.createElement('div');
-        if (line.includes('[BAJA POLLO]') || line.includes('[BAJA ADULTO]')) {
-          p.className = 'font-bold text-red-600';
-        } else {
-          p.className = 'text-stone-700';
-        }
-        p.textContent = line;
-        previewDiv.appendChild(p);
-      });
     }
 
     function loadNestRings(nestId) {
@@ -405,7 +380,6 @@
       document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
       const notesArea = document.getElementById('notes');
       notesArea.style.height = 'auto';
-      updateNotesPreview('');
       document.getElementById('chickDeathRing').innerHTML = '<option value="Sin anillar">Sin anillar</option>';
       initNestMap(39.98, -0.05);
     }
@@ -425,14 +399,16 @@
       const notesArea = document.getElementById('notes');
       let currentNotes = notesArea.value.trim();
 
+      // Limpiar texto viejo con etiquetas HTML si el usuario ya las tenía guardadas
+      currentNotes = currentNotes.replace(/<\/?strong>|<span[^>]*>|<\/span>/gi, '');
+
       let alertSnippets = [];
 
-      // Generar alerta limpia sin etiquetas HTML feas dentro del campo de texto
+      // Generar alertas limpias en texto plano (sin etiquetas HTML)
       if (selectedChickDeath && selectedChickDeath !== 'Sin anillar') {
         alertSnippets.push(`[BAJA POLLO] El pollo con anilla ${selectedChickDeath} ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
       }
 
-      // Generar alerta para adulto y limpiar casillas si se marca su muerte
       if (adultDeathStatus === 'Macho Muerto') {
         alertSnippets.push(`[BAJA ADULTO] El macho reproductor (Anilla: ${maleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
         maleRing = 'Sin anillar';
@@ -518,7 +494,9 @@
             document.getElementById('fledgedChicks').value = item.fledgedChicks || 0;
             
             const notesArea = document.getElementById('notes');
-            notesArea.value = item.notes || '';
+            // Limpiar texto viejo de etiquetas al cargar para edición
+            let cleanNotes = (item.notes || '').replace(/<\/?strong>|<span[^>]*>|<\/span>/gi, '');
+            notesArea.value = cleanNotes;
             autoResizeTextarea(notesArea);
 
             document.getElementById('edit-mode-badge').classList.remove('hidden');
