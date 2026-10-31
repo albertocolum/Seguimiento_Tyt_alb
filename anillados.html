@@ -184,8 +184,16 @@
           <h2 class="text-lg font-bold text-stone-800">Historial de Aves Anilladas</h2>
           <p class="text-xs text-stone-500 mt-1">Listado completo de pollos y adultos registrados en la nube</p>
         </div>
-        <div>
-          <input type="text" id="searchFilter" oninput="filterRingHistory()" placeholder="Filtrar por nido o anilla..." class="px-3 py-2 border border-stone-300 rounded-xl text-xs bg-white w-64">
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="exportToCSV()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar CSV
+          </button>
+          <button onclick="document.getElementById('csvFileInput').click()" class="bg-sky-700 hover:bg-sky-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+            <i data-lucide="file-up" class="w-4 h-4"></i> Importar CSV
+          </button>
+          <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="importFromCSV(event)">
+
+          <input type="text" id="searchFilter" oninput="filterRingHistory()" placeholder="Filtrar por nido o anilla..." class="px-3 py-2 border border-stone-300 rounded-xl text-xs bg-white w-48">
         </div>
       </div>
       <div class="overflow-x-auto">
@@ -342,6 +350,105 @@
       renderRingHistory(filtered);
     }
 
+    function exportToCSV() {
+      if (!allRings || allRings.length === 0) {
+        alert('No hay datos de anillamiento para exportar.');
+        return;
+      }
+
+      let csvContent = "Nido,Fecha,Categoria,Anilla Metalica,PVC,Sexo,EURING,Ala Max (mm),P8 (mm),Tarso (mm),Peso (g),Observaciones\n";
+
+      allRings.forEach(item => {
+        const row = [
+          `"${item.nestId || ''}"`,
+          `"${item.ringDate || ''}"`,
+          `"${item.birdAge || ''}"`,
+          `"${item.metalRing || ''}"`,
+          `"${item.pvcRing || ''}"`,
+          `"${item.sex || ''}"`,
+          `"${item.euringAge || ''}"`,
+          `"${item.wingChord || ''}"`,
+          `"${item.p8 || ''}"`,
+          `"${item.tarsus || ''}"`,
+          `"${item.weight || ''}"`,
+          `"${(item.ringNotes || '').replace(/"/g, '""')}"`
+        ];
+        csvContent += row.join(",") + "\n";
+      });
+
+      const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `Anillados_TytoAlba_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function importFromCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        if (lines.length < 2) {
+          alert('El archivo CSV está vacío o no tiene el formato correcto.');
+          return;
+        }
+
+        let importedCount = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const row = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+          const cleanRow = row.map(val => val ? val.replace(/^"|"$/g, '').replace(/""/g, '"').trim() : '');
+
+          const nestId = cleanRow[0] || '';
+          const ringDate = cleanRow[1] || '';
+          const birdAge = cleanRow[2] || 'Pollo';
+          const metalRing = cleanRow[3] || '';
+          
+          if (metalRing && metalRing !== 'Anilla Metalica') {
+            const pvcRing = cleanRow[4] || '';
+            const sex = cleanRow[5] || 'Desconocido';
+            const euringAge = cleanRow[6] || '1';
+            const wingChord = parseFloat(cleanRow[7]) || null;
+            const p8 = parseFloat(cleanRow[8]) || null;
+            const tarsus = parseFloat(cleanRow[9]) || null;
+            const weight = parseFloat(cleanRow[10]) || null;
+            const ringNotes = cleanRow[11] || '';
+
+            const ringRecord = {
+              metalRing,
+              nestId,
+              ringDate,
+              birdAge,
+              sex,
+              euringAge,
+              pvcRing,
+              wingChord,
+              p8,
+              tarsus,
+              weight,
+              ringNotes
+            };
+
+            const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
+            db.ref('anillados/' + safeKey).set(ringRecord);
+            importedCount++;
+          }
+        }
+
+        alert(`¡Importación completada! Se han procesado y guardado ${importedCount} registros en Firebase.`);
+        event.target.value = '';
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
     function deleteRingRecord(metalRing, nestId, birdAge, sex) {
       if (confirm(`¿Estás seguro de que deseas eliminar el registro de la anilla ${metalRing}?`)) {
         const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
@@ -387,64 +494,75 @@
         return;
       }
 
-      const ringRecord = {
-        metalRing,
-        nestId: currentNest,
-        ringDate,
-        birdAge,
-        sex,
-        euringAge,
-        pvcRing,
-        wingChord: parseFloat(wing) || null,
-        p8: parseFloat(document.getElementById('p8').value) || null,
-        tarsus: parseFloat(document.getElementById('tarsus').value) || null,
-        weight: parseFloat(weight) || null,
-        ringNotes: userNotes
-      };
-
       const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
 
-      db.ref('anillados/' + safeKey).set(ringRecord, err => {
-        if (err) {
-          alert('Error al guardar el registro: ' + err.message);
-          return;
+      // VALIDACIÓN DE ANILLA DUPLICADA ANTES DE GUARDAR
+      db.ref('anillados/' + safeKey).once('value', snapshot => {
+        if (snapshot.exists()) {
+          const existingData = snapshot.val();
+          const confirmUpdate = confirm(`⚠️ ¡AVISO DE ANILLA DUPLICADA!\n\nLa anilla metálica "${metalRing}" ya se encuentra registrada en la base de datos (Asociada al nido: ${existingData.nestId || 'N/A'}, Fecha: ${existingData.ringDate || 'N/A'}).\n\n¿Deseas sobrescribir o actualizar este registro existente?`);
+          if (!confirmUpdate) {
+            return;
+          }
         }
 
-        db.ref('nidos/' + currentNest).once('value', snapshot => {
-          const nestData = snapshot.val() || {};
-          let nestUpdates = {};
+        const ringRecord = {
+          metalRing,
+          nestId: currentNest,
+          ringDate,
+          birdAge,
+          sex,
+          euringAge,
+          pvcRing,
+          wingChord: parseFloat(wing) || null,
+          p8: parseFloat(document.getElementById('p8').value) || null,
+          tarsus: parseFloat(document.getElementById('tarsus').value) || null,
+          weight: parseFloat(weight) || null,
+          ringNotes: userNotes
+        };
 
-          if (sex === 'Macho') {
-            nestUpdates.maleRing = metalRing;
-            nestUpdates.malePvcCode = pvcRing;
-          } else if (sex === 'Hembra') {
-            nestUpdates.femaleRing = metalRing;
-            nestUpdates.femalePvcCode = pvcRing;
-          } else {
-            if (birdAge === 'Adulto') {
-              if (!nestData.maleRing || nestData.maleRing === 'Sin anillar') {
-                nestUpdates.maleRing = metalRing;
-                nestUpdates.malePvcCode = pvcRing;
-              } else {
-                nestUpdates.femaleRing = metalRing;
-                nestUpdates.femalePvcCode = pvcRing;
-              }
-            }
+        db.ref('anillados/' + safeKey).set(ringRecord, err => {
+          if (err) {
+            alert('Error al guardar el registro: ' + err.message);
+            return;
           }
 
-          const euDate = formatDateToEU(ringDate);
-          let ringSummary = `[Anillamiento ${euDate}] ${birdAge} (Euring ${euringAge}, ${sex}): Metal ${metalRing}${pvcRing ? ' / PVC '+pvcRing : ''}.`;
-          if (weight) ringSummary += ` Peso: ${weight}g.`;
-          if (wing) ringSummary += ` Ala: ${wing}mm.`;
-          if (userNotes) ringSummary += ` Nota: ${userNotes}`;
+          db.ref('nidos/' + currentNest).once('value', nestSnapshot => {
+            const nestData = nestSnapshot.val() || {};
+            let nestUpdates = {};
 
-          const previousNotes = nestData.notes ? nestData.notes.trim() : '';
-          nestUpdates.notes = previousNotes ? previousNotes + '\n' + ringSummary : ringSummary;
+            if (sex === 'Macho') {
+              nestUpdates.maleRing = metalRing;
+              nestUpdates.malePvcCode = pvcRing;
+            } else if (sex === 'Hembra') {
+              nestUpdates.femaleRing = metalRing;
+              nestUpdates.femalePvcCode = pvcRing;
+            } else {
+              if (birdAge === 'Adulto') {
+                if (!nestData.maleRing || nestData.maleRing === 'Sin anillar') {
+                  nestUpdates.maleRing = metalRing;
+                  nestUpdates.malePvcCode = pvcRing;
+                } else {
+                  nestUpdates.femaleRing = metalRing;
+                  nestUpdates.femalePvcCode = pvcRing;
+                }
+              }
+            }
 
-          db.ref('nidos/' + currentNest).update(nestUpdates).then(() => {
-            alert('¡Registro guardado con éxito!');
-            document.getElementById('ring-form').reset();
-            document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
+            const euDate = formatDateToEU(ringDate);
+            let ringSummary = `[Anillamiento ${euDate}] ${birdAge} (Euring ${euringAge}, ${sex}): Metal ${metalRing}${pvcRing ? ' / PVC '+pvcRing : ''}.`;
+            if (weight) ringSummary += ` Peso: ${weight}g.`;
+            if (wing) ringSummary += ` Ala: ${wing}mm.`;
+            if (userNotes) ringSummary += ` Nota: ${userNotes}`;
+
+            const previousNotes = nestData.notes ? nestData.notes.trim() : '';
+            nestUpdates.notes = previousNotes ? previousNotes + '\n' + ringSummary : ringSummary;
+
+            db.ref('nidos/' + currentNest).update(nestUpdates).then(() => {
+              alert('¡Registro guardado con éxito!');
+              document.getElementById('ring-form').reset();
+              document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
+            });
           });
         });
       });
