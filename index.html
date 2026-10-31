@@ -36,6 +36,28 @@
       background-size: cover;
     }
     #dashboard-map { height: 400px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
+    
+    /* Estilo para la anilla metálica (fondo gris claro, texto negro y negrita) */
+    .metal-ring-badge {
+      background-color: #e5e7eb;
+      color: #111827;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      display: inline-block;
+    }
+
+    /* Estilo realista para la anilla de PVC (fondo negro, letras blancas y negrita) */
+    .pvc-badge {
+      background-color: #000000;
+      color: #ffffff;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      display: inline-block;
+    }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
@@ -255,8 +277,13 @@
           const latLngs = [];
 
           nests.forEach(nest => {
-            const maleInfo = nest.maleRing && nest.maleRing !== 'Sin anillar' ? `<span class="font-mono font-bold text-sky-700">${nest.maleRing}</span> ${nest.malePvcCode ? '<span class="text-stone-500 font-mono">('+nest.malePvcCode+')</span>' : ''}` : '<span class="italic text-stone-400">Sin anillar</span>';
-            const femaleInfo = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? `<span class="font-mono font-bold text-sky-700">${nest.femaleRing}</span> ${nest.femalePvcCode ? '<span class="text-stone-500 font-mono">('+nest.femalePvcCode+')</span>' : ''}` : '<span class="italic text-stone-400">Sin anillar</span>';
+            const maleInfo = nest.maleRing && nest.maleRing !== 'Sin anillar' ? 
+              `<span class="metal-ring-badge">${nest.maleRing}</span> ${nest.malePvcCode ? `<span class="pvc-badge ml-1">${nest.malePvcCode}</span>` : ''}` : 
+              '<span class="italic text-stone-400">Sin anillar</span>';
+            
+            const femaleInfo = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? 
+              `<span class="metal-ring-badge">${nest.femaleRing}</span> ${nest.femalePvcCode ? `<span class="pvc-badge ml-1">${nest.femalePvcCode}</span>` : ''}` : 
+              '<span class="italic text-stone-400">Sin anillar</span>';
 
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-stone-50/60 transition-colors';
@@ -275,9 +302,8 @@
             tbody.appendChild(tr);
 
             if (nest.lat && nest.lng) {
-              // CREAR PUNTOS LIMPIOS EN VEZ DE CHINCHETAS CON L.circleMarker
               const isActive = (nest.status === 'Activo');
-              const circleColor = isActive ? '#2563eb' : '#9ca3af'; // Azul para activo, gris para inactivo
+              const circleColor = isActive ? '#2563eb' : '#9ca3af';
 
               const circleMarker = L.circleMarker([nest.lat, nest.lng], {
                 radius: 8,
