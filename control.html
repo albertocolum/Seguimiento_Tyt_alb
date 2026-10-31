@@ -388,7 +388,34 @@
     function saveNestRecord(e) {
       e.preventDefault();
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
-      const selectedDeathRing = document.getElementById('chickDeathRing').value;
+      const selectedChickDeath = document.getElementById('chickDeathRing').value;
+      const adultDeathStatus = document.getElementById('adultDeath').value;
+      
+      const maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
+      const femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
+      
+      const layDate = document.getElementById('layDate').value;
+      const notesArea = document.getElementById('notes');
+      let currentNotes = notesArea.value.trim();
+
+      // Generar automáticamente las alertas en rojo y negrita en las observaciones si hay bajas registradas
+      let alertSnippets = [];
+
+      if (selectedChickDeath && selectedChickDeath !== 'Sin anillar') {
+        alertSnippets.push(`[BAJA POLLO] El pollo con anilla ${selectedChickDeath} ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
+      }
+
+      if (adultDeathStatus === 'Macho Muerto') {
+        alertSnippets.push(`[BAJA ADULTO] El macho reproductor (Anilla: ${maleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
+      } else if (adultDeathStatus === 'Hembra Muerta') {
+        alertSnippets.push(`[BAJA ADULTO] La hembra reproductora (Anilla: ${femaleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
+      }
+
+      // Concatenar las alertas al principio o final de las notas
+      if (alertSnippets.length > 0) {
+        const formattedAlerts = alertSnippets.join(' ');
+        currentNotes = currentNotes ? currentNotes + '\n' + formattedAlerts : formattedAlerts;
+      }
 
       const record = {
         nestId,
@@ -398,17 +425,17 @@
         lat: parseFloat(document.getElementById('lat').value) || null,
         lng: parseFloat(document.getElementById('lng').value) || null,
         hasCamera: document.getElementById('hasCamera').value,
-        maleRing: document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar',
+        maleRing: maleRing,
         malePvcCode: document.getElementById('malePvcCode').value.trim().toUpperCase(),
-        femaleRing: document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar',
+        femaleRing: femaleRing,
         femalePvcCode: document.getElementById('femalePvcCode').value.trim().toUpperCase(),
-        layDate: document.getElementById('layDate').value,
+        layDate: layDate,
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
-        chickDeathRing: selectedDeathRing,
-        adultDeath: document.getElementById('adultDeath').value,
+        chickDeathRing: selectedChickDeath,
+        adultDeath: adultDeathStatus,
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
-        notes: document.getElementById('notes').value.trim(),
+        notes: currentNotes,
         lastReview: new Date().toISOString().split('T')[0]
       };
 
