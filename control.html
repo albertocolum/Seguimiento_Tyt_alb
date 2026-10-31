@@ -275,13 +275,11 @@
     let nestMap = null;
     let nestMarker = null;
 
-    // Función para auto-ajustar la altura del textarea de observaciones dinámicamente
     function autoResizeTextarea(textarea) {
       textarea.style.height = 'auto';
       textarea.style.height = (textarea.scrollHeight + 4) + 'px';
     }
 
-    // Cargar dinámicamente las anillas de los pollos del nido actual
     function loadNestRings(nestId) {
       const select = document.getElementById('chickDeathRing');
       const currentVal = select.value;
@@ -391,29 +389,39 @@
       const selectedChickDeath = document.getElementById('chickDeathRing').value;
       const adultDeathStatus = document.getElementById('adultDeath').value;
       
-      const maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
-      const femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
+      let maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
+      let malePvcCode = document.getElementById('malePvcCode').value.trim().toUpperCase();
+      let femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
+      let femalePvcCode = document.getElementById('femalePvcCode').value.trim().toUpperCase();
       
       const layDate = document.getElementById('layDate').value;
       const notesArea = document.getElementById('notes');
       let currentNotes = notesArea.value.trim();
 
-      // Generar automáticamente las alertas en rojo y negrita en las observaciones si hay bajas registradas
       let alertSnippets = [];
 
+      // Generar alerta para pollo en ROJO y NEGRITA
       if (selectedChickDeath && selectedChickDeath !== 'Sin anillar') {
-        alertSnippets.push(`[BAJA POLLO] El pollo con anilla ${selectedChickDeath} ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
+        alertSnippets.push(`<strong><span style="color:red">[BAJA POLLO] El pollo con anilla ${selectedChickDeath} ha sido registrado como fallecido/baja (Fecha: ${layDate}).</span></strong>`);
       }
 
+      // Generar alerta para adulto en ROJO y NEGRITA y limpiar la casilla correspondiente
       if (adultDeathStatus === 'Macho Muerto') {
-        alertSnippets.push(`[BAJA ADULTO] El macho reproductor (Anilla: ${maleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
+        alertSnippets.push(`<strong><span style="color:red">[BAJA ADULTO] El macho reproductor (Anilla: ${maleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).</span></strong>`);
+        maleRing = 'Sin anillar';
+        malePvcCode = '';
+        document.getElementById('maleRing').value = '';
+        document.getElementById('malePvcCode').value = '';
       } else if (adultDeathStatus === 'Hembra Muerta') {
-        alertSnippets.push(`[BAJA ADULTO] La hembra reproductora (Anilla: ${femaleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).`);
+        alertSnippets.push(`<strong><span style="color:red">[BAJA ADULTO] La hembra reproductora (Anilla: ${femaleRing}) ha sido registrado como fallecido/baja (Fecha: ${layDate}).</span></strong>`);
+        femaleRing = 'Sin anillar';
+        femalePvcCode = '';
+        document.getElementById('femaleRing').value = '';
+        document.getElementById('femalePvcCode').value = '';
       }
 
-      // Concatenar las alertas al principio o final de las notas
       if (alertSnippets.length > 0) {
-        const formattedAlerts = alertSnippets.join(' ');
+        const formattedAlerts = alertSnippets.join('\n');
         currentNotes = currentNotes ? currentNotes + '\n' + formattedAlerts : formattedAlerts;
       }
 
@@ -426,9 +434,9 @@
         lng: parseFloat(document.getElementById('lng').value) || null,
         hasCamera: document.getElementById('hasCamera').value,
         maleRing: maleRing,
-        malePvcCode: document.getElementById('malePvcCode').value.trim().toUpperCase(),
+        malePvcCode: malePvcCode,
         femaleRing: femaleRing,
-        femalePvcCode: document.getElementById('femalePvcCode').value.trim().toUpperCase(),
+        femalePvcCode: femalePvcCode,
         layDate: layDate,
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
@@ -443,7 +451,7 @@
         if (err) {
           alert('Error al guardar: ' + err.message);
         } else {
-          alert('¡Ficha de nido guardada con éxito en la nube!');
+          alert('¡Ficha de nido guardada con éxito y casillas de adultos actualizadas!');
           window.location.href = 'index.html';
         }
       });
