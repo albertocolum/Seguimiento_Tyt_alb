@@ -123,13 +123,28 @@
       <div class="space-y-4">
         <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b border-brand-border pb-2 flex items-center gap-1.5"><i data-lucide="activity" class="w-4 h-4 text-brand-accent"></i> 3. Biometría Científica</h3>
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 bg-stone-50/80 p-4 rounded-xl border">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 bg-stone-50/80 p-4 rounded-xl border">
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Sexo</label>
             <select id="sex" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white">
               <option value="Desconocido">Desconocido</option>
               <option value="Macho">Macho</option>
               <option value="Hembra">Hembra</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Edad EURING</label>
+            <select id="euringAge" class="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm bg-white font-semibold">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="U">Desconocida (U)</option>
             </select>
           </div>
           <div>
@@ -183,6 +198,7 @@
               <th class="px-4 py-3">Anilla Metálica</th>
               <th class="px-4 py-3">PVC</th>
               <th class="px-4 py-3">Sexo</th>
+              <th class="px-4 py-3">EURING</th>
               <th class="px-4 py-3">Ala Max</th>
               <th class="px-4 py-3">P8</th>
               <th class="px-4 py-3">Tarso</th>
@@ -191,7 +207,7 @@
             </tr>
           </thead>
           <tbody id="ring-history-body" class="divide-y divide-brand-border font-medium text-stone-700">
-            <tr><td colspan="11" class="px-6 py-4 text-center text-stone-400">Cargando registros...</td></tr>
+            <tr><td colspan="12" class="px-6 py-4 text-center text-stone-400">Cargando registros...</td></tr>
           </tbody>
         </table>
       </div>
@@ -261,7 +277,7 @@
       tbody.innerHTML = '';
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" class="px-6 py-4 text-center text-stone-400">No hay aves anilladas registradas todavía.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" class="px-6 py-4 text-center text-stone-400">No hay aves anilladas registradas todavía.</td></tr>`;
         return;
       }
 
@@ -278,6 +294,7 @@
             <td class="px-4 py-3 font-mono font-bold text-sky-700">${item.metalRing}</td>
             <td class="px-4 py-3 font-mono">${item.pvcRing || '-'}</td>
             <td class="px-4 py-3">${item.sex || 'Desconocido'}</td>
+            <td class="px-4 py-3 font-bold text-center">${item.euringAge || '1'}</td>
             <td class="px-4 py-3">${item.wingChord ? item.wingChord + ' mm' : '-'}</td>
             <td class="px-4 py-3">${item.p8 ? item.p8 + ' mm' : '-'}</td>
             <td class="px-4 py-3">${item.tarsus ? item.tarsus + ' mm' : '-'}</td>
@@ -334,6 +351,7 @@
       const currentNest = document.getElementById('nestSelect').value;
       const birdAge = document.getElementById('birdAge').value;
       const sex = document.getElementById('sex').value;
+      const euringAge = document.getElementById('euringAge').value;
       const pvcRing = document.getElementById('pvcRing').value.trim().toUpperCase();
       const ringDate = document.getElementById('ringDate').value;
       const weight = document.getElementById('weight').value;
@@ -350,8 +368,9 @@
         nestId: currentNest,
         ringDate,
         birdAge,
-        pvcRing,
         sex,
+        euringAge,
+        pvcRing,
         wingChord: parseFloat(wing) || null,
         p8: parseFloat(document.getElementById('p8').value) || null,
         tarsus: parseFloat(document.getElementById('tarsus').value) || null,
@@ -390,7 +409,7 @@
           }
 
           const euDate = formatDateToEU(ringDate);
-          let ringSummary = `[Anillamiento ${euDate}] ${birdAge} (${sex}): Metal ${metalRing}${pvcRing ? ' / PVC '+pvcRing : ''}.`;
+          let ringSummary = `[Anillamiento ${euDate}] ${birdAge} (Euring ${euringAge}, ${sex}): Metal ${metalRing}${pvcRing ? ' / PVC '+pvcRing : ''}.`;
           if (weight) ringSummary += ` Peso: ${weight}g.`;
           if (wing) ringSummary += ` Ala: ${wing}mm.`;
           if (userNotes) ringSummary += ` Nota: ${userNotes}`;
