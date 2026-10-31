@@ -275,7 +275,6 @@
     let nestMap = null;
     let nestMarker = null;
 
-    // Función auxiliar para pasar de yyyy-mm-dd a dd/mm/yyyy
     function formatDateToEU(dateStr) {
       if (!dateStr) return '';
       const parts = dateStr.split('-');
@@ -292,7 +291,6 @@
 
     function loadNestRings(nestId) {
       const select = document.getElementById('chickDeathRing');
-      const currentVal = select.value;
       select.innerHTML = '<option value="Sin anillar">Sin anillar</option>';
 
       if (!nestId) return;
@@ -310,8 +308,6 @@
             select.appendChild(option);
           }
         });
-
-        if (currentVal) select.value = currentVal;
       });
     }
 
@@ -389,7 +385,8 @@
       document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
       const notesArea = document.getElementById('notes');
       notesArea.style.height = 'auto';
-      document.getElementById('chickDeathRing').innerHTML = '<option value="Sin anillar">Sin anillar</option>';
+      document.getElementById('chickDeathRing').value = 'Sin anillar';
+      document.getElementById('adultDeath').value = 'Ninguno';
       initNestMap(39.98, -0.05);
     }
 
@@ -410,17 +407,17 @@
       const notesArea = document.getElementById('notes');
       let currentNotes = notesArea.value.trim();
 
-      // Limpiar etiquetas HTML previas si las hubiera
       currentNotes = currentNotes.replace(/<\/?strong>|<span[^>]*>|<\/span>/gi, '');
 
       let alertSnippets = [];
 
-      // Generar baja de pollo con formato [BAJA POLLO dd/mm/aaaa]
+      // Si se selecciona un pollo muerto con anilla, se genera la observación y SE ELIMINA de la base de datos de anillados
       if (selectedChickDeath && selectedChickDeath !== 'Sin anillar') {
         alertSnippets.push(`[BAJA POLLO ${euDate}] El pollo con anilla ${selectedChickDeath} ha sido registrado como fallecido/baja.`);
+        const safeKey = selectedChickDeath.replace(/[\/\.#$\[\]]/g, '_');
+        db.ref('anillados/' + safeKey).remove();
       }
 
-      // Generar baja de adulto con formato [BAJA ADULTO dd/mm/aaaa] y vaciar casillas
       if (adultDeathStatus === 'Macho Muerto') {
         alertSnippets.push(`[BAJA ADULTO ${euDate}] El macho reproductor (Anilla: ${maleRing}) ha sido registrado como fallecido/baja.`);
         maleRing = 'Sin anillar';
@@ -455,8 +452,8 @@
         layDate: rawDate,
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
-        chickDeathRing: selectedChickDeath,
-        adultDeath: adultDeathStatus,
+        chickDeathRing: 'Sin anillar', // Se resetea al guardar para que al volver a editar esté limpio
+        adultDeath: 'Ninguno', // Se resetea al guardar para que al volver a editar esté limpio
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         notes: currentNotes,
         lastReview: new Date().toISOString().split('T')[0]
@@ -466,7 +463,7 @@
         if (err) {
           alert('Error al guardar: ' + err.message);
         } else {
-          alert('¡Ficha de nido guardada con éxito y formato de fecha actualizado!');
+          alert('¡Ficha de nido guardada con éxito, baja procesada y anillados actualizados!');
           window.location.href = 'index.html';
         }
       });
@@ -498,11 +495,11 @@
             document.getElementById('healthStatus').value = item.healthStatus || 'Excelente';
             
             loadNestRings(item.nestId || editId);
-            setTimeout(() => {
-              if (item.chickDeathRing) document.getElementById('chickDeathRing').value = item.chickDeathRing;
-            }, 400);
 
-            document.getElementById('adultDeath').value = item.adultDeath || 'Ninguno';
+            // Al abrir para editar, los desplegables de bajas/incidencias se inician siempre limpios ("Sin anillar" / "Ninguno")
+            document.getElementById('chickDeathRing').value = 'Sin anillar';
+            document.getElementById('adultDeath').value = 'Ninguno';
+
             document.getElementById('fledgedChicks').value = item.fledgedChicks || 0;
             
             const notesArea = document.getElementById('notes');
