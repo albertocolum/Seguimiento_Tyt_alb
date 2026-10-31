@@ -174,13 +174,19 @@
 
     <!-- SECCIÓN DEL MAPA GENERAL (RELIEVE DE ESRI) -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-3">
         <h2 class="text-lg font-bold text-stone-900 flex items-center gap-2">
           <i data-lucide="map" class="w-5 h-5 text-brand-accent"></i> Mapa General de Nidos (Relieve Topográfico)
         </h2>
-        <div class="flex items-center gap-4 text-xs">
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></i> Activo</span>
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-stone-400 inline-block"></span> Inactivo / Abandonado</span>
+        <div class="flex items-center gap-5 text-xs flex-wrap">
+          <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 rounded-full bg-blue-600 inline-block shadow-sm"></span>
+            <span class="font-semibold text-stone-700">Activo</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 rounded-full bg-stone-400 inline-block shadow-sm"></span>
+            <span class="font-semibold text-stone-700">Inactivo / Abandonado</span>
+          </div>
           <span id="total-nests-badge" class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full">0 nidos</span>
         </div>
       </div>
@@ -207,25 +213,6 @@
 
     let dashboardMap = null;
     let markersLayer = null;
-
-    // Iconos personalizados de Leaflet para diferenciar Activos e Inactivos
-    const activeIcon = new L.Icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
-
-    const inactiveIcon = new L.Icon({
-      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
-    });
 
     function initDashboardMap() {
       if (dashboardMap) return;
@@ -288,12 +275,21 @@
             tbody.appendChild(tr);
 
             if (nest.lat && nest.lng) {
-              // Seleccionar el icono según si el nido está Activo o Inactivo/Abandonado
-              const markerIcon = (nest.status === 'Activo') ? activeIcon : inactiveIcon;
-              
-              const marker = L.marker([nest.lat, nest.lng], { icon: markerIcon });
-              marker.bindPopup(`<b>${nest.nestId}</b><br>${nest.locationName || ''}<br>Estado: <span style="font-weight:bold; color:${nest.status === 'Activo' ? 'green' : 'red'}">${nest.status || 'Activo'}</span>`);
-              markersLayer.addLayer(marker);
+              // CREAR PUNTOS LIMPIOS EN VEZ DE CHINCHETAS CON L.circleMarker
+              const isActive = (nest.status === 'Activo');
+              const circleColor = isActive ? '#2563eb' : '#9ca3af'; // Azul para activo, gris para inactivo
+
+              const circleMarker = L.circleMarker([nest.lat, nest.lng], {
+                radius: 8,
+                fillColor: circleColor,
+                color: '#ffffff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
+              });
+
+              circleMarker.bindPopup(`<b>${nest.nestId}</b><br>${nest.locationName || ''}<br>Estado: <span style="font-weight:bold; color:${isActive ? 'green' : 'red'}">${nest.status || 'Activo'}</span>`);
+              markersLayer.addLayer(circleMarker);
               latLngs.push([nest.lat, nest.lng]);
             }
           });
