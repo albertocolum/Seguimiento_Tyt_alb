@@ -212,11 +212,11 @@
       </div>
     </div>
 
-    <!-- SECCIÓN DEL MAPA GENERAL (RELIEVE DE ESRI) -->
+    <!-- SECCIÓN DEL MAPA GENERAL CON CAPAS MULTIPLE (ICGC, OSM, ORTOHÍBRIDA) -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-3">
         <h2 class="text-lg font-bold text-stone-900 flex items-center gap-2">
-          <i data-lucide="map" class="w-5 h-5 text-brand-accent"></i> Mapa General de Nidos (Relieve Topográfico)
+          <i data-lucide="map" class="w-5 h-5 text-brand-accent"></i> Mapa General de Nidos
         </h2>
         <div class="flex items-center gap-5 text-xs flex-wrap">
           <div class="flex items-center gap-2">
@@ -257,12 +257,43 @@
     function initDashboardMap() {
       if (dashboardMap) return;
 
-      dashboardMap = L.map('dashboard-map').setView([39.98, -0.05], 11);
-
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+      // Definición de las capas de mapas (incluyendo las del ICGC y Ortohíbrida)
+      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
-      }).addTo(dashboardMap);
+        attribution: '&copy; OpenStreetMap contributors'
+      });
+
+      const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+      });
+
+      const icgcStandard = L.tileLayer('https://geoserveis.icgc.cat/icc_mapesvectorials/geoserveis/wmts/rmpc/wmts/raster/catala/{z}/{x}/{y}.jpeg', {
+        maxZoom: 19,
+        attribution: 'ICGC - Institut Cartogràfic i Geològic de Catalunya'
+      });
+
+      // Capa Orto híbrida ICGC (ortofoto con topografía/etiquetas)
+      const icgcOrthoHybrid = L.layerGroup([
+        L.tileLayer('https://geoserveis.icgc.cat/icc_mapesvectorials/geoserveis/wmts/orto/wmts/orto-roma/{z}/{x}/{y}.jpeg', { maxZoom: 19, attribution: 'ICGC Ortofoto' }),
+        L.tileLayer('https://geoserveis.icgc.cat/icc_mapesvectorials/geoserveis/wmts/rmpc/wmts/raster/catala/{z}/{x}/{y}.jpeg', { maxZoom: 19, opacity: 0.4 })
+      ]);
+
+      dashboardMap = L.map('dashboard-map', {
+        center: [39.98, -0.05],
+        zoom: 11,
+        layers: [icgcOrthoHybrid] // Capa por defecto seleccionada (Orto híbrida)
+      });
+
+      // Control de capas desplegable en la esquina superior izquierda
+      const baseMaps = {
+        "Streets (OpenStreetMap)": osmLayer,
+        "Satellite (Mapbox/Esri)": satLayer,
+        "Estándar (ICGC)": icgcStandard,
+        "Orto híbrida (ICGC)": icgcOrthoHybrid
+      };
+
+      L.control.layers(baseMaps).addTo(dashboardMap);
 
       markersLayer = L.layerGroup().addTo(dashboardMap);
     }
@@ -372,7 +403,6 @@
       document.getElementById('stat-ringed').textContent = ringedCount;
     }
 
-    // Funciones de Exportación e Importación en Excel (.xlsx)
     function exportFullExcel() {
       db.ref('/').once('value', snapshot => {
         const fullData = snapshot.val();
@@ -383,14 +413,12 @@
 
         const wb = XLSX.utils.book_new();
 
-        // Hoja 1: Nidos
         if (fullData.nidos) {
           const nestsArray = Object.values(fullData.nidos);
           const wsNests = XLSX.utils.json_to_sheet(nestsArray);
           XLSX.utils.book_append_sheet(wb, wsNests, "Nidos");
         }
 
-        // Hoja 2: Anillados
         if (fullData.anillados) {
           const ringsArray = Object.values(fullData.anillados);
           const wsRings = XLSX.utils.json_to_sheet(ringsArray);
