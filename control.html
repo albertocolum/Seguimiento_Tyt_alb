@@ -112,7 +112,7 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido</label>
-              <select id="nestType" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <select id="nestType" onchange="updateMarkerStyle()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
                 <option value="Nido Artificial">Nido Artificial / Caja Nido</option>
                 <option value="Nido Natural">Nido Natural</option>
                 <option value="Masia con restos">Masia con restos</option>
@@ -124,7 +124,7 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Estado del Nido</label>
-              <select id="status" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <select id="status" onchange="updateMarkerStyle()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
                 <option value="Activo">Activo</option>
                 <option value="Inactivo">Inactivo</option>
                 <option value="Abandonado">Abandonado</option>
@@ -386,10 +386,32 @@
       document.getElementById('coordinatesInput').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
 
+    function getMarkerColor() {
+      const nestType = document.getElementById('nestType').value;
+      const status = document.getElementById('status').value;
+
+      if (nestType === 'Masia con restos') {
+        return '#d97706'; // Naranja/Marrón para Masia con restos
+      } else if (status === 'Activo') {
+        return '#2563eb'; // Azul para Activo
+      } else {
+        return '#9ca3af'; // Gris para Inactivo/Abandonado
+      }
+    }
+
+    function updateMarkerStyle() {
+      if (!nestMarker) return;
+      const color = getMarkerColor();
+      nestMarker.setStyle({ fillColor: color });
+    }
+
     function initNestMap(lat = 39.98, lng = -0.05) {
       if (nestMap) {
         nestMap.setView([lat, lng], 15);
-        if (nestMarker) nestMarker.setLatLng([lat, lng]);
+        if (nestMarker) {
+          nestMarker.setLatLng([lat, lng]);
+          updateMarkerStyle();
+        }
         updateCoordsInput(lat, lng);
         setTimeout(() => nestMap.invalidateSize(), 200);
         return;
@@ -417,13 +439,16 @@
         "Streets (OpenStreetMap)": osmLayer
       }).addTo(nestMap);
 
-      nestMarker = L.marker([lat, lng], { draggable: true }).addTo(nestMap);
-
-      nestMarker.on('dragend', function(e) {
-        const pos = nestMarker.getLatLng();
-        updateCoordsInput(pos.lat, pos.lng);
-        fetchLocationName(pos.lat, pos.lng);
-      });
+      // Usamos CircleMarker interactivo con color dinámico
+      nestMarker = L.circleMarker([lat, lng], {
+        radius: 10,
+        fillColor: getMarkerColor(),
+        color: '#ffffff',
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 0.9,
+        draggable: true
+      }).addTo(nestMap);
 
       nestMap.on('click', function(e) {
         nestMarker.setLatLng(e.latlng);
@@ -491,6 +516,7 @@
       document.getElementById('adultDeath').value = 'Ninguno';
       document.getElementById('nest-historical-records').innerHTML = '<p class="text-stone-400 italic">Introduzca un ID de nido para ver sus registros históricos...</p>';
       initNestMap(39.98, -0.05);
+      updateMarkerStyle();
     }
 
     function saveNestRecord(e) {
