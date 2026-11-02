@@ -251,7 +251,7 @@
               <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> Historial Cronológico de Anillados en este Nido
             </h4>
             <div id="nest-historical-records" class="bg-stone-50 border rounded-xl p-4 max-h-48 overflow-y-auto text-xs space-y-2">
-              <p class="text-stone-400 italic">Seleccione o cargue un nido para ver sus registros históricos...</p>
+              <p class="text-stone-400 italic">Introduzca un ID de nido para ver sus registros históricos...</p>
             </div>
           </div>
 
@@ -380,18 +380,47 @@
 
     function initNestMap(lat = 39.98, lng = -0.05) {
       if (nestMap) {
-        nestMap.setView([lat, lng], 12);
+        nestMap.setView([lat, lng], 15);
         if (nestMarker) nestMarker.setLatLng([lat, lng]);
         setTimeout(() => nestMap.invalidateSize(), 200);
         return;
       }
 
-      nestMap = L.map('nest-map').setView([lat, lng], 12);
-
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+      // Definición de las mismas capas de mapas
+      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
-      }).addTo(nestMap);
+        attribution: '&copy; OpenStreetMap contributors'
+      });
+
+      const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+      });
+
+      const topoLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+      });
+
+      const orthoLayer = L.layerGroup([
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri World Imagery' }),
+        L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: 0.8 })
+      ]);
+
+      nestMap = L.map('nest-map', {
+        center: [lat, lng],
+        zoom: 15,
+        layers: [orthoLayer] // Ortoimagen por defecto
+      });
+
+      const baseMaps = {
+        "Orto Híbrida (Satélite + Etiquetas)": orthoLayer,
+        "Satélite (Esri)": satLayer,
+        "Topográfico": topoLayer,
+        "Streets (OpenStreetMap)": osmLayer
+      };
+
+      L.control.layers(baseMaps).addTo(nestMap);
 
       nestMarker = L.marker([lat, lng], { draggable: true }).addTo(nestMap);
 
@@ -422,7 +451,7 @@
       const lng = parseFloat(document.getElementById('lng').value);
       if (!isNaN(lat) && !isNaN(lng) && nestMap && nestMarker) {
         nestMarker.setLatLng([lat, lng]);
-        nestMap.setView([lat, lng], 12);
+        nestMap.setView([lat, lng], 15);
         fetchLocationName(lat, lng);
       }
     }
