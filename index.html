@@ -179,16 +179,29 @@
 
     </div>
 
-    <!-- SECCIÓN DE TABLA DETALLADA -->
+    <!-- SECCIÓN DE TABLA DETALLADA CON FILTRO -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-3">
         <div>
           <h2 class="text-lg font-bold text-stone-900">Resumen de Nidos y Parejas Asignadas</h2>
           <p class="text-xs text-stone-500">Estado actual y adultos anillados en cada caja</p>
         </div>
-        <a href="control.html" class="text-xs font-bold text-brand-dark hover:text-brand-accent flex items-center gap-1 transition-colors">
-          Registrar nido <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-        </a>
+        
+        <!-- BUSCADOR / FILTRO Y BOTÓN REGISTRAR NIDO -->
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <div class="relative flex-grow sm:flex-grow-0">
+            <input 
+              type="text" 
+              id="searchNestsInput" 
+              oninput="renderNestsTableAndMap()" 
+              placeholder="Filtrar por nido o anilla..." 
+              class="w-full sm:w-64 px-4 py-2 border border-stone-300 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-brand-accent/50 focus:border-brand-accent bg-stone-50/50 transition-all placeholder:text-stone-400"
+            />
+          </div>
+          <a href="control.html" class="text-xs font-bold text-brand-dark hover:text-brand-accent flex items-center gap-1 transition-colors shrink-0">
+            Registrar nido <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </a>
+        </div>
       </div>
 
       <div class="overflow-x-auto">
@@ -258,6 +271,8 @@
 
     let dashboardMap = null;
     let markersLayer = null;
+    let allNestsData = [];
+    let totalRingedCount = 0;
 
     function initDashboardMap() {
       if (dashboardMap) return;
@@ -293,99 +308,121 @@
 
       db.ref('anillados').on('value', ringSnapshot => {
         const ringsData = ringSnapshot.val() || {};
-        const totalRingedCount = Object.keys(ringsData).length;
+        totalRingedCount = Object.keys(ringsData).length;
         document.getElementById('stat-ringed').textContent = totalRingedCount;
 
         db.ref('nidos').on('value', nestSnapshot => {
           const nestData = nestSnapshot.val();
-          const tbody = document.getElementById('nests-table-body');
-          tbody.innerHTML = '';
-          markersLayer.clearLayers();
-
-          if (!nestData) {
-            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-stone-400">No hay nidos registrados todavía.</td></tr>';
-            document.getElementById('total-nests-badge').textContent = '0 nidos';
-            updateKpis([], totalRingedCount);
-            return;
-          }
-
-          const nests = Object.values(nestData);
-          document.getElementById('total-nests-badge').textContent = `${nests.length} nidos`;
-          updateKpis(nests, totalRingedCount);
-
-          const latLngs = [];
-
-          nests.forEach(nest => {
-            const maleInfo = nest.maleRing && nest.maleRing !== 'Sin anillar' ? 
-              `<span class="metal-ring-badge">${nest.maleRing}</span> ${nest.malePvcCode ? `<span class="pvc-badge ml-1">${nest.malePvcCode}</span>` : ''}` : 
-              '<span class="italic text-stone-400">Sin anillar</span>';
-            
-            const femaleInfo = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? 
-              `<span class="metal-ring-badge">${nest.femaleRing}</span> ${nest.femalePvcCode ? `<span class="pvc-badge ml-1">${nest.femalePvcCode}</span>` : ''}` : 
-              '<span class="italic text-stone-400">Sin anillar</span>';
-
-            // CLASE Y TEXTO DINÁMICO PARA EL ESTADO
-            let statusBadgeClass = 'bg-emerald-100 text-emerald-800';
-            let displayStatus = nest.status || 'Activo';
-
-            if (nest.nestType === 'Masia con restos' || nest.status === 'Restos') {
-              statusBadgeClass = 'bg-amber-100 text-amber-800 font-semibold';
-              displayStatus = 'Restos';
-            } else if (nest.status !== 'Activo') {
-              statusBadgeClass = 'bg-rose-100 text-rose-800';
-            }
-
-            const tr = document.createElement('tr');
-            tr.className = 'hover:bg-stone-50/60 transition-colors';
-            tr.innerHTML = `
-              <td class="p-3 font-extrabold text-stone-900">${nest.nestId}</td>
-              <td class="p-3 font-semibold text-amber-800">${nest.nestType || 'Nido Artificial'}</td>
-              <td class="p-3 font-medium text-stone-600">${nest.locationName || 'Sin paraje'}</td>
-              <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusBadgeClass}">${displayStatus}</span></td>
-              <td class="p-3">${maleInfo}</td>
-              <td class="p-3">${femaleInfo}</td>
-              <td class="p-3 text-right space-x-2">
-                <a href="control.html?edit=${nest.nestId}" class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">Editar</a>
-                <button onclick="deleteNest('${nest.nestId}')" class="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
-              </td>
-            `;
-            tbody.appendChild(tr);
-
-            if (nest.lat && nest.lng) {
-              const isActive = (nest.status === 'Activo');
-              const isMasia = (nest.nestType === 'Masia con restos' || nest.status === 'Restos');
-
-              let circleColor = '#2563eb';
-              if (isMasia) {
-                circleColor = '#d97706'; // Naranja/Marrón para Restos
-              } else if (!isActive) {
-                circleColor = '#9ca3af'; // Gris para Inactivo/Abandonado
-              }
-
-              const circleMarker = L.circleMarker([nest.lat, nest.lng], {
-                radius: 8,
-                fillColor: circleColor,
-                color: '#ffffff',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.95
-              });
-
-              circleMarker.bindPopup(`<b>${nest.nestId}</b><br>Tipo: <i>${nest.nestType || 'Nido Artificial'}</i><br>${nest.locationName || ''}<br>Estado: <span style="font-weight:bold; color:${isMasia ? '#d97706' : (isActive ? 'green' : 'red')}">${displayStatus}</span>`);
-              markersLayer.addLayer(circleMarker);
-              latLngs.push([nest.lat, nest.lng]);
-            }
-          });
-
-          if (latLngs.length > 0) {
-            dashboardMap.fitBounds(latLngs, { padding: [50, 50], maxZoom: 14 });
-          }
-
-          setTimeout(() => {
-            if (dashboardMap) dashboardMap.invalidateSize();
-          }, 300);
+          allNestsData = nestData ? Object.values(nestData) : [];
+          renderNestsTableAndMap();
         });
       });
+    }
+
+    function renderNestsTableAndMap() {
+      const tbody = document.getElementById('nests-table-body');
+      tbody.innerHTML = '';
+      markersLayer.clearLayers();
+
+      const query = (document.getElementById('searchNestsInput').value || '').trim().toLowerCase();
+
+      // FILTRAR POR CUALQUIER CAMPO DEL NIDO O ANILLA
+      const filteredNests = allNestsData.filter(nest => {
+        if (!query) return true;
+        const target = [
+          nest.nestId || '',
+          nest.nestType || '',
+          nest.locationName || '',
+          nest.status || '',
+          nest.maleRing || '',
+          nest.malePvcCode || '',
+          nest.femaleRing || '',
+          nest.femalePvcCode || ''
+        ].join(' ').toLowerCase();
+
+        return target.includes(query);
+      });
+
+      if (filteredNests.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-stone-400">${allNestsData.length === 0 ? 'No hay nidos registrados todavía.' : 'No se encontraron nidos coincidentes con la búsqueda.'}</td></tr>`;
+        document.getElementById('total-nests-badge').textContent = '0 nidos';
+        updateKpis(allNestsData, totalRingedCount);
+        return;
+      }
+
+      document.getElementById('total-nests-badge').textContent = `${filteredNests.length} nidos`;
+      updateKpis(allNestsData, totalRingedCount);
+
+      const latLngs = [];
+
+      filteredNests.forEach(nest => {
+        const maleInfo = nest.maleRing && nest.maleRing !== 'Sin anillar' ? 
+          `<span class="metal-ring-badge">${nest.maleRing}</span> ${nest.malePvcCode ? `<span class="pvc-badge ml-1">${nest.malePvcCode}</span>` : ''}` : 
+          '<span class="italic text-stone-400">Sin anillar</span>';
+        
+        const femaleInfo = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? 
+          `<span class="metal-ring-badge">${nest.femaleRing}</span> ${nest.femalePvcCode ? `<span class="pvc-badge ml-1">${nest.femalePvcCode}</span>` : ''}` : 
+          '<span class="italic text-stone-400">Sin anillar</span>';
+
+        let statusBadgeClass = 'bg-emerald-100 text-emerald-800';
+        let displayStatus = nest.status || 'Activo';
+
+        if (nest.nestType === 'Masia con restos' || nest.status === 'Restos') {
+          statusBadgeClass = 'bg-amber-100 text-amber-800 font-semibold';
+          displayStatus = 'Restos';
+        } else if (nest.status !== 'Activo') {
+          statusBadgeClass = 'bg-rose-100 text-rose-800';
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-stone-50/60 transition-colors';
+        tr.innerHTML = `
+          <td class="p-3 font-extrabold text-stone-900">${nest.nestId}</td>
+          <td class="p-3 font-semibold text-amber-800">${nest.nestType || 'Nido Artificial'}</td>
+          <td class="p-3 font-medium text-stone-600">${nest.locationName || 'Sin paraje'}</td>
+          <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusBadgeClass}">${displayStatus}</span></td>
+          <td class="p-3">${maleInfo}</td>
+          <td class="p-3">${femaleInfo}</td>
+          <td class="p-3 text-right space-x-2">
+            <a href="control.html?edit=${nest.nestId}" class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">Editar</a>
+            <button onclick="deleteNest('${nest.nestId}')" class="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        if (nest.lat && nest.lng) {
+          const isActive = (nest.status === 'Activo');
+          const isMasia = (nest.nestType === 'Masia con restos' || nest.status === 'Restos');
+
+          let circleColor = '#2563eb';
+          if (isMasia) {
+            circleColor = '#d97706';
+          } else if (!isActive) {
+            circleColor = '#9ca3af';
+          }
+
+          const circleMarker = L.circleMarker([nest.lat, nest.lng], {
+            radius: 8,
+            fillColor: circleColor,
+            color: '#ffffff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.95
+          });
+
+          circleMarker.bindPopup(`<b>${nest.nestId}</b><br>Tipo: <i>${nest.nestType || 'Nido Artificial'}</i><br>${nest.locationName || ''}<br>Estado: <span style="font-weight:bold; color:${isMasia ? '#d97706' : (isActive ? 'green' : 'red')}">${displayStatus}</span>`);
+          markersLayer.addLayer(circleMarker);
+          latLngs.push([nest.lat, nest.lng]);
+        }
+      });
+
+      if (latLngs.length > 0) {
+        dashboardMap.fitBounds(latLngs, { padding: [50, 50], maxZoom: 14 });
+      }
+
+      setTimeout(() => {
+        if (dashboardMap) dashboardMap.invalidateSize();
+      }, 300);
     }
 
     function updateKpis(nests, ringedCount) {
