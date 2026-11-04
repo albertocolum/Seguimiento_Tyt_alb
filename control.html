@@ -195,7 +195,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Baja de Pollo por Mortalidad (Muerto)</label>
-              <select id="chickDeathRing" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold text-rose-700">
+              <select id="chickDeathRing" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold text-rose-700">
                 <option value="Sin baja">Sin baja (Ningún pollo muerto)</option>
               </select>
             </div>
@@ -295,8 +295,6 @@
 
     let controlMap = null;
     let selectedMarker = null;
-    let tempMaleRing = '';
-    let tempFemaleRing = '';
 
     function initControlMap(lat = 39.98, lng = -0.05) {
       if (controlMap) {
@@ -361,7 +359,7 @@
           }
         });
 
-        select.value = selectedVal || 'Sin baja';
+        select.value = (selectedVal && selectedVal !== '') ? selectedVal : 'Sin baja';
       });
     }
 
@@ -370,8 +368,6 @@
       const container = document.getElementById('nest-history-container');
       const deadChickRing = document.getElementById('chickDeathRing').value;
       const adultDeathStatus = document.getElementById('adultDeath').value;
-
-      loadChicksDropdown(deadChickRing);
 
       if (!nestId) {
         container.innerHTML = 'Introduzca un ID de nido para ver sus registros históricos...';
@@ -384,7 +380,7 @@
 
         let html = '<div class="space-y-2">';
 
-        // Mostrar estado de adultos muertos si aplica
+        // Mostrar aviso de adultos muertos si aplica
         const mRing = document.getElementById('maleRing').value.trim();
         const fRing = document.getElementById('femaleRing').value.trim();
 
@@ -406,7 +402,7 @@
           `;
         }
 
-        if (matched.length === 0 && adultDeathStatus === 'Ninguno') {
+        if (matched.length === 0 && adultDeathStatus === 'Ninguno' && deadChickRing === 'Sin baja') {
           container.innerHTML = `<span class="italic text-stone-400">No hay registros de anillamiento asociados al nido "${nestId}".</span>`;
           return;
         }
@@ -486,7 +482,9 @@
       } else {
         initControlMap();
         document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
-        loadChicksDropdown();
+        document.getElementById('adultDeath').value = 'Ninguno';
+        loadChicksDropdown('Sin baja');
+        updateNestHistoryPreview();
       }
     }
 
@@ -494,6 +492,7 @@
       e.preventDefault();
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       const adultDeathStatus = document.getElementById('adultDeath').value;
+      const chickDeathVal = document.getElementById('chickDeathRing').value;
 
       let maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
       let malePvc = document.getElementById('malePvcCode').value.trim().toUpperCase() || '';
@@ -520,7 +519,7 @@
         layDate: document.getElementById('layDate').value,
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
-        chickDeathRing: document.getElementById('chickDeathRing').value,
+        chickDeathRing: chickDeathVal,
         adultDeath: adultDeathStatus,
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         hasCamera: document.getElementById('hasCamera').value,
@@ -544,7 +543,6 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkEditMode();
-      document.getElementById('chickDeathRing').addEventListener('change', updateNestHistoryPreview);
       document.getElementById('maleRing').addEventListener('input', updateNestHistoryPreview);
       document.getElementById('femaleRing').addEventListener('input', updateNestHistoryPreview);
       if (typeof lucide !== 'undefined') lucide.createIcons();
