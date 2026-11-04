@@ -97,20 +97,39 @@
   <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     
-    <!-- BARRA DE ACCIONES GLOBALES (EXCEL) -->
-    <div class="bg-white/95 backdrop-blur-sm p-4 rounded-2xl border border-brand-border shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+    <!-- BARRA DE ACCIONES GLOBALES (EXCEL) Y CONTADORES DE AUDIENCIA -->
+    <div class="bg-white/95 backdrop-blur-sm p-4 rounded-2xl border border-brand-border shadow-sm flex flex-col lg:flex-row justify-between items-center gap-4">
       <div>
         <h2 class="text-sm font-bold text-stone-900">Copias de Seguridad y Datos (Excel)</h2>
         <p class="text-xs text-stone-500">Exporta o importa toda la base de datos de nidos y anillados en un libro de Excel (.xlsx)</p>
       </div>
-      <div class="flex items-center gap-2">
-        <button onclick="exportFullExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
-          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar Excel
-        </button>
-        <button onclick="document.getElementById('excelFileInput').click()" class="bg-sky-700 hover:bg-sky-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
-          <i data-lucide="upload" class="w-4 h-4"></i> Importar Excel
-        </button>
-        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="importFullExcel(event)">
+
+      <div class="flex items-center gap-4 flex-wrap justify-end">
+        <!-- CONTADORES EN TIEMPO REAL -->
+        <div class="flex items-center gap-3 bg-stone-50 border px-3.5 py-2 rounded-xl text-xs">
+          <div class="flex items-center gap-1.5" title="Usuarios en este momento">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-stone-500 font-semibold">Conectados:</span>
+            <span id="online-users-count" class="font-bold text-stone-900">1</span>
+          </div>
+          <span class="text-stone-300">|</span>
+          <div class="flex items-center gap-1.5" title="Visitas totales acumuladas">
+            <i data-lucide="eye" class="w-3.5 h-3.5 text-brand-accent"></i>
+            <span class="text-stone-500 font-semibold">Visitas:</span>
+            <span id="total-visits-count" class="font-bold text-stone-900">0</span>
+          </div>
+        </div>
+
+        <!-- BOTONES EXCEL -->
+        <div class="flex items-center gap-2">
+          <button onclick="exportFullExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar Excel
+          </button>
+          <button onclick="document.getElementById('excelFileInput').click()" class="bg-sky-700 hover:bg-sky-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+            <i data-lucide="upload" class="w-4 h-4"></i> Importar Excel
+          </button>
+          <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="importFullExcel(event)">
+        </div>
       </div>
     </div>
 
@@ -274,6 +293,40 @@
     let allNestsData = [];
     let totalRingedCount = 0;
 
+    // SISTEMA DE PRESENCIA Y VISITAS EN TIEMPO REAL
+    function initVisitorTracking() {
+      // 1. Contador de visitas acumuladas (usando transacción para incrementar de forma segura)
+      const visitsRef = db.ref('estadisticas/totalVisits');
+      visitsRef.transaction(currentVisits => {
+        return (currentVisits || 0) + 1;
+      });
+
+      visitsRef.on('value', snapshot => {
+        const count = snapshot.val() || 0;
+        document.getElementById('total-visits-count').textContent = count.toLocaleString();
+      });
+
+      // 2. Control de usuarios conectados en tiempo real
+      const connectedRef = db.ref('.info/connected');
+      const onlineUsersRef = db.ref('estadisticas/onlineUsers');
+
+      connectedRef.on('value', snap => {
+        if (snap.val() === true) {
+          const userRef = onlineUsersRef.push();
+          // Al desconectarse, eliminar este usuario de la lista
+          userRef.onDisconnect().remove();
+          // Establecer marca de presencia
+          userRef.set(true);
+        }
+      });
+
+      // Escuchar cuántos nodos hay en 'onlineUsers'
+      onlineUsersRef.on('value', snapshot => {
+        const onlineCount = snapshot.numChildren() || 1;
+        document.getElementById('online-users-count').textContent = onlineCount;
+      });
+    }
+
     function initDashboardMap() {
       if (dashboardMap) return;
 
@@ -305,6 +358,7 @@
 
     function loadDashboardData() {
       initDashboardMap();
+      initVisitorTracking();
 
       db.ref('anillados').on('value', ringSnapshot => {
         const ringsData = ringSnapshot.val() || {};
@@ -326,7 +380,6 @@
 
       const query = (document.getElementById('searchNestsInput').value || '').trim().toLowerCase();
 
-      // FILTRAR POR CUALQUIER CAMPO DEL NIDO O ANILLA
       const filteredNests = allNestsData.filter(nest => {
         if (!query) return true;
         const target = [
