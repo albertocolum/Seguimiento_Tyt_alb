@@ -42,6 +42,11 @@
       font-weight: 700;
       font-family: monospace;
     }
+    .metal-ring-badge-dead {
+      color: #e11d48;
+      font-weight: 700;
+      font-family: monospace;
+    }
     .pvc-badge {
       background-color: #000000;
       color: #ffffff;
@@ -385,7 +390,7 @@
             <div class="bg-rose-50/70 border border-rose-300 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 shadow-sm">
               <div class="flex items-center gap-3">
                 <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">⚠️ Adulto Fallecido (Macho)</span>
-                <span class="metal-ring-badge text-sm">${mRing}</span>
+                <span class="metal-ring-badge-dead text-sm">${mRing}</span>
               </div>
               <div class="text-stone-500 text-xs font-medium">
                 Fecha: <strong class="text-stone-800">${visitDate}</strong> | 
@@ -401,7 +406,7 @@
             <div class="bg-rose-50/70 border border-rose-300 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 shadow-sm">
               <div class="flex items-center gap-3">
                 <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">⚠️ Adulto Fallecido (Hembra)</span>
-                <span class="metal-ring-badge text-sm">${fRing}</span>
+                <span class="metal-ring-badge-dead text-sm">${fRing}</span>
               </div>
               <div class="text-stone-500 text-xs font-medium">
                 Fecha: <strong class="text-stone-800">${visitDate}</strong> | 
@@ -425,10 +430,12 @@
           
           let badgeHTML = '';
           let cardBg = 'bg-white border-stone-200';
+          let ringClass = 'metal-ring-badge';
 
           if (isDead) {
             badgeHTML = '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">⚠️ Pollo Fallecido (Muerto)</span>';
             cardBg = 'bg-rose-50/40 border-rose-300 shadow-sm';
+            ringClass = 'metal-ring-badge-dead';
           } else if (isAdult) {
             badgeHTML = '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>';
           } else {
@@ -439,7 +446,7 @@
             <div class="${cardBg} border rounded-xl p-3 flex flex-wrap justify-between items-center gap-2">
               <div class="flex items-center gap-3">
                 ${badgeHTML}
-                <span class="metal-ring-badge text-sm">${r.metalRing}</span>
+                <span class="${ringClass} text-sm">${r.metalRing}</span>
                 ${r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : ''}
               </div>
               <div class="text-stone-500 text-xs font-medium">
