@@ -119,7 +119,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido *</label>
-              <input type="text" id="nestId" required placeholder="Ej. NIDO-01 o ALQUERIA" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
+              <input type="text" id="nestId" oninput="updateNestHistoryPreview()" required placeholder="Ej. NIDO-01 o ALQUERIA" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido *</label>
@@ -249,9 +249,20 @@
           </div>
         </div>
 
-        <div class="space-y-2">
-          <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones / Historial de Visitas</label>
-          <textarea id="notes" oninput="autoResizeTextarea(this)" placeholder="Notas de campo, incidencias, evolución de la nidada..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
+        <!-- OBSERVACIONES DE CAMPO (AUTO-AJUSTABLE) -->
+        <div class="space-y-2 pt-2">
+          <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo (Auto-ajustable)</label>
+          <textarea id="notes" oninput="autoResizeTextarea(this)" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
+        </div>
+
+        <!-- HISTORIAL CRONOLÓGICO DE ANILLADOS EN ESTE NIDO -->
+        <div class="space-y-3 pt-4 border-t">
+          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> Historial Cronológico de Anillados en este Nido
+          </h3>
+          <div id="nest-history-container" class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-500">
+            Introduzca un ID de nido para ver sus registros históricos...
+          </div>
         </div>
 
         <div class="flex justify-end pt-3">
@@ -325,6 +336,50 @@
       textarea.style.height = (textarea.scrollHeight + 4) + 'px';
     }
 
+    function updateNestHistoryPreview() {
+      const nestId = document.getElementById('nestId').value.trim().toUpperCase();
+      const container = document.getElementById('nest-history-container');
+
+      if (!nestId) {
+        container.innerHTML = 'Introduzca un ID de nido para ver sus registros históricos...';
+        return;
+      }
+
+      db.ref('anillados').once('value', snapshot => {
+        const ringsData = snapshot.val() || {};
+        const matched = Object.values(ringsData).filter(r => (r.nestId || '').toUpperCase() === nestId);
+
+        if (matched.length === 0) {
+          container.innerHTML = `<span class="italic text-stone-400">No hay registros de anillamiento asociados al nido "${nestId}".</span>`;
+          return;
+        }
+
+        matched.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
+
+        let html = '<div class="space-y-2">';
+        matched.forEach(r => {
+          const isAdult = r.birdAge === 'Adulto';
+          const badgeClass = isAdult ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+          html += `
+            <div class="bg-white p-2.5 rounded-lg border border-stone-200 flex flex-wrap justify-between items-center gap-2">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${r.birdAge || 'Pollo'}</span>
+                <span class="font-mono font-bold text-sky-700">${r.metalRing}</span>
+                ${r.pvcRing ? `<span class="font-mono bg-black text-white px-1.5 py-0.5 rounded text-[10px]">${r.pvcRing}</span>` : ''}
+              </div>
+              <div class="text-stone-500 text-[11px]">
+                Fecha: <strong class="text-stone-700">${r.ringDate || '-'}</strong> | 
+                Sexo: <strong class="text-stone-700">${r.sex || 'Desconocido'}</strong> | 
+                Peso: <strong class="text-stone-700">${r.weight ? r.weight + 'g' : '-'}</strong>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+      });
+    }
+
     function checkEditMode() {
       const urlParams = new URLSearchParams(window.location.search);
       const editId = urlParams.get('edit');
@@ -357,6 +412,8 @@
             document.getElementById('femaleRing').value = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? nest.femaleRing : '';
             document.getElementById('femalePvcCode').value = nest.femalePvcCode || '';
             document.getElementById('notes').value = nest.notes || '';
+
+            updateNestHistoryPreview();
 
             if (nest.lat && nest.lng) {
               initControlMap(nest.lat, nest.lng);
