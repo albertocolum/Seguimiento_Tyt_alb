@@ -377,7 +377,6 @@
 
         let html = '';
 
-        // Comprobación de adultos muertos para mostrar en tarjetas idénticas
         const mRing = document.getElementById('maleRing').value.trim();
         const fRing = document.getElementById('femaleRing').value.trim();
 
@@ -521,7 +520,6 @@
       let femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
       let femalePvc = document.getElementById('femalePvcCode').value.trim().toUpperCase() || '';
 
-      // Registrar automáticamente en observaciones si hay bajas de adultos o pollos
       let currentNotes = notesField.value.trim();
       let newLogEntries = [];
 
@@ -537,7 +535,6 @@
         currentNotes = currentNotes ? currentNotes + '\n' + logText : logText;
       }
 
-      // Si se indica que han muerto, sus anillas se limpian automáticamente de este nido
       if (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') {
         maleRing = 'Sin anillar';
         malePvc = '';
