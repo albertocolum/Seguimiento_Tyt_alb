@@ -307,10 +307,7 @@
       db.ref('nidos').once('value', snapshot => {
         const data = snapshot.val() || {};
         select.innerHTML = '<option value="">-- Seleccionar nido asociado --</option>';
-        
-        // Extraer y ordenar todos los IDs de nidos correctamente (como ALQUERIA BLANCA, VILA-REAL, etc.)
         const nestIds = Object.keys(data).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
-        
         nestIds.forEach(nestId => {
           const opt = document.createElement('option');
           opt.value = nestId;
@@ -409,14 +406,18 @@
       e.preventDefault();
       const metalRing = document.getElementById('metalRing').value.trim().toUpperCase();
       const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
+      const nestId = document.getElementById('nestId').value;
+      const birdAge = document.getElementById('birdAge').value;
+      const sex = document.getElementById('sex').value;
+      const pvcRing = document.getElementById('pvcRing').value.trim().toUpperCase();
 
       const record = {
-        nestId: document.getElementById('nestId').value,
+        nestId: nestId,
         ringDate: document.getElementById('ringDate').value,
-        birdAge: document.getElementById('birdAge').value,
+        birdAge: birdAge,
         metalRing: metalRing,
-        pvcRing: document.getElementById('pvcRing').value.trim().toUpperCase(),
-        sex: document.getElementById('sex').value,
+        pvcRing: pvcRing,
+        sex: sex,
         euringAge: document.getElementById('euringAge').value,
         maxWing: document.getElementById('maxWing').value,
         p8Length: document.getElementById('p8Length').value,
@@ -425,9 +426,44 @@
         biometricNotes: document.getElementById('biometricNotes').value.trim()
       };
 
+      // 1. Guardar en 'anillados'
       db.ref('anillados/' + safeKey).set(record, err => {
         if (err) {
           alert('Error al guardar: ' + err.message);
+          return;
+        }
+
+        // 2. Si es Adulto, actualizar automáticamente la pareja reproductora en el nido correspondiente
+        if (birdAge === 'Adulto' && nestId) {
+          db.ref('nidos/' + nestId).once('value', snap => {
+            const nestData = snap.val() || {};
+            let updates = {};
+
+            if (sex === 'Macho') {
+              updates.maleRing = metalRing;
+              updates.malePvcCode = pvcRing;
+            } else if (sex === 'Hembra') {
+              updates.femaleRing = metalRing;
+              updates.femalePvcCode = pvcRing;
+            } else {
+              // Si el sexo es desconocido pero se indica como adulto, se asigna por defecto al macho si está libre o viceversa
+              if (!nestData.maleRing || nestData.maleRing === 'Sin anillar') {
+                updates.maleRing = metalRing;
+                updates.malePvcCode = pvcRing;
+              } else {
+                updates.femaleRing = metalRing;
+                updates.femalePvcCode = pvcRing;
+              }
+            }
+
+            db.ref('nidos/' + nestId).update(updates, () => {
+              alert('¡Registro de anillamiento guardado y sincronizado con el nido con éxito!');
+              document.getElementById('ringForm').reset();
+              document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
+              document.getElementById('metalRing').removeAttribute('readonly');
+              document.getElementById('form-mode-badge').classList.add('hidden');
+            });
+          });
         } else {
           alert('¡Registro de anillamiento guardado con éxito!');
           document.getElementById('ringForm').reset();
