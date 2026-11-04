@@ -201,7 +201,7 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Adulto Muerto / Incidencias</label>
-              <select id="adultDeath" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <select id="adultDeath" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold text-rose-700">
                 <option value="Ninguno">Ninguno</option>
                 <option value="Macho muerto">Macho muerto</option>
                 <option value="Hembra muerta">Hembra muerta</option>
@@ -260,7 +260,7 @@
         <!-- HISTORIAL CRONOLÓGICO DE ANILLADOS EN ESTE NIDO -->
         <div class="space-y-3 pt-4 border-t">
           <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> Historial Cronológico de Anillados en este Nido
+            <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> Historial Cronológico de Anillados y Adultos en este Nido
           </h3>
           <div id="nest-history-container" class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-500">
             Introduzca un ID de nido para ver sus registros históricos...
@@ -295,6 +295,8 @@
 
     let controlMap = null;
     let selectedMarker = null;
+    let tempMaleRing = '';
+    let tempFemaleRing = '';
 
     function initControlMap(lat = 39.98, lng = -0.05) {
       if (controlMap) {
@@ -338,7 +340,6 @@
       textarea.style.height = (textarea.scrollHeight + 4) + 'px';
     }
 
-    // Cargar la relación de pollos anillados de este nido en el desplegable de bajas
     function loadChicksDropdown(selectedVal = 'Sin baja') {
       const currentNest = document.getElementById('nestId').value.trim().toUpperCase();
       const select = document.getElementById('chickDeathRing');
@@ -350,9 +351,8 @@
         Object.values(data).forEach(r => {
           if (r.birdAge === 'Pollo') {
             const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
-            // Mostrar solo los pollos del nido actual o todos si no coincide
             if (isThisNest) {
-              const label = `⚠️ MUERTO: Pollo Anilla Metálica [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
+              const label = `⚠️ MUERTO: Pollo Anilla [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
               const opt = document.createElement('option');
               opt.value = r.metalRing;
               opt.textContent = label;
@@ -368,8 +368,10 @@
     function updateNestHistoryPreview() {
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       const container = document.getElementById('nest-history-container');
+      const deadChickRing = document.getElementById('chickDeathRing').value;
+      const adultDeathStatus = document.getElementById('adultDeath').value;
 
-      loadChicksDropdown();
+      loadChicksDropdown(deadChickRing);
 
       if (!nestId) {
         container.innerHTML = 'Introduzca un ID de nido para ver sus registros históricos...';
@@ -380,21 +382,48 @@
         const ringsData = snapshot.val() || {};
         const matched = Object.values(ringsData).filter(r => (r.nestId || '').toUpperCase() === nestId);
 
-        if (matched.length === 0) {
+        let html = '<div class="space-y-2">';
+
+        // Mostrar estado de adultos muertos si aplica
+        const mRing = document.getElementById('maleRing').value.trim();
+        const fRing = document.getElementById('femaleRing').value.trim();
+
+        if ((adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') && mRing && mRing !== 'Sin anillar') {
+          html += `
+            <div class="bg-rose-50 p-2.5 rounded-lg border border-rose-400 flex justify-between items-center">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">⚠️ Adulto Fallecido (Macho)</span>
+              <span class="font-mono font-bold text-rose-700">Anilla: ${mRing}</span>
+            </div>
+          `;
+        }
+
+        if ((adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') && fRing && fRing !== 'Sin anillar') {
+          html += `
+            <div class="bg-rose-50 p-2.5 rounded-lg border border-rose-400 flex justify-between items-center">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">⚠️ Adulto Fallecido (Hembra)</span>
+              <span class="font-mono font-bold text-rose-700">Anilla: ${fRing}</span>
+            </div>
+          `;
+        }
+
+        if (matched.length === 0 && adultDeathStatus === 'Ninguno') {
           container.innerHTML = `<span class="italic text-stone-400">No hay registros de anillamiento asociados al nido "${nestId}".</span>`;
           return;
         }
 
         matched.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
 
-        let html = '<div class="space-y-2">';
         matched.forEach(r => {
           const isAdult = r.birdAge === 'Adulto';
-          const badgeClass = isAdult ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+          const isDead = (r.metalRing === deadChickRing && deadChickRing !== 'Sin baja');
+          
+          let badgeClass = isAdult ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+          if (isDead) badgeClass = 'bg-rose-100 text-rose-800 border border-rose-300';
+
           html += `
-            <div class="bg-white p-2.5 rounded-lg border border-stone-200 flex flex-wrap justify-between items-center gap-2">
+            <div class="bg-white p-2.5 rounded-lg border ${isDead ? 'border-rose-400 bg-rose-50/40' : 'border-stone-200'} flex flex-wrap justify-between items-center gap-2">
               <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${r.birdAge || 'Pollo'}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${isDead ? '⚠️ Pollo Fallecido (Muerto)' : (r.birdAge || 'Pollo')}</span>
                 <span class="font-mono font-bold text-sky-700">${r.metalRing}</span>
                 ${r.pvcRing ? `<span class="font-mono bg-black text-white px-1.5 py-0.5 rounded text-[10px]">${r.pvcRing}</span>` : ''}
               </div>
@@ -464,6 +493,22 @@
     function saveNest(e) {
       e.preventDefault();
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
+      const adultDeathStatus = document.getElementById('adultDeath').value;
+
+      let maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
+      let malePvc = document.getElementById('malePvcCode').value.trim().toUpperCase() || '';
+      let femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
+      let femalePvc = document.getElementById('femalePvcCode').value.trim().toUpperCase() || '';
+
+      // Si se indica que han muerto, sus anillas se limpian automáticamente de este nido
+      if (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') {
+        maleRing = 'Sin anillar';
+        malePvc = '';
+      }
+      if (adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') {
+        femaleRing = 'Sin anillar';
+        femalePvc = '';
+      }
 
       const nestData = {
         nestId: nestId,
@@ -476,13 +521,13 @@
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
         chickDeathRing: document.getElementById('chickDeathRing').value,
-        adultDeath: document.getElementById('adultDeath').value,
+        adultDeath: adultDeathStatus,
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         hasCamera: document.getElementById('hasCamera').value,
-        maleRing: document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar',
-        malePvcCode: document.getElementById('malePvcCode').value.trim().toUpperCase() || '',
-        femaleRing: document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar',
-        femalePvcCode: document.getElementById('femalePvcCode').value.trim().toUpperCase() || '',
+        maleRing: maleRing,
+        malePvcCode: malePvc,
+        femaleRing: femaleRing,
+        femalePvcCode: femalePvc,
         notes: document.getElementById('notes').value.trim(),
         lastReview: new Date().toISOString().split('T')[0]
       };
@@ -499,6 +544,9 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkEditMode();
+      document.getElementById('chickDeathRing').addEventListener('change', updateNestHistoryPreview);
+      document.getElementById('maleRing').addEventListener('input', updateNestHistoryPreview);
+      document.getElementById('femaleRing').addEventListener('input', updateNestHistoryPreview);
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
   </script>
