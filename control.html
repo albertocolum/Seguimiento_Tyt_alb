@@ -84,7 +84,7 @@
         <a href="index.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span>
         </a>
-        <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm">
+        <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-brand-accent text-white shadow-sm">
           <i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span>
         </a>
         <a href="anillados.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
@@ -119,7 +119,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido *</label>
-              <input type="text" id="nestId" oninput="updateNestHistoryPreview()" required placeholder="Ej. NIDO-01 o ALQUERIA" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
+              <input type="text" id="nestId" oninput="updateNestHistoryPreview(); loadChicksDropdown();" required placeholder="Ej. NIDO-01 o ALQUERIA" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido *</label>
@@ -194,8 +194,10 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Baja de Pollo por Mortalidad (Anilla / Estado)</label>
-              <input type="text" id="chickDeathRing" placeholder="Sin anillar / Motivo" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+              <label class="block text-xs font-bold text-stone-600 mb-1">Baja de Pollo por Mortalidad (Muerto)</label>
+              <select id="chickDeathRing" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold text-rose-700">
+                <option value="Sin baja">Sin baja (Ningún pollo muerto)</option>
+              </select>
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Adulto Muerto / Incidencias</label>
@@ -336,9 +338,38 @@
       textarea.style.height = (textarea.scrollHeight + 4) + 'px';
     }
 
+    // Cargar la relación de pollos anillados de este nido en el desplegable de bajas
+    function loadChicksDropdown(selectedVal = 'Sin baja') {
+      const currentNest = document.getElementById('nestId').value.trim().toUpperCase();
+      const select = document.getElementById('chickDeathRing');
+
+      db.ref('anillados').once('value', snapshot => {
+        const data = snapshot.val() || {};
+        select.innerHTML = '<option value="Sin baja">Sin baja (Ningún pollo muerto)</option>';
+
+        Object.values(data).forEach(r => {
+          if (r.birdAge === 'Pollo') {
+            const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
+            // Mostrar solo los pollos del nido actual o todos si no coincide
+            if (isThisNest) {
+              const label = `⚠️ MUERTO: Pollo Anilla Metálica [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
+              const opt = document.createElement('option');
+              opt.value = r.metalRing;
+              opt.textContent = label;
+              select.appendChild(opt);
+            }
+          }
+        });
+
+        select.value = selectedVal || 'Sin baja';
+      });
+    }
+
     function updateNestHistoryPreview() {
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       const container = document.getElementById('nest-history-container');
+
+      loadChicksDropdown();
 
       if (!nestId) {
         container.innerHTML = 'Introduzca un ID de nido para ver sus registros históricos...';
@@ -403,7 +434,6 @@
             document.getElementById('layDate').value = nest.layDate || '';
             document.getElementById('visitationState').value = nest.visitationState || 'Huevos';
             document.getElementById('healthStatus').value = nest.healthStatus || 'Excelente';
-            document.getElementById('chickDeathRing').value = nest.chickDeathRing || '';
             document.getElementById('adultDeath').value = nest.adultDeath || 'Ninguno';
             document.getElementById('fledgedChicks').value = nest.fledgedChicks || 0;
             document.getElementById('hasCamera').value = nest.hasCamera || 'No';
@@ -413,6 +443,7 @@
             document.getElementById('femalePvcCode').value = nest.femalePvcCode || '';
             document.getElementById('notes').value = nest.notes || '';
 
+            loadChicksDropdown(nest.chickDeathRing || 'Sin baja');
             updateNestHistoryPreview();
 
             if (nest.lat && nest.lng) {
@@ -426,6 +457,7 @@
       } else {
         initControlMap();
         document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
+        loadChicksDropdown();
       }
     }
 
@@ -443,7 +475,7 @@
         layDate: document.getElementById('layDate').value,
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
-        chickDeathRing: document.getElementById('chickDeathRing').value.trim(),
+        chickDeathRing: document.getElementById('chickDeathRing').value,
         adultDeath: document.getElementById('adultDeath').value,
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         hasCamera: document.getElementById('hasCamera').value,
