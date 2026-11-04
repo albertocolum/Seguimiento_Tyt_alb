@@ -307,7 +307,11 @@
       db.ref('nidos').once('value', snapshot => {
         const data = snapshot.val() || {};
         select.innerHTML = '<option value="">-- Seleccionar nido asociado --</option>';
-        Object.keys(data).sort().forEach(nestId => {
+        
+        // Extraer y ordenar todos los IDs de nidos correctamente (como ALQUERIA BLANCA, VILA-REAL, etc.)
+        const nestIds = Object.keys(data).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+        
+        nestIds.forEach(nestId => {
           const opt = document.createElement('option');
           opt.value = nestId;
           opt.textContent = nestId;
