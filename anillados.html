@@ -31,24 +31,6 @@
       background-repeat: no-repeat;
       background-size: cover;
     }
-    .metal-ring-badge {
-      background-color: #e5e7eb;
-      color: #111827;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-      display: inline-block;
-    }
-    .pvc-badge {
-      background-color: #000000;
-      color: #ffffff;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-      display: inline-block;
-    }
     textarea#biometricNotes {
       resize: none;
       overflow-y: hidden;
@@ -166,11 +148,15 @@
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Edad EURING</label>
               <select id="euringAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="1">1 (Pollo)</option>
-                <option value="2">2 (Inmaduro)</option>
-                <option value="3">3 (1er año)</option>
-                <option value="4">4 (Ad. 2º año)</option>
-                <option value="5">5 (Adulto)</option>
+                <option value="1">1: Pollo en el nido</option>
+                <option value="2">2: Capaz de volar</option>
+                <option value="3">3: Primer año de calendario</option>
+                <option value="4">4: Al menos en su 2º año de calendario</option>
+                <option value="5">5: Segundo año de calendario</option>
+                <option value="6">6: Al menos en su 3º año de calendario</option>
+                <option value="7">7: Tercer año de calendario</option>
+                <option value="8">8: Al menos en su 4º año de calendario</option>
+                <option value="9">9: Cuarto año de calendario</option>
               </select>
             </div>
             <div>
@@ -333,7 +319,7 @@
 
       const query = (document.getElementById('searchRingsInput').value || '').trim().toLowerCase();
 
-      const filtered = allRingsData.filter(r => {
+      const filtered = allRingsData.questionFilter || allRingsData.filter(r => {
         if (!query) return true;
         const target = [
           r.nestId || '',
@@ -426,14 +412,12 @@
         biometricNotes: document.getElementById('biometricNotes').value.trim()
       };
 
-      // 1. Guardar en 'anillados'
       db.ref('anillados/' + safeKey).set(record, err => {
         if (err) {
           alert('Error al guardar: ' + err.message);
           return;
         }
 
-        // 2. Si es Adulto, actualizar automáticamente la pareja reproductora en el nido correspondiente
         if (birdAge === 'Adulto' && nestId) {
           db.ref('nidos/' + nestId).once('value', snap => {
             const nestData = snap.val() || {};
@@ -446,7 +430,6 @@
               updates.femaleRing = metalRing;
               updates.femalePvcCode = pvcRing;
             } else {
-              // Si el sexo es desconocido pero se indica como adulto, se asigna por defecto al macho si está libre o viceversa
               if (!nestData.maleRing || nestData.maleRing === 'Sin anillar') {
                 updates.maleRing = metalRing;
                 updates.malePvcCode = pvcRing;
