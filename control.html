@@ -162,18 +162,18 @@
           <div id="control-map"></div>
         </div>
 
-        <!-- BLOQUE 3: BIOLOGÍA Y REPRODUCCIÓN -->
+        <!-- BLOQUE 3: SEGUIMIENTO DE LA NIDADA Y ESTADO -->
         <div class="space-y-3">
           <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
-            <i data-lucide="heart" class="w-4 h-4 text-brand-accent"></i> 3. Biología y Reproducción
+            <i data-lucide="activity" class="w-4 h-4 text-brand-accent"></i> 3. Seguimiento de la Nidada y Estado
           </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Puesta</label>
-              <input type="date" id="layDate" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+              <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de la Visita *</label>
+              <input type="date" id="layDate" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
             </div>
             <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Estado de Visitação / Puesta</label>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Estado de la Visita / Nidada</label>
               <select id="visitationState" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
                 <option value="Huevos">Huevos</option>
                 <option value="Pollos">Pollos</option>
@@ -182,15 +182,33 @@
               </select>
             </div>
             <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Pollos Volantones</label>
-              <input type="number" id="fledgedChicks" min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+              <label class="block text-xs font-bold text-stone-600 mb-1">Salud General</label>
+              <select id="healthStatus" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Excelente">Excelente</option>
+                <option value="Buena">Buena</option>
+                <option value="Regular">Regular</option>
+                <option value="Crítica">Crítica</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Baja de Pollo por Mortalidad (Anilla / Estado)</label>
+              <input type="text" id="chickDeathRing" placeholder="Sin anillar / Motivo" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
             </div>
             <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Cámara de Fototrampeo</label>
-              <select id="hasCamera" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="No">No</option>
-                <option value="Sí">Sí</option>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Adulto Muerto / Incidencias</label>
+              <select id="adultDeath" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Ninguno">Ninguno</option>
+                <option value="Macho muerto">Macho muerto</option>
+                <option value="Hembra muerta">Hembra muerta</option>
+                <option value="Ambos muertos">Ambos muertos</option>
               </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Pollos Volados / Exitosos</label>
+              <input type="number" id="fledgedChicks" min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
             </div>
           </div>
         </div>
@@ -220,7 +238,17 @@
           </div>
         </div>
 
-        <!-- BLOQUE 5: OBSERVACIONES -->
+        <!-- BLOQUE 5: CÁMARA Y OBSERVACIONES -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Cámara de Fototrampeo</label>
+            <select id="hasCamera" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <option value="No">No</option>
+              <option value="Sí">Sí</option>
+            </select>
+          </div>
+        </div>
+
         <div class="space-y-2">
           <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones / Historial de Visitas</label>
           <textarea id="notes" oninput="autoResizeTextarea(this)" placeholder="Notas de campo, incidencias, evolución de la nidada..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
@@ -297,7 +325,6 @@
       textarea.style.height = (textarea.scrollHeight + 4) + 'px';
     }
 
-    // Comprobar si venimos en modo edición (?edit=ID)
     function checkEditMode() {
       const urlParams = new URLSearchParams(window.location.search);
       const editId = urlParams.get('edit');
@@ -320,6 +347,9 @@
             document.getElementById('lng').value = nest.lng || '';
             document.getElementById('layDate').value = nest.layDate || '';
             document.getElementById('visitationState').value = nest.visitationState || 'Huevos';
+            document.getElementById('healthStatus').value = nest.healthStatus || 'Excelente';
+            document.getElementById('chickDeathRing').value = nest.chickDeathRing || '';
+            document.getElementById('adultDeath').value = nest.adultDeath || 'Ninguno';
             document.getElementById('fledgedChicks').value = nest.fledgedChicks || 0;
             document.getElementById('hasCamera').value = nest.hasCamera || 'No';
             document.getElementById('maleRing').value = nest.maleRing && nest.maleRing !== 'Sin anillar' ? nest.maleRing : '';
@@ -338,6 +368,7 @@
         });
       } else {
         initControlMap();
+        document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
       }
     }
 
@@ -354,6 +385,9 @@
         lng: parseFloat(document.getElementById('lng').value) || null,
         layDate: document.getElementById('layDate').value,
         visitationState: document.getElementById('visitationState').value,
+        healthStatus: document.getElementById('healthStatus').value,
+        chickDeathRing: document.getElementById('chickDeathRing').value.trim(),
+        adultDeath: document.getElementById('adultDeath').value,
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         hasCamera: document.getElementById('hasCamera').value,
         maleRing: document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar',
