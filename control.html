@@ -380,7 +380,6 @@
 
         let html = '<div class="space-y-2">';
 
-        // Mostrar aviso de adultos muertos si aplica
         const mRing = document.getElementById('maleRing').value.trim();
         const fRing = document.getElementById('femaleRing').value.trim();
 
@@ -491,13 +490,31 @@
     function saveNest(e) {
       e.preventDefault();
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
+      const visitDate = document.getElementById('layDate').value;
       const adultDeathStatus = document.getElementById('adultDeath').value;
       const chickDeathVal = document.getElementById('chickDeathRing').value;
+      const notesField = document.getElementById('notes');
 
       let maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
       let malePvc = document.getElementById('malePvcCode').value.trim().toUpperCase() || '';
       let femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
       let femalePvc = document.getElementById('femalePvcCode').value.trim().toUpperCase() || '';
+
+      // Registrar automáticamente en observaciones si hay bajas de adultos o pollos
+      let currentNotes = notesField.value.trim();
+      let newLogEntries = [];
+
+      if (adultDeathStatus !== 'Ninguno') {
+        newLogEntries.push(`[${visitDate}] Baja de adulto: ${adultDeathStatus}.`);
+      }
+      if (chickDeathVal !== 'Sin baja') {
+        newLogEntries.push(`[${visitDate}] Baja de pollo muerto (Anilla: ${chickDeathVal}).`);
+      }
+
+      if (newLogEntries.length > 0) {
+        const logText = newLogEntries.join('\n');
+        currentNotes = currentNotes ? currentNotes + '\n' + logText : logText;
+      }
 
       // Si se indica que han muerto, sus anillas se limpian automáticamente de este nido
       if (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') {
@@ -516,7 +533,7 @@
         status: document.getElementById('status').value,
         lat: parseFloat(document.getElementById('lat').value) || null,
         lng: parseFloat(document.getElementById('lng').value) || null,
-        layDate: document.getElementById('layDate').value,
+        layDate: visitDate,
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
         chickDeathRing: chickDeathVal,
@@ -527,7 +544,7 @@
         malePvcCode: malePvc,
         femaleRing: femaleRing,
         femalePvcCode: femalePvc,
-        notes: document.getElementById('notes').value.trim(),
+        notes: currentNotes,
         lastReview: new Date().toISOString().split('T')[0]
       };
 
@@ -535,7 +552,7 @@
         if (err) {
           alert('Error al guardar el nido: ' + err.message);
         } else {
-          alert('¡Nido guardado y sincronizado con éxito!');
+          alert('¡Nido guardado, bajas registradas en observaciones y sincronizado con éxito!');
           window.location.href = 'index.html';
         }
       });
