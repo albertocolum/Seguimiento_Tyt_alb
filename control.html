@@ -14,6 +14,7 @@
 
   <!-- LIBRERÍAS DE FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <script>
@@ -84,7 +85,7 @@
       </div>
 
       <nav class="flex items-center space-x-1.5 sm:space-x-2">
-        <a href="index.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+        <a href="dashboard.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span>
         </a>
         <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-brand-accent text-white shadow-sm">
@@ -93,6 +94,10 @@
         <a href="anillados.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
         </a>
+        <!-- BOTÓN DE CERRAR SESIÓN -->
+        <button onclick="cerrarSesion()" class="bg-rose-700/80 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2.5 rounded-xl transition-all shadow flex items-center gap-1.5 ml-2">
+          <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">Salir</span>
+        </button>
       </nav>
 
     </div>
@@ -294,11 +299,30 @@
     };
 
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.database();
+
+    // --- CONTROL DE SEGURIDAD (PROTECCIÓN DE ACCESO) ---
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = 'index.html';
+      }
+    });
+
+    // --- FUNCIÓN PARA CERRAR SESIÓN ---
+    function cerrarSesion() {
+      auth.signOut()
+        .then(() => {
+          window.location.href = 'index.html';
+        })
+        .catch(err => {
+          console.error('Error al cerrar sesión:', err);
+        });
+    }
 
     let controlMap = null;
     let selectedMarker = null;
-    let originalNestData = null; // Almacena los datos originales al cargar para comparar cambios
+    let originalNestData = null;
 
     function formatDateToDDMMYYYY(dateStr) {
       if (!dateStr) return '';
@@ -527,7 +551,7 @@
         db.ref('nidos/' + editId).once('value', snapshot => {
           const nest = snapshot.val();
           if (nest) {
-            originalNestData = nest; // Guardamos estado original para comparar cambios
+            originalNestData = nest;
 
             document.getElementById('nestId').value = nest.nestId || '';
             document.getElementById('nestType').value = nest.nestType || 'Nido Artificial';
@@ -585,7 +609,6 @@
       let currentNotes = notesField.value.trim();
       let newLogEntries = [];
 
-      // Detección detallada de cambios respecto al estado anterior (si es edición) o registro nuevo
       let changesDescription = [];
       const newVisitationState = document.getElementById('visitationState').value;
       const newCameraState = document.getElementById('hasCamera').value;
@@ -616,7 +639,6 @@
           changesDescription.push(`Estado del nido cambiado a "${newStatus}"`);
         }
 
-        // Si se editó algo pero no entró en los campos anteriores, dejamos una nota genérica de actualización
         if (changesDescription.length === 0) {
           changesDescription.push(`Nido visitado / actualizado`);
         }
@@ -678,10 +700,12 @@
         femalePvc = '';
       }
 
+      const locationNameVal = document.getElementById('locationName').value.trim();
+
       const nestData = {
         nestId: nestId,
         nestType: document.getElementById('nestType').value,
-        locationName: document.getElementById('locationName').value.trim(),
+        locationName: locationNameVal,
         status: document.getElementById('status').value,
         lat: parseFloat(document.getElementById('lat').value) || null,
         lng: parseFloat(document.getElementById('lng').value) || null,
@@ -700,13 +724,56 @@
         lastReview: new Date().toISOString().split('T')[0]
       };
 
+      // 1. Guardar/Actualizar el nido en Firebase
       db.ref('nidos/' + nestId).set(nestData, err => {
         if (err) {
           alert('Error al guardar el nido: ' + err.message);
-        } else {
-          alert('¡Nido guardado, cambios específicos (cámara, huevos/pollos, etc.) registrados en observaciones con éxito!');
-          window.location.href = 'index.html';
+          return;
         }
+
+        // 2. Sincronizar automáticamente al Macho en 'anillados' si está especificado
+        let updatesSync = {};
+        const rawVisitDate = document.getElementById('layDate').value;
+
+        if (maleRing && maleRing !== 'Sin anillar') {
+          const maleKey = maleRing.replace(/[\/\.#$\[\]]/g, '_');
+          updatesSync['anillados/' + maleKey] = {
+            metalRing: maleRing,
+            pvcRing: malePvc,
+            birdAge: 'Adulto',
+            sex: 'Macho',
+            nestId: nestId,
+            locationName: locationNameVal,
+            ringDate: rawVisitDate,
+            lastObservation: currentNotes
+          };
+        }
+
+        // 3. Sincronizar automáticamente a la Hembra en 'anillados' si está especificada
+        if (femaleRing && femaleRing !== 'Sin anillar') {
+          const femaleKey = femaleRing.replace(/[\/\.#$\[\]]/g, '_');
+          updatesSync['anillados/' + femaleKey] = {
+            metalRing: femaleRing,
+            pvcRing: femalePvc,
+            birdAge: 'Adulto',
+            sex: 'Hembra',
+            nestId: nestId,
+            locationName: locationNameVal,
+            ringDate: rawVisitDate,
+            lastObservation: currentNotes
+          };
+        }
+
+        if (Object.keys(updatesSync).length > 0) {
+          db.ref().update(updatesSync, syncErr => {
+            if (syncErr) {
+              console.error('Error al sincronizar anillados:', syncErr);
+            }
+          });
+        }
+
+        alert('¡Nido guardado y sincronizado con éxito con las observaciones y anillados!');
+        window.location.href = 'dashboard.html';
       });
     }
 
