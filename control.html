@@ -196,17 +196,17 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Baja de Pollo por Mortalidad (Muerto)</label>
-              <select id="chickDeathRing" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-rose-600">
+              <select id="chickDeathRing" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-stone-800">
                 <option value="Sin baja">Sin baja (Ningún pollo muerto)</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Adulto Muerto / Incidencias</label>
-              <select id="adultDeath" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-rose-600">
+              <select id="adultDeath" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-stone-800">
                 <option value="Ninguno">Ninguno</option>
-                <option value="Macho muerto">⚠️ Macho muerto</option>
-                <option value="Hembra muerta">⚠️ Hembra muerta</option>
-                <option value="Ambos muertos">⚠️ Ambos muertos</option>
+                <option value="Macho muerto">Macho muerto</option>
+                <option value="Hembra muerta">Hembra muerta</option>
+                <option value="Ambos muertos">Ambos muertos</option>
               </select>
             </div>
             <div>
@@ -388,9 +388,8 @@
           Object.values(data).forEach(r => {
             if (r.birdAge === 'Pollo') {
               const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
-              // Si ya está muerto en este nido o no está seleccionado actualmente, lo filtramos (desaparece de la lista de vivos)
               if (isThisNest && r.metalRing !== alreadyDeadRing) {
-                const label = `⚠️ MUERTO: Pollo Anilla [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
+                const label = `MUERTO: Pollo Anilla [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
                 const opt = document.createElement('option');
                 opt.value = r.metalRing;
                 opt.textContent = label;
