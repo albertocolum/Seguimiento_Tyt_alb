@@ -3,10 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Panel de Control</title>
-
+  <title>Tyto Alba | Dashboard General</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- LIBRERÍAS DE LEAFLET (MAPA) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- LIBRERÍA DE EXCEL (SheetJS / XLSX) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- LIBRERÍAS DE FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -18,49 +25,253 @@
       theme: {
         extend: {
           colors: {
-            brand: {
-              dark: '#1e382b',
-              hover: '#162b20',
-              accent: '#c88a4b',
-              accentHover: '#b5793e',
-              bg: '#f4f3ed',
-              border: '#e5e3d7'
-            }
+            brand: { dark: '#1e382b', hover: '#162b20', accent: '#c88a4b', accentHover: '#b5793e', bg: '#f4f3ed', border: '#e5e3d7' }
           }
         }
       }
     }
   </script>
+  <style>
+    body {
+      background-image: linear-gradient(rgba(30, 41, 59, 0.45), rgba(30, 41, 59, 0.45)), url('https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/fondo.jpg');
+      background-attachment: fixed;
+      background-position: center 25%;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+    #dashboard-map { height: 400px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
+    
+    .metal-ring-badge {
+      background-color: #e5e7eb;
+      color: #111827;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      display: inline-block;
+    }
+
+    .pvc-badge {
+      background-color: #000000;
+      color: #ffffff;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      display: inline-block;
+    }
+  </style>
 </head>
-<body class="bg-stone-100 text-stone-800 font-sans min-h-screen">
+<body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
 
-  <!-- CABECERA PRINCIPAL CON BOTÓN DE CERRAR SESIÓN -->
-  <header class="bg-brand-dark text-white shadow-lg px-6 py-4 flex justify-between items-center">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full bg-white p-0.5 overflow-hidden">
-        <img src="logo.png" alt="GER Logo" class="w-full h-full object-cover rounded-full" onerror="this.src='https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/logo_ger.png'">
+  <!-- NAVBAR -->
+  <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
+      
+      <div class="flex items-center space-x-3.5">
+        <div class="w-12 h-12 rounded-full bg-white p-0.5 border-2 border-emerald-500/30 flex items-center justify-center overflow-hidden shadow-inner shrink-0">
+          <img src="logo.png" alt="Grupo Naturalista GER" class="w-full h-full object-cover rounded-full" onerror="this.src='https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/logo_ger.png'">
+        </div>
+        <div class="flex items-baseline space-x-2.5">
+          <span class="text-xl font-bold tracking-tight">Tyto Alba</span>
+          <span class="text-white/40 font-light hidden sm:inline">|</span>
+          <span class="text-xs font-semibold tracking-wide text-emerald-400 hidden sm:inline">GER (Grup d'Estudi i Protecció dels Rapinyaires)</span>
+          <span class="text-xs font-semibold tracking-wide text-emerald-400 sm:hidden">GER</span>
+        </div>
       </div>
-      <div>
-        <h1 class="font-extrabold text-lg leading-tight tracking-wide">Tyto Alba</h1>
-        <p class="text-xs text-emerald-400 font-medium">Monitoreo de Cajas Nido — GER</p>
-      </div>
-    </div>
 
-    <div class="flex items-center gap-4">
-      <span id="user-display-email" class="text-xs text-stone-300 font-medium hidden sm:inline"></span>
-      <button onclick="cerrarSesion()" class="bg-rose-700/80 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-all shadow flex items-center gap-1.5">
-        <i data-lucide="log-out" class="w-4 h-4"></i> Cerrar Sesión
-      </button>
+      <nav class="flex items-center space-x-1.5 sm:space-x-2">
+        <a href="dashboard.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span>
+        </a>
+        <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+          <i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span>
+        </a>
+        <a href="anillados.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+          <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
+        </a>
+        <!-- BOTÓN DE CERRAR SESIÓN -->
+        <button onclick="cerrarSesion()" class="bg-rose-700/80 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2.5 rounded-xl transition-all shadow flex items-center gap-1.5 ml-2">
+          <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">Salir</span>
+        </button>
+      </nav>
+
     </div>
   </header>
 
-  <!-- CONTENIDO PRINCIPAL DEL PANEL -->
-  <main class="max-w-7xl mx-auto p-6 space-y-6">
-    <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm">
-      <h2 class="text-xl font-bold text-stone-900 mb-2">Bienvenido al Panel de Monitoreo</h2>
-      <p class="text-sm text-stone-600">Sistema activo y protegido correctamente mediante Firebase Auth.</p>
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
+    
+    <!-- BARRA DE ACCIONES GLOBALES (EXCEL) Y CONTADORES DE AUDIENCIA -->
+    <div class="bg-white/95 backdrop-blur-sm p-4 rounded-2xl border border-brand-border shadow-sm flex flex-col lg:flex-row justify-between items-center gap-4">
+      <div>
+        <h2 class="text-sm font-bold text-stone-900">Copias de Seguridad y Datos (Excel)</h2>
+        <p class="text-xs text-stone-500">Exporta o importa toda la base de datos de nidos y anillados en un libro de Excel (.xlsx)</p>
+      </div>
+
+      <div class="flex items-center gap-4 flex-wrap justify-end">
+        <!-- CONTADORES DE VISITAS (SIN CONECTADOS) -->
+        <div class="flex items-center gap-3 bg-stone-50 border px-3.5 py-2 rounded-xl text-xs">
+          <div class="flex items-center gap-1.5" title="Visitas totales acumuladas">
+            <i data-lucide="eye" class="w-3.5 h-3.5 text-brand-accent"></i>
+            <span class="text-stone-500 font-semibold">Visitas:</span>
+            <span id="total-visits-count" class="font-bold text-stone-900">0</span>
+          </div>
+        </div>
+
+        <!-- BOTONES EXCEL -->
+        <div class="flex items-center gap-2">
+          <button onclick="exportFullExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar Excel
+          </button>
+          <button onclick="document.getElementById('excelFileInput').click()" class="bg-sky-700 hover:bg-sky-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
+            <i data-lucide="upload" class="w-4 h-4"></i> Importar Excel
+          </button>
+          <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="importFullExcel(event)">
+        </div>
+      </div>
     </div>
+
+    <!-- TARJETAS DE ESTADÍSTICAS KPI -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      
+      <!-- Nidos Activos -->
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Nidos Activos</span>
+          <div class="p-2 rounded-xl bg-emerald-50 text-emerald-600"><i data-lucide="home" class="w-4 h-4"></i></div>
+        </div>
+        <div class="mt-3">
+          <span id="stat-active" class="text-2xl font-black text-stone-900">0</span>
+          <p class="text-[10px] font-medium text-stone-500 mt-0.5">Ocupación en caja</p>
+        </div>
+      </div>
+
+      <!-- Nidos Inactivos -->
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Nidos Inactivos</span>
+          <div class="p-2 rounded-xl bg-rose-50 text-rose-500"><i data-lucide="x-circle" class="w-4 h-4"></i></div>
+        </div>
+        <div class="mt-3">
+          <span id="stat-inactive" class="text-2xl font-black text-stone-900">0</span>
+          <p class="text-[10px] font-medium text-rose-600 mt-0.5">Inactivos / Abandonados</p>
+        </div>
+      </div>
+
+      <!-- Parejas -->
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Parejas</span>
+          <div class="p-2 rounded-xl bg-amber-50 text-amber-600"><i data-lucide="heart" class="w-4 h-4"></i></div>
+        </div>
+        <div class="mt-3">
+          <span id="stat-pairs" class="text-2xl font-black text-stone-900">0</span>
+          <p class="text-[10px] font-medium text-amber-700 mt-0.5">Identificadas</p>
+        </div>
+      </div>
+
+      <!-- Crías -->
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Crías</span>
+          <div class="p-2 rounded-xl bg-teal-50 text-teal-600"><i data-lucide="smile" class="w-4 h-4"></i></div>
+        </div>
+        <div class="mt-3">
+          <span id="stat-chicks" class="text-2xl font-black text-stone-900">0</span>
+          <p class="text-[10px] font-medium text-teal-700 mt-0.5">Eclosionadas / Pollos</p>
+        </div>
+      </div>
+
+      <!-- Anillados -->
+      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between col-span-2 sm:col-span-1">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Anillados</span>
+          <div class="p-2 rounded-xl bg-sky-50 text-sky-600"><i data-lucide="tag" class="w-4 h-4"></i></div>
+        </div>
+        <div class="mt-3">
+          <span id="stat-ringed" class="text-2xl font-black text-stone-900">0</span>
+          <a href="anillados.html" class="text-[10px] font-bold text-sky-600 hover:text-sky-800 mt-0.5 inline-block">Ver Biometría →</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SECCIÓN DE TABLA DETALLADA CON FILTRO -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-stone-900">Resumen de Nidos y Parejas Asignadas</h2>
+          <p class="text-xs text-stone-500">Estado actual y adultos anillados en cada caja</p>
+        </div>
+        
+        <!-- BUSCADOR / FILTRO Y BOTÓN REGISTRAR NIDO -->
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <div class="relative flex-grow sm:flex-grow-0">
+            <input 
+              type="text" 
+              id="searchNestsInput" 
+              oninput="renderNestsTableAndMap()" 
+              placeholder="Filtrar por nido o anilla..." 
+              class="w-full sm:w-64 px-4 py-2 border border-stone-300 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-brand-accent/50 focus:border-brand-accent bg-stone-50/50 transition-all placeholder:text-stone-400"
+            />
+          </div>
+          <a href="control.html" class="text-xs font-bold text-brand-dark hover:text-brand-accent flex items-center gap-1 transition-colors shrink-0">
+            Registrar nido <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-stone-700">
+          <thead class="bg-stone-50/80 text-stone-500 border-b border-stone-200 uppercase font-bold text-[10px] tracking-wider">
+            <tr>
+              <th class="p-3">ID Nido</th>
+              <th class="p-3">Tipo</th>
+              <th class="p-3">Ubicación</th>
+              <th class="p-3">Estado</th>
+              <th class="p-3">Macho (Anilla / PVC)</th>
+              <th class="p-3">Hembra (Anilla / PVC)</th>
+              <th class="p-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="nests-table-body" class="divide-y divide-stone-100">
+            <tr>
+              <td colspan="7" class="p-4 text-center text-stone-400">Cargando datos en la nube...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECCIÓN DEL MAPA GENERAL -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-3">
+        <h2 class="text-lg font-bold text-stone-900 flex items-center gap-2">
+          <i data-lucide="map" class="w-5 h-5 text-brand-accent"></i> Mapa General de Nidos
+        </h2>
+        <div class="flex items-center gap-4 text-xs flex-wrap">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3.5 h-3.5 rounded-full bg-blue-600 inline-block shadow-sm"></span>
+            <span class="font-semibold text-stone-700">Activo</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3.5 h-3.5 rounded-full bg-amber-600 inline-block shadow-sm"></span>
+            <span class="font-semibold text-stone-700">Restos</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3.5 h-3.5 rounded-full bg-stone-400 inline-block shadow-sm"></span>
+            <span class="font-semibold text-stone-700">Inactivo / Abandonado</span>
+          </div>
+          <span id="total-nests-badge" class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full">0 nidos</span>
+        </div>
+      </div>
+      <div id="dashboard-map"></div>
+    </div>
+
   </main>
+
+  <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo — Firebase Cloud Mode</footer>
 
   <script>
     const firebaseConfig = {
@@ -77,13 +288,11 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // --- PROTECCIÓN DE SEGURIDAD (REDIRECCIÓN A INDEX.HTML SI NO HAY SESIÓN) ---
+    // --- CONTROL DE SEGURIDAD (PROTECCIÓN DE ACCESO) ---
     auth.onAuthStateChanged(user => {
       if (!user) {
+        // Si no ha iniciado sesión, redirige inmediatamente a la pantalla de login
         window.location.href = 'index.html';
-      } else {
-        const userEmailElem = document.getElementById('user-display-email');
-        if (userEmailElem) userEmailElem.textContent = user.email;
       }
     });
 
@@ -98,8 +307,290 @@
         });
     }
 
+    let dashboardMap = null;
+    let markersLayer = null;
+    let allNestsData = [];
+    let totalRingedCount = 0;
+
+    // CONTADOR DE VISITAS EN TIEMPO REAL
+    function initVisitorTracking() {
+      const visitsRef = db.ref('estadisticas/totalVisits');
+      visitsRef.transaction(currentVisits => {
+        return (currentVisits || 0) + 1;
+      });
+
+      visitsRef.on('value', snapshot => {
+        const count = snapshot.val() || 0;
+        document.getElementById('total-visits-count').textContent = count.toLocaleString();
+      });
+    }
+
+    function initDashboardMap() {
+      if (dashboardMap) return;
+
+      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
+      const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' });
+      const topoLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' });
+
+      const orthoLayer = L.layerGroup([
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri World Imagery' }),
+        L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: 0.8 })
+      ]);
+
+      dashboardMap = L.map('dashboard-map', {
+        center: [39.98, -0.05],
+        zoom: 11,
+        layers: [orthoLayer]
+      });
+
+      const baseMaps = {
+        "Orto Híbrida (Satélite + Etiquetas)": orthoLayer,
+        "Satélite (Esri)": satLayer,
+        "Topográfico": topoLayer,
+        "Streets (OpenStreetMap)": osmLayer
+      };
+
+      L.control.layers(baseMaps).addTo(dashboardMap);
+      markersLayer = L.layerGroup().addTo(dashboardMap);
+    }
+
+    function loadDashboardData() {
+      initDashboardMap();
+      initVisitorTracking();
+
+      db.ref('anillados').on('value', ringSnapshot => {
+        const ringsData = ringSnapshot.val() || {};
+        totalRingedCount = Object.keys(ringsData).length;
+        document.getElementById('stat-ringed').textContent = totalRingedCount;
+
+        db.ref('nidos').on('value', nestSnapshot => {
+          const nestData = nestSnapshot.val();
+          allNestsData = nestData ? Object.values(nestData) : [];
+          renderNestsTableAndMap();
+        });
+      });
+    }
+
+    function renderNestsTableAndMap() {
+      const tbody = document.getElementById('nests-table-body');
+      tbody.innerHTML = '';
+      markersLayer.clearLayers();
+
+      const query = (document.getElementById('searchNestsInput').value || '').trim().toLowerCase();
+
+      const filteredNests = allNestsData.filter(nest => {
+        if (!query) return true;
+        const target = [
+          nest.nestId || '',
+          nest.nestType || '',
+          nest.locationName || '',
+          nest.status || '',
+          nest.maleRing || '',
+          nest.malePvcCode || '',
+          nest.femaleRing || '',
+          nest.femalePvcCode || ''
+        ].join(' ').toLowerCase();
+
+        return target.includes(query);
+      });
+
+      if (filteredNests.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-stone-400">${allNestsData.length === 0 ? 'No hay nidos registrados todavía.' : 'No se encontraron nidos coincidentes con la búsqueda.'}</td></tr>`;
+        document.getElementById('total-nests-badge').textContent = '0 nidos';
+        updateKpis(allNestsData, totalRingedCount);
+        return;
+      }
+
+      document.getElementById('total-nests-badge').textContent = `${filteredNests.length} nidos`;
+      updateKpis(allNestsData, totalRingedCount);
+
+      const latLngs = [];
+
+      filteredNests.forEach(nest => {
+        const maleInfo = nest.maleRing && nest.maleRing !== 'Sin anillar' ? 
+          `<span class="metal-ring-badge">${nest.maleRing}</span> ${nest.malePvcCode ? `<span class="pvc-badge ml-1">${nest.malePvcCode}</span>` : ''}` : 
+          '<span class="italic text-stone-400">Sin anillar</span>';
+        
+        const femaleInfo = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? 
+          `<span class="metal-ring-badge">${nest.femaleRing}</span> ${nest.femalePvcCode ? `<span class="pvc-badge ml-1">${nest.femalePvcCode}</span>` : ''}` : 
+          '<span class="italic text-stone-400">Sin anillar</span>';
+
+        let statusBadgeClass = 'bg-emerald-100 text-emerald-800';
+        let displayStatus = nest.status || 'Activo';
+
+        if (nest.nestType === 'Masia con restos' || nest.status === 'Restos') {
+          statusBadgeClass = 'bg-amber-100 text-amber-800 font-semibold';
+          displayStatus = 'Restos';
+        } else if (nest.status !== 'Activo') {
+          statusBadgeClass = 'bg-rose-100 text-rose-800';
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-stone-50/60 transition-colors';
+        tr.innerHTML = `
+          <td class="p-3 font-extrabold text-stone-900">${nest.nestId}</td>
+          <td class="p-3 font-semibold text-amber-800">${nest.nestType || 'Nido Artificial'}</td>
+          <td class="p-3 font-medium text-stone-600">${nest.locationName || 'Sin paraje'}</td>
+          <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusBadgeClass}">${displayStatus}</span></td>
+          <td class="p-3">${maleInfo}</td>
+          <td class="p-3">${femaleInfo}</td>
+          <td class="p-3 text-right space-x-2">
+            <a href="control.html?edit=${nest.nestId}" class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">Editar</a>
+            <button onclick="deleteNest('${nest.nestId}')" class="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        if (nest.lat && nest.lng) {
+          const isActive = (nest.status === 'Activo');
+          const isMasia = (nest.nestType === 'Masia con restos' || nest.status === 'Restos');
+
+          let circleColor = '#2563eb';
+          if (isMasia) {
+            circleColor = '#d97706';
+          } else if (!isActive) {
+            circleColor = '#9ca3af';
+          }
+
+          const circleMarker = L.circleMarker([nest.lat, nest.lng], {
+            radius: 8,
+            fillColor: circleColor,
+            color: '#ffffff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.95
+          });
+
+          circleMarker.bindPopup(`<b>${nest.nestId}</b><br>Tipo: <i>${nest.nestType || 'Nido Artificial'}</i><br>${nest.locationName || ''}<br>Estado: <span style="font-weight:bold; color:${isMasia ? '#d97706' : (isActive ? 'green' : 'red')}">${displayStatus}</span>`);
+          markersLayer.addLayer(circleMarker);
+          latLngs.push([nest.lat, nest.lng]);
+        }
+      });
+
+      if (latLngs.length > 0) {
+        dashboardMap.fitBounds(latLngs, { padding: [50, 50], maxZoom: 14 });
+      }
+
+      setTimeout(() => {
+        if (dashboardMap) dashboardMap.invalidateSize();
+      }, 300);
+    }
+
+    function updateKpis(nests, ringedCount) {
+      let active = 0;
+      let inactive = 0;
+      let pairs = 0;
+      let chicks = 0;
+
+      nests.forEach(n => {
+        if (n.status === 'Activo') active++;
+        else inactive++;
+
+        if ((n.maleRing && n.maleRing !== 'Sin anillar') || (n.femaleRing && n.femaleRing !== 'Sin anillar')) {
+          pairs++;
+        }
+
+        if (n.fledgedChicks) chicks += parseInt(n.fledgedChicks) || 0;
+      });
+
+      document.getElementById('stat-active').textContent = active;
+      document.getElementById('stat-inactive').textContent = inactive;
+      document.getElementById('stat-pairs').textContent = pairs;
+      document.getElementById('stat-chicks').textContent = chicks;
+      document.getElementById('stat-ringed').textContent = ringedCount;
+    }
+
+    function exportFullExcel() {
+      db.ref('/').once('value', snapshot => {
+        const fullData = snapshot.val();
+        if (!fullData) {
+          alert('La base de datos está vacía.');
+          return;
+        }
+
+        const wb = XLSX.utils.book_new();
+
+        if (fullData.nidos) {
+          const nestsArray = Object.values(fullData.nidos);
+          const wsNests = XLSX.utils.json_to_sheet(nestsArray);
+          XLSX.utils.book_append_sheet(wb, wsNests, "Nidos");
+        }
+
+        if (fullData.anillados) {
+          const ringsArray = Object.values(fullData.anillados);
+          const wsRings = XLSX.utils.json_to_sheet(ringsArray);
+          XLSX.utils.book_append_sheet(wb, wsRings, "Anillados");
+        }
+
+        XLSX.writeFile(wb, `TytoAlba_Backup_${new Date().toISOString().split('T')[0]}.xlsx`);
+      });
+    }
+
+    function importFullExcel(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+
+          let importedData = {};
+
+          workbook.SheetNames.forEach(sheetName => {
+            const jsonSheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            if (sheetName.toLowerCase().includes('nido')) {
+              importedData.nidos = {};
+              jsonSheet.forEach(item => {
+                if (item.nestId) importedData.nidos[item.nestId] = item;
+              });
+            } else if (sheetName.toLowerCase().includes('anillado')) {
+              importedData.anillados = {};
+              jsonSheet.forEach(item => {
+                if (item.metalRing) {
+                  const safeKey = item.metalRing.replace(/[\/\.#$\[\]]/g, '_');
+                  importedData.anillados[safeKey] = item;
+                }
+              });
+            }
+          });
+
+          if (confirm('¿Estás seguro de importar este archivo de Excel? Esto actualizará la información en Firebase.')) {
+            db.ref('/').update(importedData, err => {
+              if (err) {
+                alert('Error al importar el Excel: ' + err.message);
+              } else {
+                alert('¡Datos importados y sincronizados con éxito!');
+                window.location.reload();
+              }
+            });
+          }
+        } catch (ex) {
+          alert('Error al procesar el archivo Excel: ' + ex.message);
+        }
+        event.target.value = '';
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function deleteNest(nestId) {
+      if (confirm(`¿Estás seguro de que deseas eliminar el nido ${nestId}?`)) {
+        db.ref('nidos/' + nestId).remove().then(() => {
+          alert('Nido eliminado correctamente.');
+        }).catch(err => {
+          alert('Error al eliminar: ' + err.message);
+        });
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+      loadDashboardData();
       if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+
+    window.addEventListener('load', () => {
+      if (dashboardMap) dashboardMap.invalidateSize();
     });
   </script>
 </body>
