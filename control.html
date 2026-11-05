@@ -298,6 +298,7 @@
 
     let controlMap = null;
     let selectedMarker = null;
+    let originalNestData = null; // Almacena los datos originales al cargar para comparar cambios
 
     function formatDateToDDMMYYYY(dateStr) {
       if (!dateStr) return '';
@@ -526,6 +527,8 @@
         db.ref('nidos/' + editId).once('value', snapshot => {
           const nest = snapshot.val();
           if (nest) {
+            originalNestData = nest; // Guardamos estado original para comparar cambios
+
             document.getElementById('nestId').value = nest.nestId || '';
             document.getElementById('nestType').value = nest.nestType || 'Nido Artificial';
             document.getElementById('locationName').value = nest.locationName || '';
@@ -556,6 +559,7 @@
           }
         });
       } else {
+        originalNestData = null;
         initControlMap();
         document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('adultDeath').value = 'Ninguno';
@@ -581,11 +585,45 @@
       let currentNotes = notesField.value.trim();
       let newLogEntries = [];
 
-      // Registro automático de edición general del nido
-      const editLogLine = `[${visitDateFormatted}] Nido actualizado / visitado.`;
-      if (!currentNotes.includes(editLogLine)) {
-        newLogEntries.push(editLogLine);
+      // Detección detallada de cambios respecto al estado anterior (si es edición) o registro nuevo
+      let changesDescription = [];
+      const newVisitationState = document.getElementById('visitationState').value;
+      const newCameraState = document.getElementById('hasCamera').value;
+      const newHealth = document.getElementById('healthStatus').value;
+      const newFledged = document.getElementById('fledgedChicks').value;
+      const newStatus = document.getElementById('status').value;
+
+      if (!originalNestData) {
+        changesDescription.push(`Nido registrado (Estado: ${newVisitationState}, Cámara: ${newCameraState})`);
+      } else {
+        if (originalNestData.visitationState !== newVisitationState) {
+          changesDescription.push(`Estado nidada cambiado de "${originalNestData.visitationState}" a "${newVisitationState}"`);
+        }
+        if (originalNestData.hasCamera !== newCameraState) {
+          if (newCameraState === 'Sí') {
+            changesDescription.push(`Se ha colocado / activado cámara de fototrampeo`);
+          } else {
+            changesDescription.push(`Se ha retirado / desactivado la cámara de fototrampeo`);
+          }
+        }
+        if (originalNestData.healthStatus !== newHealth) {
+          changesDescription.push(`Salud general modificada a "${newHealth}"`);
+        }
+        if (parseInt(originalNestData.fledgedChicks || 0) !== parseInt(newFledged)) {
+          changesDescription.push(`Pollos volados actualizados a ${newFledged}`);
+        }
+        if (originalNestData.status !== newStatus) {
+          changesDescription.push(`Estado del nido cambiado a "${newStatus}"`);
+        }
+
+        // Si se editó algo pero no entró en los campos anteriores, dejamos una nota genérica de actualización
+        if (changesDescription.length === 0) {
+          changesDescription.push(`Nido visitado / actualizado`);
+        }
       }
+
+      const summaryLine = `[${visitDateFormatted}] ${changesDescription.join(' | ')}.`;
+      newLogEntries.push(summaryLine);
 
       if (adultDeathStatus !== 'Ninguno') {
         let adultInfoText = `Baja de adulto: ${adultDeathStatus}`;
@@ -666,7 +704,7 @@
         if (err) {
           alert('Error al guardar el nido: ' + err.message);
         } else {
-          alert('¡Nido guardado, cambios y fecha de edición registrados en observaciones con éxito!');
+          alert('¡Nido guardado, cambios específicos (cámara, huevos/pollos, etc.) registrados en observaciones con éxito!');
           window.location.href = 'index.html';
         }
       });
