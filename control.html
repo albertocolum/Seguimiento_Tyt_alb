@@ -132,7 +132,7 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Paraje / Ubicación *</label>
-              <input type="text" id="locationName" required placeholder="Ej. Cabanes (Comunidad Valenciana)" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+              <input type="text" id="locationName" required placeholder="Obteniendo automáticamente..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Estado Actual *</label>
@@ -297,6 +297,36 @@
     let controlMap = null;
     let selectedMarker = null;
 
+    // GEOCODIFICACIÓN INVERSA (Obtener localidad desde coordenadas)
+    function reverseGeocode(lat, lng) {
+      const locInput = document.getElementById('locationName');
+      locInput.placeholder = "Buscando ubicación...";
+
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.address) {
+            const addr = data.address;
+            const place = addr.locality || addr.town || addr.village || addr.hamlet || addr.suburb || addr.city || '';
+            const state = addr.province || addr.state || '';
+            
+            let name = place;
+            if (state && place) {
+              name += ` (${state})`;
+            } else if (state) {
+              name = state;
+            }
+
+            if (name) {
+              locInput.value = name;
+            }
+          }
+        })
+        .catch(err => {
+          console.error("Error en geocodificación inversa:", err);
+        });
+    }
+
     function initControlMap(lat = 39.98, lng = -0.05) {
       if (controlMap) {
         controlMap.setView([lat, lng], 13);
@@ -321,14 +351,19 @@
         document.getElementById('lat').value = clickedLat;
         document.getElementById('lng').value = clickedLng;
 
+        reverseGeocode(clickedLat, clickedLng);
+
         if (selectedMarker) {
           selectedMarker.setLatLng(e.latlng);
         } else {
           selectedMarker = L.marker(e.latlng, { draggable: true }).addTo(controlMap);
           selectedMarker.on('dragend', function(event) {
             const pos = event.target.getLatLng();
-            document.getElementById('lat').value = pos.lat.toFixed(6);
-            document.getElementById('lng').value = pos.lng.toFixed(6);
+            const dragLat = pos.lat.toFixed(6);
+            const dragLng = pos.lng.toFixed(6);
+            document.getElementById('lat').value = dragLat;
+            document.getElementById('lng').value = dragLng;
+            reverseGeocode(dragLat, dragLng);
           });
         }
       });
