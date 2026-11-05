@@ -77,13 +77,11 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // --- PROTECCIÓN DE SEGURIDAD ---
+    // --- PROTECCIÓN DE SEGURIDAD (REDIRECCIÓN A INDEX.HTML SI NO HAY SESIÓN) ---
     auth.onAuthStateChanged(user => {
       if (!user) {
-        // Si no está logueado, redirige a la pantalla de login (index.html)
         window.location.href = 'index.html';
       } else {
-        // Muestra el correo del usuario en la barra superior
         const userEmailElem = document.getElementById('user-display-email');
         if (userEmailElem) userEmailElem.textContent = user.email;
       }
