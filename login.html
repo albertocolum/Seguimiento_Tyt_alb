@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tyto Alba | Acceso al Sistema</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- LIBRERÍAS DE FIREBASE -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <!-- LIBRERÍA DE EMAILJS -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function() {
+      emailjs.init("ef5v5aGMnU4LJTrbg");
+    })();
+  </script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#1e382b',
+              hover: '#162b20',
+              accent: '#c88a4b',
+              accentHover: '#b5793e',
+              bg: '#f4f3ed',
+              border: '#e5e3d7'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-image: linear-gradient(rgba(30, 41, 59, 0.55), rgba(30, 41, 59, 0.55)), url('https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/fondo.jpg');
+      background-attachment: fixed;
+      background-position: center 25%;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+  </style>
+</head>
+<body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between items-center p-4">
+
+  <div class="w-full max-w-md my-auto space-y-6">
+
+    <!-- CABECERA CON LOGO -->
+    <div class="text-center space-y-3">
+      <div class="w-20 h-20 mx-auto rounded-full bg-white p-1 border-4 border-emerald-500/30 flex items-center justify-center overflow-hidden shadow-xl">
+        <img src="logo.png" alt="Grupo Naturalista GER" class="w-full h-full object-cover rounded-full" onerror="this.src='https://raw.githubusercontent.com/albertocolum/Seguimiento_Tyt_alb/main/logo_ger.png'">
+      </div>
+      <div>
+        <h1 class="text-2xl font-extrabold text-white tracking-tight">Tyto Alba</h1>
+        <p class="text-xs text-emerald-400 font-semibold tracking-wide">GER (Grup d'Estudi i Protecció dels Rapinyaires)</p>
+      </div>
+    </div>
+
+    <!-- TARJETA DE LOGIN -->
+    <div class="bg-white/95 backdrop-blur-md rounded-2xl border border-stone-200 shadow-2xl p-6 sm:p-8 space-y-6">
+      
+      <div class="border-b border-stone-200 pb-3">
+        <h2 class="text-lg font-bold text-stone-900 flex items-center gap-2">
+          <i data-lucide="lock" class="w-5 h-5 text-brand-accent"></i> Iniciar Sesión
+        </h2>
+        <p class="text-xs text-stone-500 mt-0.5">Accede con tus credenciales autorizadas.</p>
+      </div>
+
+      <!-- MENSAJES DE ESTADO DE LOGIN -->
+      <div id="login-alert" class="hidden p-3 rounded-xl text-xs font-semibold flex items-center gap-2"></div>
+
+      <!-- FORMULARIO DE ACCESO -->
+      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+        
+        <div>
+          <label class="block text-xs font-bold text-stone-700 mb-1">Correo Electrónico</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-4 h-4 text-stone-400 absolute left-3 top-3"></i>
+            <input type="email" id="email" required placeholder="usuario@ejemplo.com" class="w-full pl-9 pr-3 py-2 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-brand-accent focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-bold text-stone-700">Contraseña</label>
+            <button type="button" onclick="sendPasswordReset()" class="text-[11px] font-semibold text-brand-accent hover:underline">¿Olvidaste la contraseña?</button>
+          </div>
+          <div class="relative">
+            <i data-lucide="key-round" class="w-4 h-4 text-stone-400 absolute left-3 top-3"></i>
+            <input type="password" id="password" required placeholder="••••••••" class="w-full pl-9 pr-9 py-2 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-brand-accent focus:outline-none">
+            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600">
+              <i id="togglePassIcon" data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="loginBtn" class="w-full bg-brand-dark hover:bg-brand-hover text-white font-semibold py-2.5 rounded-xl transition-all shadow-md flex justify-center items-center gap-2 text-xs">
+          <i data-lucide="log-in" class="w-4 h-4"></i> Entrar al Sistema
+        </button>
+
+      </form>
+
+      <!-- BOTÓN PARA ABRIR EL MODAL DE CONTACTO -->
+      <div class="border-t border-stone-200 pt-4 text-center">
+        <p class="text-xs text-stone-500">¿No tienes cuenta de acceso?</p>
+        <button type="button" onclick="openAdminModal()" class="mt-1 text-xs font-bold text-brand-accent hover:text-brand-accentHover transition-all inline-flex items-center gap-1.5">
+          <i data-lucide="user-plus" class="w-4 h-4"></i> Contactar con el administrador
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- MODAL DE CONTACTO CON EL ADMINISTRADOR -->
+  <div id="adminModal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl border border-stone-200 w-full max-w-md p-6 space-y-4">
+      
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-base font-bold text-stone-900 flex items-center gap-2">
+          <i data-lucide="message-square" class="w-5 h-5 text-brand-accent"></i> Solicitud de Acceso
+        </h3>
+        <button type="button" onclick="closeAdminModal()" class="text-stone-400 hover:text-stone-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="modal-alert" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
+
+      <form id="contactAdminForm" onsubmit="handleSendAdminRequest(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-stone-700 mb-1">Tu Nombre Completo *</label>
+          <input type="text" id="reqName" required placeholder="Ej. Alberto Colom" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-stone-700 mb-1">Tu Correo Electrónico *</label>
+          <input type="email" id="reqEmail" required placeholder="tuemail@ejemplo.com" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-stone-700 mb-1">Mensaje o Motivo *</label>
+          <textarea id="reqMessage" required rows="3" placeholder="Hola, solicito acceso al sistema de seguimiento de nidos..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeAdminModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-stone-100 text-stone-600 hover:bg-stone-200 transition-all">Cancelar</button>
+          <button type="submit" id="sendReqBtn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-brand-accent hover:bg-brand-accentHover text-white transition-all shadow-sm flex items-center gap-1.5">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i> Enviar Solicitud
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <footer class="text-xs text-white/70 font-medium">Tyto Alba Monitoreo — GER ©</footer>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDgcdamrQ_4QbU-dZK-j2K-8GHz2U_JmVw",
+      authDomain: "tytoalbamonitoreo.firebaseapp.com",
+      databaseURL: "https://tytoalbamonitoreo-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "tytoalbamonitoreo",
+      storageBucket: "tytoalbamonitoreo.firebasestorage.app",
+      messagingSenderId: "770240286093",
+      appId: "1:770240286093:web:5d389a48e7580face9c1c4"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        window.location.href = 'index.html';
+      }
+    });
+
+    function togglePasswordVisibility() {
+      const passInput = document.getElementById('password');
+      const icon = document.getElementById('togglePassIcon');
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        icon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        passInput.type = 'password';
+        icon.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    }
+
+    function showAlert(msg, isError = true) {
+      const alertBox = document.getElementById('login-alert');
+      alertBox.textContent = msg;
+      alertBox.classList.remove('hidden', 'bg-rose-100', 'text-rose-800', 'bg-emerald-100', 'text-emerald-800');
+      if (isError) {
+        alertBox.classList.add('bg-rose-100', 'text-rose-800');
+      } else {
+        alertBox.classList.add('bg-emerald-100', 'text-emerald-800');
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('loginBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Verificando...';
+      lucide.createIcons();
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          showAlert('¡Acceso correcto! Redirigiendo...', false);
+          setTimeout(() => { window.location.href = 'index.html'; }, 800);
+        })
+        .catch(err => {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> Entrar al Sistema';
+          lucide.createIcons();
+          showAlert('El usuario o la contraseña no son válidos.');
+        });
+    }
+
+    function sendPasswordReset() {
+      const email = document.getElementById('email').value.trim();
+      if (!email) {
+        showAlert('Introduce tu correo en el campo de texto para enviarte el enlace de recuperación.');
+        return;
+      }
+      auth.sendPasswordResetEmail(email)
+        .then(() => {
+          showAlert('Se ha enviado un correo con instrucciones para restablecer tu contraseña.', false);
+        })
+        .catch(err => {
+          showAlert('Error al solicitar restablecimiento: ' + err.message);
+        });
+    }
+
+    function openAdminModal() {
+      document.getElementById('adminModal').classList.remove('hidden');
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+      document.getElementById('contactAdminForm').reset();
+      document.getElementById('modal-alert').classList.add('hidden');
+    }
+
+    function handleSendAdminRequest(e) {
+      e.preventDefault();
+      const name = document.getElementById('reqName').value.trim();
+      const email = document.getElementById('reqEmail').value.trim();
+      const message = document.getElementById('reqMessage').value.trim();
+      const modalAlert = document.getElementById('modal-alert');
+      const btn = document.getElementById('sendReqBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = 'Enviando...';
+
+      const requestData = {
+        name: name,
+        email: email,
+        message: message,
+        date: new Date().toISOString(),
+        targetAdmin: 'almarero@gmail.com'
+      };
+
+      // 1. Guardar en Firebase Realtime Database
+      db.ref('solicitudes_acceso').push(requestData, err => {
+        if (err) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i> Enviar Solicitud';
+          lucide.createIcons();
+          modalAlert.classList.remove('hidden');
+          modalAlert.classList.add('bg-rose-100', 'text-rose-800');
+          modalAlert.textContent = 'Error al guardar la solicitud: ' + err.message;
+          return;
+        }
+
+        // 2. Enviar notificación por correo con EmailJS a almarero@gmail.com
+        const templateParams = {
+          to_email: 'almarero@gmail.com',
+          from_name: name,
+          from_email: email,
+          message: message
+        };
+
+        emailjs.send('service_2o87icf', 'template_36ze9ur', templateParams)
+          .then(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i> Enviar Solicitud';
+            lucide.createIcons();
+            modalAlert.classList.remove('hidden');
+            modalAlert.classList.add('bg-emerald-100', 'text-emerald-800');
+            modalAlert.textContent = '¡Solicitud enviada a almarero@gmail.com!';
+            setTimeout(() => { closeAdminModal(); }, 1800);
+          })
+          .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i> Enviar Solicitud';
+            lucide.createIcons();
+            modalAlert.classList.remove('hidden');
+            modalAlert.classList.add('bg-emerald-100', 'text-emerald-800');
+            modalAlert.textContent = '¡Solicitud registrada correctamente en la base de datos!';
+            setTimeout(() => { closeAdminModal(); }, 1800);
+          });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
