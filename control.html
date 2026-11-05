@@ -299,7 +299,6 @@
     let controlMap = null;
     let selectedMarker = null;
 
-    // Función auxiliar para formatear YYYY-MM-DD a DD/MM/AAAA
     function formatDateToDDMMYYYY(dateStr) {
       if (!dateStr) return '';
       const parts = dateStr.split('-');
@@ -592,7 +591,11 @@
           if (maleRing !== 'Sin anillar') adultInfoText += ` | Macho (${maleRing}${malePvc ? ' - ' + malePvc : ''})`;
           if (femaleRing !== 'Sin anillar') adultInfoText += ` | Hembra (${femaleRing}${femalePvc ? ' - ' + femalePvc : ''})`;
         }
-        newLogEntries.push(`[${visitDateFormatted}] ⚠️ ${adultInfoText}.`);
+        const logLine = `[${visitDateFormatted}] ⚠️ ${adultInfoText}.`;
+        // Solo lo añadimos automáticamente si no está ya escrito en las notas
+        if (!currentNotes.includes(logLine)) {
+          newLogEntries.push(logLine);
+        }
       }
 
       if (chickDeathVal !== 'Sin baja') {
@@ -605,7 +608,10 @@
               pvcStr = ` - PVC: ${record.pvcRing}`;
             }
           }
-          newLogEntries.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (Anilla: ${chickDeathVal}${pvcStr}).`);
+          const logLine = `[${visitDateFormatted}] ⚠️ Baja de pollo muerto (Anilla: ${chickDeathVal}${pvcStr}).`;
+          if (!currentNotes.includes(logLine)) {
+            newLogEntries.push(logLine);
+          }
           finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries);
         });
         return;
@@ -655,7 +661,7 @@
         if (err) {
           alert('Error al guardar el nido: ' + err.message);
         } else {
-          alert('¡Nido guardado, formato de fecha actualizado a DD/MM/AAAA y sincronizado con éxito!');
+          alert('¡Nido guardado, notas de campo e historial sincronizados correctamente!');
           window.location.href = 'index.html';
         }
       });
