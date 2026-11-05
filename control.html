@@ -196,17 +196,17 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Baja de Pollo por Mortalidad (Muerto)</label>
-              <select id="chickDeathRing" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold text-rose-700">
+              <select id="chickDeathRing" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-rose-600">
                 <option value="Sin baja">Sin baja (Ningún pollo muerto)</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Adulto Muerto / Incidencias</label>
-              <select id="adultDeath" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold text-rose-700">
+              <select id="adultDeath" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-rose-600">
                 <option value="Ninguno">Ninguno</option>
-                <option value="Macho muerto">Macho muerto</option>
-                <option value="Hembra muerta">Hembra muerta</option>
-                <option value="Ambos muertos">Ambos muertos</option>
+                <option value="Macho muerto">⚠️ Macho muerto</option>
+                <option value="Hembra muerta">⚠️ Hembra muerta</option>
+                <option value="Ambos muertos">⚠️ Ambos muertos</option>
               </select>
             </div>
             <div>
@@ -297,7 +297,6 @@
     let controlMap = null;
     let selectedMarker = null;
 
-    // GEOCODIFICACIÓN INVERSA (Obtener localidad desde coordenadas)
     function reverseGeocode(lat, lng) {
       const locInput = document.getElementById('locationName');
       locInput.placeholder = "Buscando ubicación...";
@@ -378,24 +377,30 @@
       const currentNest = document.getElementById('nestId').value.trim().toUpperCase();
       const select = document.getElementById('chickDeathRing');
 
-      db.ref('anillados').once('value', snapshot => {
-        const data = snapshot.val() || {};
-        select.innerHTML = '<option value="Sin baja">Sin baja (Ningún pollo muerto)</option>';
+      db.ref('nidos/' + currentNest).once('value', nestSnap => {
+        const nestData = nestSnap.val() || {};
+        const alreadyDeadRing = nestData.chickDeathRing || 'Sin baja';
 
-        Object.values(data).forEach(r => {
-          if (r.birdAge === 'Pollo') {
-            const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
-            if (isThisNest) {
-              const label = `⚠️ MUERTO: Pollo Anilla [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
-              const opt = document.createElement('option');
-              opt.value = r.metalRing;
-              opt.textContent = label;
-              select.appendChild(opt);
+        db.ref('anillados').once('value', snapshot => {
+          const data = snapshot.val() || {};
+          select.innerHTML = '<option value="Sin baja">Sin baja (Ningún pollo muerto)</option>';
+
+          Object.values(data).forEach(r => {
+            if (r.birdAge === 'Pollo') {
+              const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
+              // Si ya está muerto en este nido o no está seleccionado actualmente, lo filtramos (desaparece de la lista de vivos)
+              if (isThisNest && r.metalRing !== alreadyDeadRing) {
+                const label = `⚠️ MUERTO: Pollo Anilla [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
+                const opt = document.createElement('option');
+                opt.value = r.metalRing;
+                opt.textContent = label;
+                select.appendChild(opt);
+              }
             }
-          }
-        });
+          });
 
-        select.value = (selectedVal && selectedVal !== '') ? selectedVal : 'Sin baja';
+          select.value = (selectedVal && selectedVal !== '') ? selectedVal : alreadyDeadRing;
+        });
       });
     }
 
@@ -566,10 +571,10 @@
       let newLogEntries = [];
 
       if (adultDeathStatus !== 'Ninguno') {
-        newLogEntries.push(`[${visitDate}] Baja de adulto: ${adultDeathStatus}.`);
+        newLogEntries.push(`[${visitDate}] ⚠️ Baja de adulto: ${adultDeathStatus}.`);
       }
       if (chickDeathVal !== 'Sin baja') {
-        newLogEntries.push(`[${visitDate}] Baja de pollo muerto (Anilla: ${chickDeathVal}).`);
+        newLogEntries.push(`[${visitDate}] ⚠️ Baja de pollo muerto (Anilla: ${chickDeathVal}).`);
       }
 
       if (newLogEntries.length > 0) {
