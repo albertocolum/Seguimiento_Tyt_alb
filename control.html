@@ -581,6 +581,12 @@
       let currentNotes = notesField.value.trim();
       let newLogEntries = [];
 
+      // Registro automático de edición general del nido
+      const editLogLine = `[${visitDateFormatted}] Nido actualizado / visitado.`;
+      if (!currentNotes.includes(editLogLine)) {
+        newLogEntries.push(editLogLine);
+      }
+
       if (adultDeathStatus !== 'Ninguno') {
         let adultInfoText = `Baja de adulto: ${adultDeathStatus}`;
         if (adultDeathStatus.includes('Macho') && maleRing !== 'Sin anillar') {
@@ -592,7 +598,6 @@
           if (femaleRing !== 'Sin anillar') adultInfoText += ` | Hembra (${femaleRing}${femalePvc ? ' - ' + femalePvc : ''})`;
         }
         const logLine = `[${visitDateFormatted}] ⚠️ ${adultInfoText}.`;
-        // Solo lo añadimos automáticamente si no está ya escrito en las notas
         if (!currentNotes.includes(logLine)) {
           newLogEntries.push(logLine);
         }
@@ -661,7 +666,7 @@
         if (err) {
           alert('Error al guardar el nido: ' + err.message);
         } else {
-          alert('¡Nido guardado, notas de campo e historial sincronizados correctamente!');
+          alert('¡Nido guardado, cambios y fecha de edición registrados en observaciones con éxito!');
           window.location.href = 'index.html';
         }
       });
