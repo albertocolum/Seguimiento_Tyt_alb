@@ -299,6 +299,16 @@
     let controlMap = null;
     let selectedMarker = null;
 
+    // Función auxiliar para formatear YYYY-MM-DD a DD/MM/AAAA
+    function formatDateToDDMMYYYY(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return dateStr;
+    }
+
     function reverseGeocode(lat, lng) {
       const locInput = document.getElementById('locationName');
       locInput.placeholder = "Buscando ubicación...";
@@ -405,7 +415,8 @@
       const container = document.getElementById('nest-history-container');
       const deadChickRing = document.getElementById('chickDeathRing').value;
       const adultDeathStatus = document.getElementById('adultDeath').value;
-      const visitDate = document.getElementById('layDate').value || new Date().toISOString().split('T')[0];
+      const rawVisitDate = document.getElementById('layDate').value || new Date().toISOString().split('T')[0];
+      const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
 
       if (!nestId) {
         container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>';
@@ -432,7 +443,7 @@
                 ${mPvc ? `<span class="pvc-badge text-xs">${mPvc}</span>` : ''}
               </div>
               <div class="text-stone-500 text-xs font-medium">
-                Fecha: <strong class="text-stone-800">${visitDate}</strong> | 
+                Fecha: <strong class="text-stone-800">${visitDateFormatted}</strong> | 
                 Sexo: <strong class="text-stone-800">Macho</strong> | 
                 Peso: <strong class="text-stone-800">-</strong>
               </div>
@@ -449,7 +460,7 @@
                 ${fPvc ? `<span class="pvc-badge text-xs">${fPvc}</span>` : ''}
               </div>
               <div class="text-stone-500 text-xs font-medium">
-                Fecha: <strong class="text-stone-800">${visitDate}</strong> | 
+                Fecha: <strong class="text-stone-800">${visitDateFormatted}</strong> | 
                 Sexo: <strong class="text-stone-800">Hembra</strong> | 
                 Peso: <strong class="text-stone-800">-</strong>
               </div>
@@ -490,7 +501,7 @@
                 ${r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : ''}
               </div>
               <div class="text-stone-500 text-xs font-medium">
-                Fecha: <strong class="text-stone-800">${r.ringDate || '-'}</strong> | 
+                Fecha: <strong class="text-stone-800">${r.ringDate ? formatDateToDDMMYYYY(r.ringDate) : '-'}</strong> | 
                 Sexo: <strong class="text-stone-800">${r.sex || 'Desconocido'}</strong> | 
                 Peso: <strong class="text-stone-800">${r.weight ? r.weight + 'g' : '-'}</strong>
               </div>
@@ -557,7 +568,8 @@
     function saveNest(e) {
       e.preventDefault();
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
-      const visitDate = document.getElementById('layDate').value;
+      const rawVisitDate = document.getElementById('layDate').value;
+      const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
       const adultDeathStatus = document.getElementById('adultDeath').value;
       const chickDeathVal = document.getElementById('chickDeathRing').value;
       const notesField = document.getElementById('notes');
@@ -580,7 +592,7 @@
           if (maleRing !== 'Sin anillar') adultInfoText += ` | Macho (${maleRing}${malePvc ? ' - ' + malePvc : ''})`;
           if (femaleRing !== 'Sin anillar') adultInfoText += ` | Hembra (${femaleRing}${femalePvc ? ' - ' + femalePvc : ''})`;
         }
-        newLogEntries.push(`[${visitDate}] ⚠️ ${adultInfoText}.`);
+        newLogEntries.push(`[${visitDateFormatted}] ⚠️ ${adultInfoText}.`);
       }
 
       if (chickDeathVal !== 'Sin baja') {
@@ -593,7 +605,7 @@
               pvcStr = ` - PVC: ${record.pvcRing}`;
             }
           }
-          newLogEntries.push(`[${visitDate}] ⚠️ Baja de pollo muerto (Anilla: ${chickDeathVal}${pvcStr}).`);
+          newLogEntries.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (Anilla: ${chickDeathVal}${pvcStr}).`);
           finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries);
         });
         return;
@@ -643,7 +655,7 @@
         if (err) {
           alert('Error al guardar el nido: ' + err.message);
         } else {
-          alert('¡Nido guardado, bajas con su PVC registradas en observaciones y sincronizado con éxito!');
+          alert('¡Nido guardado, formato de fecha actualizado a DD/MM/AAAA y sincronizado con éxito!');
           window.location.href = 'index.html';
         }
       });
