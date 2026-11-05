@@ -422,7 +422,9 @@
         let html = '';
 
         const mRing = document.getElementById('maleRing').value.trim();
+        const mPvc = document.getElementById('malePvcCode').value.trim();
         const fRing = document.getElementById('femaleRing').value.trim();
+        const fPvc = document.getElementById('femalePvcCode').value.trim();
 
         if ((adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') && mRing && mRing !== 'Sin anillar') {
           html += `
@@ -430,6 +432,7 @@
               <div class="flex items-center gap-3">
                 <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">⚠️ Adulto Fallecido (Macho)</span>
                 <span class="metal-ring-badge-dead text-sm">${mRing}</span>
+                ${mPvc ? `<span class="pvc-badge text-xs">${mPvc}</span>` : ''}
               </div>
               <div class="text-stone-500 text-xs font-medium">
                 Fecha: <strong class="text-stone-800">${visitDate}</strong> | 
@@ -446,6 +449,7 @@
               <div class="flex items-center gap-3">
                 <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">⚠️ Adulto Fallecido (Hembra)</span>
                 <span class="metal-ring-badge-dead text-sm">${fRing}</span>
+                ${fPvc ? `<span class="pvc-badge text-xs">${fPvc}</span>` : ''}
               </div>
               <div class="text-stone-500 text-xs font-medium">
                 Fecha: <strong class="text-stone-800">${visitDate}</strong> | 
@@ -570,22 +574,48 @@
       let newLogEntries = [];
 
       if (adultDeathStatus !== 'Ninguno') {
-        newLogEntries.push(`[${visitDate}] ⚠️ Baja de adulto: ${adultDeathStatus}.`);
-      }
-      if (chickDeathVal !== 'Sin baja') {
-        newLogEntries.push(`[${visitDate}] ⚠️ Baja de pollo muerto (Anilla: ${chickDeathVal}).`);
+        let adultInfoText = `Baja de adulto: ${adultDeathStatus}`;
+        if (adultDeathStatus.includes('Macho') && maleRing !== 'Sin anillar') {
+          adultInfoText += ` (Anilla: ${maleRing}${malePvc ? ' - PVC: ' + malePvc : ''})`;
+        } else if (adultDeathStatus.includes('Hembra') && femaleRing !== 'Sin anillar') {
+          adultInfoText += ` (Anilla: ${femaleRing}${femalePvc ? ' - PVC: ' + femalePvc : ''})`;
+        } else if (adultDeathStatus.includes('Ambos')) {
+          if (maleRing !== 'Sin anillar') adultInfoText += ` | Macho (${maleRing}${malePvc ? ' - ' + malePvc : ''})`;
+          if (femaleRing !== 'Sin anillar') adultInfoText += ` | Hembra (${femaleRing}${femalePvc ? ' - ' + femalePvc : ''})`;
+        }
+        newLogEntries.push(`[${visitDate}] ⚠️ ${adultInfoText}.`);
       }
 
+      if (chickDeathVal !== 'Sin baja') {
+        db.ref('anillados').orderByChild('metalRing').equalTo(chickDeathVal).once('value', snap => {
+          let pvcStr = '';
+          const ringDataObj = snap.val();
+          if (ringDataObj) {
+            const record = Object.values(ringDataObj)[0];
+            if (record && record.pvcRing) {
+              pvcStr = ` - PVC: ${record.pvcRing}`;
+            }
+          }
+          newLogEntries.push(`[${visitDate}] ⚠️ Baja de pollo muerto (Anilla: ${chickDeathVal}${pvcStr}).`);
+          finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries);
+        });
+        return;
+      }
+
+      finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries);
+    }
+
+    function finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries) {
       if (newLogEntries.length > 0) {
         const logText = newLogEntries.join('\n');
         currentNotes = currentNotes ? currentNotes + '\n' + logText : logText;
       }
 
-      if (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') {
+      if (document.getElementById('adultDeath').value === 'Macho muerto' || document.getElementById('adultDeath').value === 'Ambos muertos') {
         maleRing = 'Sin anillar';
         malePvc = '';
       }
-      if (adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') {
+      if (document.getElementById('adultDeath').value === 'Hembra muerta' || document.getElementById('adultDeath').value === 'Ambos muertos') {
         femaleRing = 'Sin anillar';
         femalePvc = '';
       }
@@ -597,11 +627,11 @@
         status: document.getElementById('status').value,
         lat: parseFloat(document.getElementById('lat').value) || null,
         lng: parseFloat(document.getElementById('lng').value) || null,
-        layDate: visitDate,
+        layDate: document.getElementById('layDate').value,
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
-        chickDeathRing: chickDeathVal,
-        adultDeath: adultDeathStatus,
+        chickDeathRing: document.getElementById('chickDeathRing').value,
+        adultDeath: document.getElementById('adultDeath').value,
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         hasCamera: document.getElementById('hasCamera').value,
         maleRing: maleRing,
@@ -616,7 +646,7 @@
         if (err) {
           alert('Error al guardar el nido: ' + err.message);
         } else {
-          alert('¡Nido guardado, bajas registradas en observaciones y sincronizado con éxito!');
+          alert('¡Nido guardado, bajas con su PVC registradas en observaciones y sincronizado con éxito!');
           window.location.href = 'index.html';
         }
       });
@@ -626,6 +656,8 @@
       checkEditMode();
       document.getElementById('maleRing').addEventListener('input', updateNestHistoryPreview);
       document.getElementById('femaleRing').addEventListener('input', updateNestHistoryPreview);
+      document.getElementById('malePvcCode').addEventListener('input', updateNestHistoryPreview);
+      document.getElementById('femalePvcCode').addEventListener('input', updateNestHistoryPreview);
       document.getElementById('layDate').addEventListener('change', updateNestHistoryPreview);
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
