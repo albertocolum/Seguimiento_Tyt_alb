@@ -56,10 +56,12 @@
       font-family: monospace;
       display: inline-block;
     }
-    textarea {
-      resize: none;
-      overflow-y: hidden;
-      min-height: 80px;
+    /* Estilo de área de texto fija con scroll vertical clásico */
+    textarea.fixed-textarea {
+      resize: vertical;
+      overflow-y: auto;
+      height: 120px;
+      max-height: 250px;
     }
   </style>
 </head>
@@ -252,10 +254,10 @@
           </div>
         </div>
 
-        <!-- OBSERVACIONES DE CAMPO (AUTO-AJUSTABLE) -->
+        <!-- OBSERVACIONES DE CAMPO -->
         <div class="space-y-2 pt-2">
-          <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo (Auto-ajustable)</label>
-          <textarea id="notes" oninput="autoResizeTextarea(this)" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
+          <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo</label>
+          <textarea id="notes" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white fixed-textarea"></textarea>
         </div>
 
         <!-- HISTORIAL CRONOLÓGICO DE ANILLADOS Y ADULTOS EN ESTE NIDO -->
@@ -366,11 +368,6 @@
           });
         }
       });
-    }
-
-    function autoResizeTextarea(textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = (textarea.scrollHeight + 4) + 'px';
     }
 
     function loadChicksDropdown(selectedVal = 'Sin baja') {
