@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Registro de Anillamiento y Biometría</title>
+  <title>Tyto Alba | Control de Anillados</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   
   <!-- LIBRERÍAS DE FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <script>
@@ -31,11 +32,9 @@
       background-repeat: no-repeat;
       background-size: cover;
     }
-    textarea#biometricNotes {
-      resize: none;
-      overflow-y: hidden;
-      min-height: 70px;
-    }
+    .metal-ring-badge { color: #0284c7; font-weight: 700; font-family: monospace; }
+    .metal-ring-badge-dead { color: #e11d48; font-weight: 700; font-family: monospace; }
+    .pvc-badge { background-color: #000000; color: #ffffff; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-family: monospace; display: inline-block; }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
@@ -57,15 +56,18 @@
       </div>
 
       <nav class="flex items-center space-x-1.5 sm:space-x-2">
-        <a href="index.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
-          <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Dashboard</span>
+        <a href="dashboard.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Panel</span>
         </a>
         <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span>
         </a>
-        <a href="anillados.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm">
-          <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
+        <a href="anillados.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-brand-accent text-white shadow-sm">
+          <i data-lucide="tag" class="w-4 h-4 text-white"></i><span>Anillados</span>
         </a>
+        <button onclick="cerrarSesion()" class="bg-rose-700/80 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2.5 rounded-xl transition-all shadow flex items-center gap-1.5 ml-2">
+          <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">Salir</span>
+        </button>
       </nav>
 
     </div>
@@ -74,184 +76,47 @@
   <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     
-    <!-- CABECERA DE LA SECCIÓN -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-stone-900 relative overflow-hidden shadow-lg border border-brand-border flex justify-between items-center">
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-dark">Registro de Anillamiento y Biometría</h1>
-        <p class="text-stone-500 text-xs sm:text-sm mt-1">Asocie las capturas y medidas biométricas de adultos y pollos a sus respectivos nidos.</p>
-      </div>
-      <span id="form-mode-badge" class="hidden bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full shrink-0">Editando Registro</span>
-    </div>
-
-    <!-- TARJETA DEL FORMULARIO DE REGISTRO -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-6">
-      
-      <form id="ringForm" onsubmit="saveRingRecord(event)" class="space-y-6">
-        
-        <!-- 1. PROCEDENCIA DE LA CAPTURA -->
-        <div class="space-y-3">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
-            <i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i> 1. Procedencia de la Captura
-          </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Nido de Procedencia *</label>
-              <select id="nestId" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold uppercase">
-                <option value="">-- Seleccionar nido asociado --</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Anillamiento *</label>
-              <input type="date" id="ringDate" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Edad / Categoría *</label>
-              <select id="birdAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Pollo">Pollo</option>
-                <option value="Adulto">Adulto</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. MARCAS E IDENTIFICACIÓN -->
-        <div class="space-y-3">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
-            <i data-lucide="tag" class="w-4 h-4 text-brand-accent"></i> 2. Marcas e Identificación
-          </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica (Aranzadi / CGB) *</label>
-              <input type="text" id="metalRing" required placeholder="Ej. G-12345 o NX-987" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase font-bold bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Anilla PVC / Color (Opcional)</label>
-              <input type="text" id="pvcRing" placeholder="Ej. A-12 (NEGRO/BLANCO)" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. BIOMETRÍA CIENTÍFICA -->
-        <div class="space-y-3">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
-            <i data-lucide="activity" class="w-4 h-4 text-brand-accent"></i> 3. Biometría Científica
-          </h3>
-          <div class="grid grid-cols-2 sm:grid-cols-6 gap-3">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Sexo</label>
-              <select id="sex" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Desconocido">Desconocido</option>
-                <option value="Macho">Macho</option>
-                <option value="Hembra">Hembra</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Edad EURING</label>
-              <select id="euringAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="1">1: Pollo en el nido</option>
-                <option value="2">2: Capaz de volar</option>
-                <option value="3">3: Primer año de calendario</option>
-                <option value="4">4: Al menos en su 2º año de calendario</option>
-                <option value="5">5: Segundo año de calendario</option>
-                <option value="6">6: Al menos en su 3º año de calendario</option>
-                <option value="7">7: Tercer año de calendario</option>
-                <option value="8">8: Al menos en su 4º año de calendario</option>
-                <option value="9">9: Cuarto año de calendario</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Ala Max (mm)</label>
-              <input type="number" step="0.1" id="maxWing" placeholder="Ej. 290" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">P8 (mm)</label>
-              <input type="number" step="0.1" id="p8Length" placeholder="Ej. 185" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Tarso (mm)</label>
-              <input type="number" step="0.1" id="tarsus" placeholder="Ej. 62.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Peso (gramos)</label>
-              <input type="number" step="0.1" id="weight" placeholder="Ej. 320.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-            </div>
-          </div>
-
-          <div class="pt-2">
-            <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones Biométricas / Estado Físico</label>
-            <textarea id="biometricNotes" oninput="autoResizeTextarea(this)" placeholder="Condición corporal, muda, desarrollo de plumas..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white"></textarea>
-          </div>
-        </div>
-
-        <div class="flex justify-end pt-3">
-          <button type="submit" class="bg-[#1e382b] hover:bg-[#162b20] text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-2 text-xs">
-            <i data-lucide="save" class="w-4 h-4"></i><span>Guardar Registro de Anillamiento</span>
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- TARJETA DE HISTORIAL CON TABLA, BUSCADOR Y PAGINACIÓN -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-6">
-      
-      <!-- CABECERA: TÍTULO Y BUSCADOR -->
-      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center border-b pb-4 gap-4">
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-3">
         <div>
-          <h2 class="text-lg font-bold text-stone-900">Historial de Aves Anilladas</h2>
-          <p class="text-xs text-stone-500">Listado completo de pollos y adultos registrados en la nube (máx. 10 registros por página)</p>
+          <h1 class="text-xl font-extrabold text-stone-900 tracking-tight">Registro General de Aves Anilladas</h1>
+          <p class="text-xs text-stone-500 mt-0.5">Base de datos biométrica y seguimiento de individuos.</p>
         </div>
-
-        <!-- BUSCADOR -->
-        <div>
+        <div class="flex items-center gap-3 w-full sm:w-auto">
           <input 
             type="text" 
-            id="searchRingsInput" 
-            oninput="currentPage = 1; renderRingsTable();" 
-            placeholder="Filtrar por nido o anilla..." 
-            class="w-full sm:w-64 px-4 py-2 border border-stone-300 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-brand-accent/50 focus:border-brand-accent bg-stone-50/50 transition-all placeholder:text-stone-400"
+            id="searchRingInput" 
+            oninput="renderRingedTable()" 
+            placeholder="Buscar por anilla, PVC o nido..." 
+            class="w-full sm:w-64 px-4 py-2 border border-stone-300 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-brand-accent/50 bg-stone-50/50"
           />
+          <span id="total-rings-badge" class="bg-sky-100 text-sky-800 font-bold px-3 py-1.5 rounded-full text-xs shrink-0">0 anillas</span>
         </div>
       </div>
 
-      <!-- TABLA DE ANILLADOS -->
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs text-stone-700">
           <thead class="bg-stone-50/80 text-stone-500 border-b border-stone-200 uppercase font-bold text-[10px] tracking-wider">
             <tr>
-              <th class="p-3">Nido</th>
-              <th class="p-3">Fecha</th>
-              <th class="p-3">Categoría</th>
               <th class="p-3">Anilla Metálica</th>
               <th class="p-3">PVC</th>
+              <th class="p-3">Edad</th>
               <th class="p-3">Sexo</th>
-              <th class="p-3">Euring</th>
-              <th class="p-3">Ala Max</th>
-              <th class="p-3">P8</th>
-              <th class="p-3">Tarso</th>
-              <th class="p-3">Peso</th>
-              <th class="p-3 text-right">Acción</th>
+              <th class="p-3">Nido Asignado</th>
+              <th class="p-3">Paraje</th>
+              <th class="p-3">Estado</th>
+              <th class="p-3 text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody id="rings-table-body" class="divide-y divide-stone-100">
+          <tbody id="anillados-table-body" class="divide-y divide-stone-100">
             <tr>
-              <td colspan="12" class="p-6 text-center text-stone-400">Cargando registros de anillamiento...</td>
+              <td colspan="8" class="p-4 text-center text-stone-400">Cargando registros de anillados...</td>
             </tr>
           </tbody>
         </table>
       </div>
-
-      <!-- CONTROLES DE PAGINACIÓN -->
-      <div id="pagination-container" class="flex justify-between items-center pt-4 border-t border-stone-100 hidden">
-        <button id="prev-btn" onclick="changePage(-1)" class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
-          <i data-lucide="chevron-left" class="w-4 h-4"></i> Anterior
-        </button>
-        <span id="page-info" class="text-xs font-semibold text-stone-600">Página 1 de 1</span>
-        <button id="next-btn" onclick="changePage(1)" class="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5">
-          Siguiente <i data-lucide="chevron-right" class="w-4 h-4"></i>
-        </button>
-      </div>
-
     </div>
+
   </main>
 
   <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo — Firebase Cloud Mode</footer>
@@ -268,217 +133,79 @@
     };
 
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.database();
 
+    auth.onAuthStateChanged(user => {
+      if (!user) window.location.href = 'index.html';
+    });
+
+    function cerrarSesion() {
+      auth.signOut().then(() => window.location.href = 'index.html').catch(err => console.error(err));
+    }
+
     let allRingsData = [];
-    let currentPage = 1;
-    const pageSize = 10;
-
-    function formatDateToEU(dateStr) {
-      if (!dateStr) return '';
-      const parts = dateStr.split('-');
-      if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-      return dateStr;
-    }
-
-    function autoResizeTextarea(textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = (textarea.scrollHeight + 4) + 'px';
-    }
-
-    function loadNestsDropdown() {
-      const select = document.getElementById('nestId');
-      db.ref('nidos').once('value', snapshot => {
-        const data = snapshot.val() || {};
-        select.innerHTML = '<option value="">-- Seleccionar nido asociado --</option>';
-        const nestIds = Object.keys(data).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
-        nestIds.forEach(nestId => {
-          const opt = document.createElement('option');
-          opt.value = nestId;
-          opt.textContent = nestId;
-          select.appendChild(opt);
-        });
-      });
-    }
 
     function loadRingsData() {
       db.ref('anillados').on('value', snapshot => {
         const data = snapshot.val() || {};
         allRingsData = Object.values(data);
-        allRingsData.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
-        renderRingsTable();
+        renderRingedTable();
       });
     }
 
-    function renderRingsTable() {
-      const tbody = document.getElementById('rings-table-body');
-      const paginationContainer = document.getElementById('pagination-container');
+    function renderRingedTable() {
+      const tbody = document.getElementById('anillados-table-body');
       tbody.innerHTML = '';
 
-      const query = (document.getElementById('searchRingsInput').value || '').trim().toLowerCase();
+      const query = (document.getElementById('searchRingInput').value || '').trim().toLowerCase();
 
-      const filtered = allRingsData.questionFilter || allRingsData.filter(r => {
-        if (!query) return true;
+      const filtered = allRingsData.filter(r => {
         const target = [
-          r.nestId || '',
           r.metalRing || '',
           r.pvcRing || '',
+          r.nestId || '',
+          r.locationName || '',
           r.sex || '',
           r.birdAge || ''
         ].join(' ').toLowerCase();
-        return target.includes(query);
+
+        return !query || target.includes(query);
       });
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="12" class="p-6 text-center text-stone-400">${allRingsData.length === 0 ? 'No hay aves anilladas registradas.' : 'No se encontraron resultados.'}</td></tr>`;
-        paginationContainer.classList.add('hidden');
+        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-stone-400">No se encontraron registros de anillados.</td></tr>`;
+        document.getElementById('total-rings-badge').textContent = '0 anillas';
         return;
       }
 
-      const totalPages = Math.ceil(filtered.length / pageSize);
-      if (currentPage > totalPages) currentPage = totalPages;
-      if (currentPage < 1) currentPage = 1;
+      document.getElementById('total-rings-badge').textContent = `${filtered.length} anillas`;
 
-      const startIndex = (currentPage - 1) * pageSize;
-      const paginatedItems = filtered.slice(startIndex, startIndex + pageSize);
-
-      paginatedItems.forEach(r => {
-        const isAdult = r.birdAge === 'Adulto';
-        const badgeClass = isAdult ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+      filtered.forEach(r => {
+        const isDead = r.status === 'Muerto';
+        const ringClass = isDead ? 'metal-ring-badge-dead' : 'metal-ring-badge';
+        const pvcHtml = r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : '<span class="text-stone-400">-</span>';
+        
+        let statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Vivo</span>';
+        if (isDead) {
+          statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Muerto</span>';
+        }
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-stone-50/60 transition-colors';
         tr.innerHTML = `
-          <td class="p-3 font-bold text-stone-900">${r.nestId || '-'}</td>
-          <td class="p-3 text-stone-600">${formatDateToEU(r.ringDate)}</td>
-          <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${badgeClass}">${r.birdAge || 'Pollo'}</span></td>
-          <td class="p-3 font-mono font-bold text-sky-700">${r.metalRing}</td>
-          <td class="p-3 font-mono text-stone-800">${r.pvcRing || '-'}</td>
-          <td class="p-3 font-medium text-stone-700">${r.sex || 'Desconocido'}</td>
-          <td class="p-3">${r.euringAge || '-'}</td>
-          <td class="p-3">${r.maxWing ? r.maxWing + ' mm' : '-'}</td>
-          <td class="p-3">${r.p8Length ? r.p8Length + ' mm' : '-'}</td>
-          <td class="p-3">${r.tarsus ? r.tarsus + ' mm' : '-'}</td>
-          <td class="p-3">${r.weight ? r.weight + ' g' : '-'}</td>
-          <td class="p-3 text-right space-x-2">
-            <button onclick="editRing('${r.metalRing}')" class="text-amber-700 hover:text-amber-900 font-bold">Editar</button>
-            <button onclick="deleteRing('${r.metalRing}')" class="text-rose-600 hover:text-rose-800 font-bold">Eliminar</button>
+          <td class="p-3 ${ringClass} text-sm">${r.metalRing}</td>
+          <td class="p-3">${pvcHtml}</td>
+          <td class="p-3 font-semibold text-stone-700">${r.birdAge || 'Adulto'}</td>
+          <td class="p-3 font-medium text-stone-600">${r.sex || 'Desconocido'}</td>
+          <td class="p-3 font-bold text-brand-dark">${r.nestId || '-'}</td>
+          <td class="p-3 text-stone-500">${r.locationName || '-'}</td>
+          <td class="p-3">${statusBadge}</td>
+          <td class="p-3 text-right">
+            <button onclick="deleteRing('${r.metalRing}')" class="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
           </td>
         `;
         tbody.appendChild(tr);
-      });
-
-      if (filtered.length > pageSize) {
-        paginationContainer.classList.remove('hidden');
-        document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages} (${filtered.length} registros)`;
-        document.getElementById('prev-btn').disabled = (currentPage === 1);
-        document.getElementById('next-btn').disabled = (currentPage === totalPages);
-      } else {
-        paginationContainer.classList.add('hidden');
-      }
-
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
-
-    function changePage(direction) {
-      currentPage += direction;
-      renderRingsTable();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function saveRingRecord(e) {
-      e.preventDefault();
-      const metalRing = document.getElementById('metalRing').value.trim().toUpperCase();
-      const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
-      const nestId = document.getElementById('nestId').value;
-      const birdAge = document.getElementById('birdAge').value;
-      const sex = document.getElementById('sex').value;
-      const pvcRing = document.getElementById('pvcRing').value.trim().toUpperCase();
-
-      const record = {
-        nestId: nestId,
-        ringDate: document.getElementById('ringDate').value,
-        birdAge: birdAge,
-        metalRing: metalRing,
-        pvcRing: pvcRing,
-        sex: sex,
-        euringAge: document.getElementById('euringAge').value,
-        maxWing: document.getElementById('maxWing').value,
-        p8Length: document.getElementById('p8Length').value,
-        tarsus: document.getElementById('tarsus').value,
-        weight: document.getElementById('weight').value,
-        biometricNotes: document.getElementById('biometricNotes').value.trim()
-      };
-
-      db.ref('anillados/' + safeKey).set(record, err => {
-        if (err) {
-          alert('Error al guardar: ' + err.message);
-          return;
-        }
-
-        if (birdAge === 'Adulto' && nestId) {
-          db.ref('nidos/' + nestId).once('value', snap => {
-            const nestData = snap.val() || {};
-            let updates = {};
-
-            if (sex === 'Macho') {
-              updates.maleRing = metalRing;
-              updates.malePvcCode = pvcRing;
-            } else if (sex === 'Hembra') {
-              updates.femaleRing = metalRing;
-              updates.femalePvcCode = pvcRing;
-            } else {
-              if (!nestData.maleRing || nestData.maleRing === 'Sin anillar') {
-                updates.maleRing = metalRing;
-                updates.malePvcCode = pvcRing;
-              } else {
-                updates.femaleRing = metalRing;
-                updates.femalePvcCode = pvcRing;
-              }
-            }
-
-            db.ref('nidos/' + nestId).update(updates, () => {
-              alert('¡Registro de anillamiento guardado y sincronizado con el nido con éxito!');
-              document.getElementById('ringForm').reset();
-              document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
-              document.getElementById('metalRing').removeAttribute('readonly');
-              document.getElementById('form-mode-badge').classList.add('hidden');
-            });
-          });
-        } else {
-          alert('¡Registro de anillamiento guardado con éxito!');
-          document.getElementById('ringForm').reset();
-          document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
-          document.getElementById('metalRing').removeAttribute('readonly');
-          document.getElementById('form-mode-badge').classList.add('hidden');
-        }
-      });
-    }
-
-    function editRing(metalRing) {
-      const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
-      db.ref('anillados/' + safeKey).once('value', snapshot => {
-        const item = snapshot.val();
-        if (item) {
-          document.getElementById('nestId').value = item.nestId || '';
-          document.getElementById('ringDate').value = item.ringDate || '';
-          document.getElementById('birdAge').value = item.birdAge || 'Pollo';
-          document.getElementById('metalRing').value = item.metalRing || '';
-          document.getElementById('metalRing').setAttribute('readonly', true);
-          document.getElementById('pvcRing').value = item.pvcRing || '';
-          document.getElementById('sex').value = item.sex || 'Desconocido';
-          document.getElementById('euringAge').value = item.euringAge || '1';
-          document.getElementById('maxWing').value = item.maxWing || '';
-          document.getElementById('p8Length').value = item.p8Length || '';
-          document.getElementById('tarsus').value = item.tarsus || '';
-          document.getElementById('weight').value = item.weight || '';
-          document.getElementById('biometricNotes').value = item.biometricNotes || '';
-
-          document.getElementById('form-mode-badge').classList.remove('hidden');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
       });
     }
 
@@ -494,8 +221,6 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
-      loadNestsDropdown();
       loadRingsData();
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
