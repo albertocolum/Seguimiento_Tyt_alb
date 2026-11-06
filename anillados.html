@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Control de Anillados</title>
+  <title>Tyto Alba | Control de Anillados y Biometría</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -76,10 +76,90 @@
   <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     
+    <!-- FORMULARIO DE ALTA / EDICIÓN DE ANILLADOS -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-6">
+      <div class="border-b pb-4 flex justify-between items-center">
+        <div>
+          <h1 id="form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Nuevo Registro de Ave Anillada</h1>
+          <p class="text-xs text-stone-500 mt-0.5">Introduce la biometría, anillas y datos de marcaje del ejemplar.</p>
+        </div>
+        <button type="button" id="cancel-edit-btn" onclick="resetRingForm()" class="hidden text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-3 py-1.5 rounded-xl transition-all">Cancelar Edición</button>
+      </div>
+
+      <form id="ringForm" onsubmit="saveRingRecord(event)" class="space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica *</label>
+            <input type="text" id="metalRing" required placeholder="Ej. G-14869" class="w-full px-3 py-2 border rounded-xl text-xs font-mono font-bold uppercase bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla PVC</label>
+            <input type="text" id="pvcRing" placeholder="Ej. 04T" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Edad / Categoría *</label>
+            <select id="birdAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <option value="Pollo">Pollo</option>
+              <option value="Adulto">Adulto</option>
+              <option value="Juvenil">Juvenil</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Sexo</label>
+            <select id="sex" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <option value="Desconocido">Desconocido</option>
+              <option value="Macho">Macho</option>
+              <option value="Hembra">Hembra</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">ID Nido Asociado</label>
+            <input type="text" id="nestId" placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold uppercase bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Paraje / Ubicación</label>
+            <input type="text" id="locationName" placeholder="Lugar de anillamiento" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Anillamiento</label>
+            <input type="date" id="ringDate" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Peso (g)</label>
+            <input type="number" step="0.1" id="weight" placeholder="Ej. 310.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Estado Biológico</label>
+            <select id="status" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <option value="Vivo">Vivo / Activo</option>
+              <option value="Muerto">Muerto / Fallecido</option>
+            </select>
+          </div>
+          <div class="sm:col-span-3">
+            <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones Biométricas</label>
+            <input type="text" id="lastObservation" placeholder="Medidas de P8, tarso, R5, estado general..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-3">
+          <button type="submit" class="bg-brand-dark hover:bg-brand-hover text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-2 text-xs">
+            <i data-lucide="save" class="w-4 h-4"></i><span id="save-btn-text">Guardar Registro</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- TABLA DE ANILLADOS -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-6">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-3">
         <div>
-          <h1 class="text-xl font-extrabold text-stone-900 tracking-tight">Registro General de Aves Anilladas</h1>
+          <h2 class="text-xl font-extrabold text-stone-900 tracking-tight">Listado General de Aves Anilladas</h2>
           <p class="text-xs text-stone-500 mt-0.5">Base de datos biométrica y seguimiento de individuos.</p>
         </div>
         <div class="flex items-center gap-3 w-full sm:w-auto">
@@ -201,12 +281,80 @@
           <td class="p-3 font-bold text-brand-dark">${r.nestId || '-'}</td>
           <td class="p-3 text-stone-500">${r.locationName || '-'}</td>
           <td class="p-3">${statusBadge}</td>
-          <td class="p-3 text-right">
+          <td class="p-3 text-right space-x-2">
+            <button onclick="editRing('${r.metalRing}')" class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">Editar</button>
             <button onclick="deleteRing('${r.metalRing}')" class="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
           </td>
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function saveRingRecord(e) {
+      e.preventDefault();
+      const metalRing = document.getElementById('metalRing').value.trim().toUpperCase();
+      if (!metalRing) return;
+
+      const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
+      const record = {
+        metalRing: metalRing,
+        pvcRing: document.getElementById('pvcRing').value.trim().toUpperCase(),
+        birdAge: document.getElementById('birdAge').value,
+        sex: document.getElementById('sex').value,
+        nestId: document.getElementById('nestId').value.trim().toUpperCase(),
+        locationName: document.getElementById('locationName').value.trim(),
+        ringDate: document.getElementById('ringDate').value || new Date().toISOString().split('T')[0],
+        weight: document.getElementById('weight').value ? parseFloat(document.getElementById('weight').value) : null,
+        status: document.getElementById('status').value,
+        lastObservation: document.getElementById('lastObservation').value.trim()
+      };
+
+      db.ref('anillados/' + safeKey).set(record, err => {
+        if (err) {
+          alert('Error al guardar: ' + err.message);
+        } else {
+          alert('¡Registro de anillado guardado con éxito!');
+          resetRingForm();
+        }
+      });
+    }
+
+    function editRing(metalRing) {
+      const safeKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
+      db.ref('anillados/' + safeKey).once('value', snap => {
+        const r = snap.val();
+        if (r) {
+          document.getElementById('form-title').textContent = `Editando Anilla: ${r.metalRing}`;
+          document.getElementById('save-btn-text').textContent = 'Actualizar Registro';
+          document.getElementById('cancel-edit-btn').classList.remove('hidden');
+          
+          document.getElementById('metalRing').value = r.metalRing || '';
+          document.getElementById('metalRing').setAttribute('readonly', true);
+          document.getElementById('metalRing').classList.add('bg-stone-100');
+
+          document.getElementById('pvcRing').value = r.pvcRing || '';
+          document.getElementById('birdAge').value = r.birdAge || 'Adulto';
+          document.getElementById('sex').value = r.sex || 'Desconocido';
+          document.getElementById('nestId').value = r.nestId || '';
+          document.getElementById('locationName').value = r.locationName || '';
+          document.getElementById('ringDate').value = r.ringDate || '';
+          document.getElementById('weight').value = r.weight || '';
+          document.getElementById('status').value = r.status || 'Vivo';
+          document.getElementById('lastObservation').value = r.lastObservation || '';
+
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+    }
+
+    function resetRingForm() {
+      document.getElementById('ringForm').reset();
+      document.getElementById('form-title').textContent = 'Nuevo Registro de Ave Anillada';
+      document.getElementById('save-btn-text').textContent = 'Guardar Registro';
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
+      document.getElementById('metalRing').removeAttribute('readonly');
+      document.getElementById('metalRing').classList.remove('bg-stone-100');
+      document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
     }
 
     function deleteRing(metalRing) {
@@ -222,6 +370,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       loadRingsData();
+      resetRingForm();
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
   </script>
