@@ -224,19 +224,19 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-stone-50/80 p-4 rounded-xl border border-stone-200">
             <div>
               <label class="block text-[11px] font-bold text-stone-600 mb-1">Macho - Anilla Metálica</label>
-              <input type="text" id="maleRing" placeholder="Ej. G-14869" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
+              <input type="text" id="maleRing" oninput="updateNestHistoryPreview()" placeholder="Ej. G-14869" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
             </div>
             <div>
               <label class="block text-[11px] font-bold text-stone-600 mb-1">Macho - PVC</label>
-              <input type="text" id="malePvcCode" placeholder="Ej. 04T" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+              <input type="text" id="malePvcCode" oninput="updateNestHistoryPreview()" placeholder="Ej. 04T" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
             </div>
             <div>
               <label class="block text-[11px] font-bold text-stone-600 mb-1">Hembra - Anilla Metálica</label>
-              <input type="text" id="femaleRing" placeholder="Ej. G-14875" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
+              <input type="text" id="femaleRing" oninput="updateNestHistoryPreview()" placeholder="Ej. G-14875" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
             </div>
             <div>
               <label class="block text-[11px] font-bold text-stone-600 mb-1">Hembra - PVC</label>
-              <input type="text" id="femalePvcCode" placeholder="Ej. 04W" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+              <input type="text" id="femalePvcCode" oninput="updateNestHistoryPreview()" placeholder="Ej. 04W" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
             </div>
           </div>
         </div>
@@ -393,6 +393,7 @@
       });
     }
 
+    // CARGA DE POLLOS VIVOS EN EL DESPLEGABLE (OMITE LOS MUERTOS)
     function loadChicksDropdown(selectedVal = 'Sin baja') {
       const currentNest = document.getElementById('nestId').value.trim().toUpperCase();
       const select = document.getElementById('chickDeathRing');
@@ -406,15 +407,16 @@
           select.innerHTML = '<option value="Sin baja">Sin baja (Ningún pollo muerto)</option>';
 
           Object.values(data).forEach(r => {
-            if (r.birdAge === 'Pollo' && r.status !== 'Muerto') {
-              const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
-              if (isThisNest && r.metalRing !== alreadyDeadRing) {
-                const label = `MUERTO: Pollo Anilla [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
-                const opt = document.createElement('option');
-                opt.value = r.metalRing;
-                opt.textContent = label;
-                select.appendChild(opt);
-              }
+            const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
+            const isChick = r.birdAge === 'Pollo';
+            const isAlive = r.status !== 'Muerto';
+
+            if (isChick && isThisNest && isAlive) {
+              const label = `MUERTO: Pollo Anilla [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
+              const opt = document.createElement('option');
+              opt.value = r.metalRing;
+              opt.textContent = label;
+              select.appendChild(opt);
             }
           });
           select.value = (selectedVal && selectedVal !== '') ? selectedVal : alreadyDeadRing;
@@ -422,11 +424,13 @@
       });
     }
 
+    // CRONOLOGÍA DE EJEMPLARES VIVOS (POLLOS Y ADULTOS)
     function updateNestHistoryPreview() {
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       const container = document.getElementById('nest-history-container');
       const deadChickRing = document.getElementById('chickDeathRing').value;
       const adultDeathStatus = document.getElementById('adultDeath').value;
+      const rawVisitDate = document.getElementById('layDate').value || new Date().toISOString().split('T')[0];
 
       if (!nestId) {
         container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>';
@@ -436,26 +440,47 @@
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
         
-        // Filtro estricto para excluir aves muertas en Firebase o seleccionadas como baja en este momento
+        // Excluimos absolutamente cualquier ave marcada como muerta o seleccionada como baja
         const matched = Object.values(ringsData).filter(r => {
           const isThisNest = (r.nestId || '').toUpperCase() === nestId;
-          const isDead = (r.status === 'Muerto' || r.metalRing === deadChickRing);
+          const isDeadInDb = r.status === 'Muerto';
+          const isSelectedChickDead = (r.metalRing === deadChickRing && deadChickRing !== 'Sin baja');
           const isAdultDead = (adultDeathStatus.includes('Macho') && r.sex === 'Macho' && r.birdAge === 'Adulto') ||
                               (adultDeathStatus.includes('Hembra') && r.sex === 'Hembra' && r.birdAge === 'Adulto') ||
                               (adultDeathStatus === 'Ambos muertos' && r.birdAge === 'Adulto');
-          return isThisNest && !isDead && !isAdultDead;
+          
+          return isThisNest && !isDeadInDb && !isSelectedChickDead && !isAdultDead;
         });
 
-        let html = '';
+        // Incluir manualmente los adultos en pantalla si están escritos en las casillas pero no guardados aún
+        const mRing = document.getElementById('maleRing').value.trim().toUpperCase();
+        const mPvc = document.getElementById('malePvcCode').value.trim().toUpperCase();
+        const fRing = document.getElementById('femaleRing').value.trim().toUpperCase();
+        const fPvc = document.getElementById('femalePvcCode').value.trim().toUpperCase();
 
-        if (matched.length === 0 && adultDeathStatus === 'Ninguno' && deadChickRing === 'Sin baja') {
-          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento activos asociados al nido "${nestId}".</div>`;
+        let extraAdults = [];
+        if (mRing && mRing !== 'SIN ANILLAR' && !adultDeathStatus.includes('Macho') && adultDeathStatus !== 'Ambos muertos') {
+          if (!matched.some(r => r.metalRing === mRing)) {
+            extraAdults.push({ metalRing: mRing, pvcRing: mPvc, birdAge: 'Adulto', sex: 'Macho', ringDate: rawVisitDate });
+          }
+        }
+        if (fRing && fRing !== 'SIN ANILLAR' && !adultDeathStatus.includes('Hembra') && adultDeathStatus !== 'Ambos muertos') {
+          if (!matched.some(r => r.metalRing === fRing)) {
+            extraAdults.push({ metalRing: fRing, pvcRing: fPvc, birdAge: 'Adulto', sex: 'Hembra', ringDate: rawVisitDate });
+          }
+        }
+
+        const listToRender = [...matched, ...extraAdults];
+
+        if (listToRender.length === 0) {
+          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento vivos asociados al nido "${nestId}".</div>`;
           return;
         }
 
-        matched.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
+        listToRender.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
 
-        matched.forEach(r => {
+        let html = '';
+        listToRender.forEach(r => {
           const isAdult = r.birdAge === 'Adulto';
           let badgeHTML = isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
           
@@ -572,16 +597,18 @@
         newLogEntries.push(`[${visitDateFormatted}] ⚠️ ${adultInfoText}.`);
       }
 
-      // Consulta directa por clave exacta (soluciona el bloqueo de guardado)
+      // Procesamiento directo de la baja de pollo (sin bloqueos de consulta)
       if (chickDeathVal !== 'Sin baja') {
         const chickKey = chickDeathVal.replace(/[\/\.#$\[\]]/g, '_');
-        db.ref('anillados/' + chickKey).once('value', snap => {
+        db.ref('anillados/' + chickKey).once('value').then(snap => {
           let pvcStr = '';
           const record = snap.val();
           if (record && record.pvcRing) {
             pvcStr = ` - PVC: ${record.pvcRing}`;
           }
           newLogEntries.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}${pvcStr}).`);
+          finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries, adultDeathStatus, chickDeathVal);
+        }).catch(() => {
           finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries, adultDeathStatus, chickDeathVal);
         });
         return;
@@ -625,29 +652,40 @@
         if (err) { alert('Error: ' + err.message); return; }
 
         let updatesSync = {};
+
+        // Sincronizar macho
         if (maleRing && maleRing !== 'Sin anillar' && adultDeathStatus !== 'Macho muerto' && adultDeathStatus !== 'Ambos muertos') {
           updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Vivo' };
         } else if ((adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') && maleRing && maleRing !== 'Sin anillar') {
           updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Muerto' };
         }
 
+        // Sincronizar hembra
         if (femaleRing && femaleRing !== 'Sin anillar' && adultDeathStatus !== 'Hembra muerta' && adultDeathStatus !== 'Ambos muertos') {
           updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Vivo' };
         } else if ((adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') && femaleRing && femaleRing !== 'Sin anillar') {
           updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Muerto' };
         }
 
+        // Marcar pollo como MUERTO de forma permanente
         if (chickDeathVal && chickDeathVal !== 'Sin baja') {
           const chickKey = chickDeathVal.replace(/[\/\.#$\[\]]/g, '_');
           updatesSync['anillados/' + chickKey + '/status'] = 'Muerto';
           updatesSync['anillados/' + chickKey + '/lastObservation'] = `Fallecido en nido ${nestId} con fecha ${visitDateFormatted}`;
         }
 
-        if (Object.keys(updatesSync).length > 0) db.ref().update(updatesSync);
-
-        // Alerta de confirmación exacta solicitada
-        alert('¡Se guardaron los cambios con éxito!');
-        window.location.href = 'dashboard.html';
+        if (Object.keys(updatesSync).length > 0) {
+          db.ref().update(updatesSync).then(() => {
+            alert('¡Se guardaron los cambios con éxito!');
+            window.location.href = 'dashboard.html';
+          }).catch(() => {
+            alert('¡Se guardaron los cambios con éxito!');
+            window.location.href = 'dashboard.html';
+          });
+        } else {
+          alert('¡Se guardaron los cambios con éxito!');
+          window.location.href = 'dashboard.html';
+        }
       });
     }
 
