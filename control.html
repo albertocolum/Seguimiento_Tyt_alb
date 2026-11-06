@@ -123,7 +123,8 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido *</label>
-              <input type="text" id="nestId" oninput="updateNestHistoryPreview(); loadChicksDropdown();" required placeholder="Ej. NIDO-01 o ALQUERIA" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
+              <!-- SE HA AÑADIDO autoLoadAdultsPara QUE CARGUE LOS ADULTOS AUTOMÁTICAMENTE -->
+              <input type="text" id="nestId" oninput="autoLoadAdultsForNest(); updateNestHistoryPreview(); loadChicksDropdown();" required placeholder="Ej. NIDO-01 o ALQUERIA" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido *</label>
@@ -363,6 +364,37 @@
       });
     }
 
+    // AUTO-CARGAR ADULTOS DESDE ANILLADOS AL ESCRIBIR O EDITAR EL NIDO
+    function autoLoadAdultsForNest() {
+      const nestId = document.getElementById('nestId').value.trim().toUpperCase();
+      if (!nestId) return;
+
+      db.ref('anillados').once('value', snapshot => {
+        const ringsData = snapshot.val() || {};
+        let foundMale = false;
+        let foundFemale = false;
+
+        Object.values(ringsData).forEach(r => {
+          const isThisNest = (r.nestId || '').toUpperCase() === nestId;
+          const isAdult = r.birdAge === 'Adulto';
+          const isAlive = r.status !== 'Muerto';
+
+          if (isThisNest && isAdult && isAlive) {
+            if (r.sex === 'Macho' && !foundMale) {
+              document.getElementById('maleRing').value = r.metalRing || '';
+              document.getElementById('malePvcCode').value = r.pvcRing || '';
+              foundMale = true;
+            } else if (r.sex === 'Hembra' && !foundFemale) {
+              document.getElementById('femaleRing').value = r.metalRing || '';
+              document.getElementById('femalePvcCode').value = r.pvcRing || '';
+              foundFemale = true;
+            }
+          }
+        });
+        updateNestHistoryPreview();
+      });
+    }
+
     function loadChicksDropdown(selectedVal = 'Sin baja') {
       const currentNest = document.getElementById('nestId').value.trim().toUpperCase();
       const select = document.getElementById('chickDeathRing');
@@ -376,7 +408,6 @@
           select.innerHTML = '<option value="Sin baja">Sin baja (Ningún pollo muerto)</option>';
 
           Object.values(data).forEach(r => {
-            // Solo incluimos pollos de este nido que NO estén muertos previamente
             if (r.birdAge === 'Pollo' && r.status !== 'Muerto') {
               const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
               if (isThisNest && r.metalRing !== alreadyDeadRing) {
@@ -408,7 +439,6 @@
 
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
-        // Filtramos para excluir de la cronología a las aves que ya constan como muertas (status === 'Muerto')
         const matched = Object.values(ringsData).filter(r => {
           const isThisNest = (r.nestId || '').toUpperCase() === nestId;
           const isDead = (r.status === 'Muerto' || r.metalRing === deadChickRing);
@@ -476,6 +506,7 @@
             document.getElementById('femalePvcCode').value = nest.femalePvcCode || '';
             document.getElementById('notes').value = nest.notes || '';
 
+            autoLoadAdultsForNest();
             loadChicksDropdown(nest.chickDeathRing || 'Sin baja');
             updateNestHistoryPreview();
 
