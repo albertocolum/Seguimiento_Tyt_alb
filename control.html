@@ -123,7 +123,6 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido *</label>
-              <!-- SE HA AÑADIDO autoLoadAdultsPara QUE CARGUE LOS ADULTOS AUTOMÁTICAMENTE -->
               <input type="text" id="nestId" oninput="autoLoadAdultsForNest(); updateNestHistoryPreview(); loadChicksDropdown();" required placeholder="Ej. NIDO-01 o ALQUERIA" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
             </div>
             <div>
@@ -364,7 +363,6 @@
       });
     }
 
-    // AUTO-CARGAR ADULTOS DESDE ANILLADOS AL ESCRIBIR O EDITAR EL NIDO
     function autoLoadAdultsForNest() {
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       if (!nestId) return;
@@ -429,8 +427,6 @@
       const container = document.getElementById('nest-history-container');
       const deadChickRing = document.getElementById('chickDeathRing').value;
       const adultDeathStatus = document.getElementById('adultDeath').value;
-      const rawVisitDate = document.getElementById('layDate').value || new Date().toISOString().split('T')[0];
-      const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
 
       if (!nestId) {
         container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>';
@@ -439,10 +435,15 @@
 
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
+        
+        // Filtramos para omitir por completo a los pollos y adultos muertos o marcados como baja en esta visita
         const matched = Object.values(ringsData).filter(r => {
           const isThisNest = (r.nestId || '').toUpperCase() === nestId;
           const isDead = (r.status === 'Muerto' || r.metalRing === deadChickRing);
-          return isThisNest && !isDead;
+          const isAdultDead = (adultDeathStatus.includes('Macho') && r.sex === 'Macho' && r.birdAge === 'Adulto') ||
+                              (adultDeathStatus.includes('Hembra') && r.sex === 'Hembra' && r.birdAge === 'Adulto') ||
+                              (adultDeathStatus === 'Ambos muertos' && r.birdAge === 'Adulto');
+          return isThisNest && !isDead && !isAdultDead;
         });
 
         let html = '';
@@ -643,7 +644,8 @@
 
         if (Object.keys(updatesSync).length > 0) db.ref().update(updatesSync);
 
-        alert('¡Nido guardado y sincronizado con éxito!');
+        // ALERTA PERSONALIZADA DE CAMBIOS GUARDADOS CON ÉXITO
+        alert('¡Se guardaron los cambios con éxito!');
         window.location.href = 'dashboard.html';
       });
     }
