@@ -90,7 +90,6 @@
         <a href="anillados.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
         </a>
-        <!-- BOTÓN DE CERRAR SESIÓN -->
         <button onclick="cerrarSesion()" class="bg-rose-700/80 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2.5 rounded-xl transition-all shadow flex items-center gap-1.5 ml-2">
           <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">Salir</span>
         </button>
@@ -285,6 +284,7 @@
     let dashboardMap = null;
     let markersLayer = null;
     let allNestsData = [];
+    let allRingsData = {};
     let totalRingedCount = 0;
 
     function initVisitorTracking() {
@@ -308,9 +308,13 @@
     function loadDashboardData() {
       initDashboardMap();
       initVisitorTracking();
+      
+      // Escuchamos anillados y nidos simultáneamente para cruzar la información
       db.ref('anillados').on('value', ringSnapshot => {
-        totalRingedCount = Object.keys(ringSnapshot.val() || {}).length;
+        allRingsData = ringSnapshot.val() || {};
+        totalRingedCount = Object.keys(allRingsData).length;
         document.getElementById('stat-ringed').textContent = totalRingedCount;
+
         db.ref('nidos').on('value', nestSnapshot => {
           allNestsData = nestSnapshot.val() ? Object.values(nestSnapshot.val()) : [];
           renderNestsTableAndMap();
@@ -327,7 +331,18 @@
       const selectedOccupancy = document.getElementById('occupancyFilter').value;
 
       const filteredNests = allNestsData.filter(nest => {
-        const target = [nest.nestId, nest.nestType, nest.locationName, nest.status, nest.maleRing, nest.malePvcCode, nest.femaleRing, nest.femalePvcCode].join(' ').toLowerCase();
+        // Cruzamos también con las anillas de los adultos si están en el nodo anillados
+        let mRingStr = nest.maleRing || '';
+        let fRingStr = nest.femaleRing || '';
+        
+        Object.values(allRingsData).forEach(r => {
+          if ((r.nestId || '').toUpperCase() === (nest.nestId || '').toUpperCase() && r.birdAge === 'Adulto' && r.status !== 'Muerto') {
+            if (r.sex === 'Macho' && (!mRingStr || mRingStr === 'Sin anillar')) mRingStr = r.metalRing || '';
+            if (r.sex === 'Hembra' && (!fRingStr || fRingStr === 'Sin anillar')) fRingStr = r.metalRing || '';
+          }
+        });
+
+        const target = [nest.nestId, nest.nestType, nest.locationName, nest.status, mRingStr, nest.malePvcCode, fRingStr, nest.femalePvcCode].join(' ').toLowerCase();
         const matchesQuery = !query || target.includes(query);
         let matchesOccupancy = true;
         if (selectedOccupancy !== 'all') {
@@ -348,8 +363,32 @@
 
       const latLngs = [];
       filteredNests.forEach(nest => {
-        const maleInfo = nest.maleRing && nest.maleRing !== 'Sin anillar' ? `<span class="metal-ring-badge">${nest.maleRing}</span> ${nest.malePvcCode ? `<span class="pvc-badge ml-1">${nest.malePvcCode}</span>` : ''}` : '<span class="italic text-stone-400">Sin anillar</span>';
-        const femaleInfo = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? `<span class="metal-ring-badge">${nest.femaleRing}</span> ${nest.femalePvcCode ? `<span class="pvc-badge ml-1">${nest.femalePvcCode}</span>` : ''}` : '<span class="italic text-stone-400">Sin anillar</span>';
+        // Buscar anillas adultas cruzadas si el nido no las tiene registradas directamente
+        let finalMaleRing = nest.maleRing;
+        let finalMalePvc = nest.malePvcCode;
+        let finalFemaleRing = nest.femaleRing;
+        let finalFemalePvc = nest.femalePvcCode;
+
+        Object.values(allRingsData).forEach(r => {
+          if ((r.nestId || '').toUpperCase() === (nest.nestId || '').toUpperCase() && r.birdAge === 'Adulto' && r.status !== 'Muerto') {
+            if (r.sex === 'Macho' && (!finalMaleRing || finalMaleRing === 'Sin anillar')) {
+              finalMaleRing = r.metalRing;
+              finalMalePvc = r.pvcRing;
+            }
+            if (r.sex === 'Hembra' && (!finalFemaleRing || finalFemaleRing === 'Sin anillar')) {
+              finalFemaleRing = r.metalRing;
+              finalFemalePvc = r.pvcRing;
+            }
+          }
+        });
+
+        const maleInfo = finalMaleRing && finalMaleRing !== 'Sin anillar' ? 
+          `<span class="metal-ring-badge">${finalMaleRing}</span> ${finalMalePvc ? `<span class="pvc-badge ml-1">${finalMalePvc}</span>` : ''}` : 
+          '<span class="italic text-stone-400">Sin anillar</span>';
+        
+        const femaleInfo = finalFemaleRing && finalFemaleRing !== 'Sin anillar' ? 
+          `<span class="metal-ring-badge">${finalFemaleRing}</span> ${finalFemalePvc ? `<span class="pvc-badge ml-1">${finalFemalePvc}</span>` : ''}` : 
+          '<span class="italic text-stone-400">Sin anillar</span>';
 
         let statusBadgeClass = 'bg-emerald-100 text-emerald-800';
         let displayStatus = nest.status || 'Activo';
@@ -391,7 +430,18 @@
       let active = 0, inactive = 0, pairs = 0, chicks = 0;
       nests.forEach(n => {
         if (n.status === 'Activo') active++; else inactive++;
-        if ((n.maleRing && n.maleRing !== 'Sin anillar') || (n.femaleRing && n.femaleRing !== 'Sin anillar')) pairs++;
+        
+        let hasMale = (n.maleRing && n.maleRing !== 'Sin anillar');
+        let hasFemale = (n.femaleRing && n.femaleRing !== 'Sin anillar');
+
+        Object.values(allRingsData).forEach(r => {
+          if ((r.nestId || '').toUpperCase() === (n.nestId || '').toUpperCase() && r.birdAge === 'Adulto' && r.status !== 'Muerto') {
+            if (r.sex === 'Macho') hasMale = true;
+            if (r.sex === 'Hembra') hasFemale = true;
+          }
+        });
+
+        if (hasMale || hasFemale) pairs++;
         if (n.fledgedChicks) chicks += parseInt(n.fledgedChicks) || 0;
       });
       document.getElementById('stat-active').textContent = active;
