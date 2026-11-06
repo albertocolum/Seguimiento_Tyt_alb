@@ -35,6 +35,7 @@
     .metal-ring-badge { color: #0284c7; font-weight: 700; font-family: monospace; }
     .metal-ring-badge-dead { color: #e11d48; font-weight: 700; font-family: monospace; }
     .pvc-badge { background-color: #000000; color: #ffffff; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-family: monospace; display: inline-block; }
+    textarea.fixed-textarea { resize: vertical; overflow-y: auto; height: 100px; max-height: 200px; }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
@@ -76,80 +77,113 @@
   <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     
-    <!-- FORMULARIO DE ALTA / EDICIÓN DE ANILLADOS -->
+    <!-- FORMULARIO DE REGISTRO / EDICIÓN DE ANILLADOS -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-6">
+      
       <div class="border-b pb-4 flex justify-between items-center">
         <div>
           <h1 id="form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Nuevo Registro de Ave Anillada</h1>
-          <p class="text-xs text-stone-500 mt-0.5">Introduce la biometría, anillas y datos de marcaje del ejemplar.</p>
+          <p class="text-xs text-stone-500 mt-0.5">Introduce la procedencia, marcas identificativas y biometría científica del ejemplar.</p>
         </div>
         <button type="button" id="cancel-edit-btn" onclick="resetRingForm()" class="hidden text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-3 py-1.5 rounded-xl transition-all">Cancelar Edición</button>
       </div>
 
       <form id="ringForm" onsubmit="saveRingRecord(event)" class="space-y-6">
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica *</label>
-            <input type="text" id="metalRing" required placeholder="Ej. G-14869" class="w-full px-3 py-2 border rounded-xl text-xs font-mono font-bold uppercase bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla PVC</label>
-            <input type="text" id="pvcRing" placeholder="Ej. 04T" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Edad / Categoría *</label>
-            <select id="birdAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-              <option value="Pollo">Pollo</option>
-              <option value="Adulto">Adulto</option>
-              <option value="Juvenil">Juvenil</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Sexo</label>
-            <select id="sex" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-              <option value="Desconocido">Desconocido</option>
-              <option value="Macho">Macho</option>
-              <option value="Hembra">Hembra</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">ID Nido Asociado</label>
-            <input type="text" id="nestId" placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold uppercase bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Paraje / Ubicación</label>
-            <input type="text" id="locationName" placeholder="Lugar de anillamiento" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Anillamiento</label>
-            <input type="date" id="ringDate" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Peso (g)</label>
-            <input type="number" step="0.1" id="weight" placeholder="Ej. 310.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+        
+        <!-- BLOQUE 1: PROCEDENCIA DE LA CAPTURA -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
+            <i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i> 1. Procedencia de la Captura
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Nido de Procedencia *</label>
+              <select id="nestId" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="">-- SELECCIONAR NIDO ASOCIADO --</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Anillamiento *</label>
+              <input type="date" id="ringDate" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Edad / Categoría *</label>
+              <select id="birdAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Pollo">Pollo</option>
+                <option value="Adulto">Adulto</option>
+                <option value="Juvenil">Juvenil</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Estado Biológico</label>
-            <select id="status" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-              <option value="Vivo">Vivo / Activo</option>
-              <option value="Muerto">Muerto / Fallecido</option>
-            </select>
+        <!-- BLOQUE 2: MARCAS E IDENTIFICACIÓN -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
+            <i data-lucide="tag" class="w-4 h-4 text-brand-accent"></i> 2. Marcas e Identificación
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica (Aranzadi / CGB) *</label>
+              <input type="text" id="metalRing" required placeholder="Ej. G-12345 o NX-987" class="w-full px-3 py-2 border rounded-xl text-xs font-mono font-bold uppercase bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Anilla PVC / Color (Opcional)</label>
+              <input type="text" id="pvcRing" placeholder="Ej. A-12 (NEGRO/BLANCO)" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+            </div>
           </div>
-          <div class="sm:col-span-3">
-            <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones Biométricas</label>
-            <input type="text" id="lastObservation" placeholder="Medidas de P8, tarso, R5, estado general..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+        </div>
+
+        <!-- BLOQUE 3: BIOMETRÍA CIENTÍFICA -->
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
+            <i data-lucide="activity" class="w-4 h-4 text-brand-accent"></i> 3. Biometría Científica
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-6 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Sexo</label>
+              <select id="sex" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Desconocido">Desconocido</option>
+                <option value="Macho">Macho</option>
+                <option value="Hembra">Hembra</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Edad EURING</label>
+              <select id="euringAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="1: Pollo en el nido">1: Pollo en el nido</option>
+                <option value="3: Juvenil volandero">3: Juvenil volandero</option>
+                <option value="4: Adulto 2er año o más">4: Adulto 2er año o más</option>
+                <option value="5: Adulto pleno">5: Adulto pleno</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Ala Max (mm)</label>
+              <input type="number" step="0.5" id="wingLength" placeholder="Ej. 290" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">P8 (mm)</label>
+              <input type="number" step="0.5" id="p8Length" placeholder="Ej. 185" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Tarso (mm)</label>
+              <input type="number" step="0.1" id="tarsusLength" placeholder="Ej. 62.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Peso (gramos)</label>
+              <input type="number" step="0.1" id="weight" placeholder="Ej. 320.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones Biométricas / Estado Físico</label>
+            <textarea id="lastObservation" placeholder="Condición corporal, muda, desarrollo de plumas..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white fixed-textarea"></textarea>
           </div>
         </div>
 
         <div class="flex justify-end pt-3">
           <button type="submit" class="bg-brand-dark hover:bg-brand-hover text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-2 text-xs">
-            <i data-lucide="save" class="w-4 h-4"></i><span id="save-btn-text">Guardar Registro</span>
+            <i data-lucide="save" class="w-4 h-4"></i><span id="save-btn-text">Guardar Registro de Anillamiento</span>
           </button>
         </div>
       </form>
@@ -182,9 +216,9 @@
               <th class="p-3">PVC</th>
               <th class="p-3">Edad</th>
               <th class="p-3">Sexo</th>
-              <th class="p-3">Nido Asignado</th>
-              <th class="p-3">Paraje</th>
-              <th class="p-3">Estado</th>
+              <th class="p-3">Nido</th>
+              <th class="p-3">Peso</th>
+              <th class="p-3">Ala / P8 / Tarso</th>
               <th class="p-3 text-right">Acciones</th>
             </tr>
           </thead>
@@ -226,7 +260,23 @@
 
     let allRingsData = [];
 
+    // Cargar lista de nidos disponibles en el desplegable
+    function loadNestsDropdown() {
+      const select = document.getElementById('nestId');
+      db.ref('nidos').once('value', snapshot => {
+        const nidos = snapshot.val() || {};
+        select.innerHTML = '<option value="">-- SELECCIONAR NIDO ASOCIADO --</option>';
+        Object.keys(nidos).forEach(id => {
+          const opt = document.createElement('option');
+          opt.value = id;
+          opt.textContent = `Nido: ${id} (${nidos[id].locationName || 'Sin paraje'})`;
+          select.appendChild(opt);
+        });
+      });
+    }
+
     function loadRingsData() {
+      loadNestsDropdown();
       db.ref('anillados').on('value', snapshot => {
         const data = snapshot.val() || {};
         allRingsData = Object.values(data);
@@ -245,7 +295,6 @@
           r.metalRing || '',
           r.pvcRing || '',
           r.nestId || '',
-          r.locationName || '',
           r.sex || '',
           r.birdAge || ''
         ].join(' ').toLowerCase();
@@ -265,11 +314,6 @@
         const isDead = r.status === 'Muerto';
         const ringClass = isDead ? 'metal-ring-badge-dead' : 'metal-ring-badge';
         const pvcHtml = r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : '<span class="text-stone-400">-</span>';
-        
-        let statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Vivo</span>';
-        if (isDead) {
-          statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Muerto</span>';
-        }
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-stone-50/60 transition-colors';
@@ -279,8 +323,8 @@
           <td class="p-3 font-semibold text-stone-700">${r.birdAge || 'Adulto'}</td>
           <td class="p-3 font-medium text-stone-600">${r.sex || 'Desconocido'}</td>
           <td class="p-3 font-bold text-brand-dark">${r.nestId || '-'}</td>
-          <td class="p-3 text-stone-500">${r.locationName || '-'}</td>
-          <td class="p-3">${statusBadge}</td>
+          <td class="p-3 font-mono text-stone-700">${r.weight ? r.weight + 'g' : '-'}</td>
+          <td class="p-3 text-stone-500 text-[11px]">Ala: ${r.wingLength || '-'} | P8: ${r.p8Length || '-'} | T: ${r.tarsusLength || '-'}</td>
           <td class="p-3 text-right space-x-2">
             <button onclick="editRing('${r.metalRing}')" class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">Editar</button>
             <button onclick="deleteRing('${r.metalRing}')" class="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
@@ -299,13 +343,16 @@
       const record = {
         metalRing: metalRing,
         pvcRing: document.getElementById('pvcRing').value.trim().toUpperCase(),
+        nestId: document.getElementById('nestId').value,
+        ringDate: document.getElementById('ringDate').value || new Date().toISOString().split('T')[0],
         birdAge: document.getElementById('birdAge').value,
         sex: document.getElementById('sex').value,
-        nestId: document.getElementById('nestId').value.trim().toUpperCase(),
-        locationName: document.getElementById('locationName').value.trim(),
-        ringDate: document.getElementById('ringDate').value || new Date().toISOString().split('T')[0],
+        euringAge: document.getElementById('euringAge').value,
+        wingLength: document.getElementById('wingLength').value ? parseFloat(document.getElementById('wingLength').value) : null,
+        p8Length: document.getElementById('p8Length').value ? parseFloat(document.getElementById('p8Length').value) : null,
+        tarsusLength: document.getElementById('tarsusLength').value ? parseFloat(document.getElementById('tarsusLength').value) : null,
         weight: document.getElementById('weight').value ? parseFloat(document.getElementById('weight').value) : null,
-        status: document.getElementById('status').value,
+        status: 'Vivo',
         lastObservation: document.getElementById('lastObservation').value.trim()
       };
 
@@ -313,7 +360,7 @@
         if (err) {
           alert('Error al guardar: ' + err.message);
         } else {
-          alert('¡Registro de anillado guardado con éxito!');
+          alert('¡Registro de anillamiento guardado con éxito!');
           resetRingForm();
         }
       });
@@ -333,13 +380,15 @@
           document.getElementById('metalRing').classList.add('bg-stone-100');
 
           document.getElementById('pvcRing').value = r.pvcRing || '';
-          document.getElementById('birdAge').value = r.birdAge || 'Adulto';
-          document.getElementById('sex').value = r.sex || 'Desconocido';
           document.getElementById('nestId').value = r.nestId || '';
-          document.getElementById('locationName').value = r.locationName || '';
           document.getElementById('ringDate').value = r.ringDate || '';
+          document.getElementById('birdAge').value = r.birdAge || 'Pollo';
+          document.getElementById('sex').value = r.sex || 'Desconocido';
+          document.getElementById('euringAge').value = r.euringAge || '1: Pollo en el nido';
+          document.getElementById('wingLength').value = r.wingLength || '';
+          document.getElementById('p8Length').value = r.p8Length || '';
+          document.getElementById('tarsusLength').value = r.tarsusLength || '';
           document.getElementById('weight').value = r.weight || '';
-          document.getElementById('status').value = r.status || 'Vivo';
           document.getElementById('lastObservation').value = r.lastObservation || '';
 
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -350,7 +399,7 @@
     function resetRingForm() {
       document.getElementById('ringForm').reset();
       document.getElementById('form-title').textContent = 'Nuevo Registro de Ave Anillada';
-      document.getElementById('save-btn-text').textContent = 'Guardar Registro';
+      document.getElementById('save-btn-text').textContent = 'Guardar Registro de Anillamiento';
       document.getElementById('cancel-edit-btn').classList.add('hidden');
       document.getElementById('metalRing').removeAttribute('readonly');
       document.getElementById('metalRing').classList.remove('bg-stone-100');
