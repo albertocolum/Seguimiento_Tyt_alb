@@ -436,7 +436,7 @@
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
         
-        // Filtramos para omitir por completo a los pollos y adultos muertos o marcados como baja en esta visita
+        // Filtro estricto para excluir aves muertas en Firebase o seleccionadas como baja en este momento
         const matched = Object.values(ringsData).filter(r => {
           const isThisNest = (r.nestId || '').toUpperCase() === nestId;
           const isDead = (r.status === 'Muerto' || r.metalRing === deadChickRing);
@@ -572,13 +572,14 @@
         newLogEntries.push(`[${visitDateFormatted}] ⚠️ ${adultInfoText}.`);
       }
 
+      // Consulta directa por clave exacta (soluciona el bloqueo de guardado)
       if (chickDeathVal !== 'Sin baja') {
-        db.ref('anillados').orderByChild('metalRing').equalTo(chickDeathVal).once('value', snap => {
+        const chickKey = chickDeathVal.replace(/[\/\.#$\[\]]/g, '_');
+        db.ref('anillados/' + chickKey).once('value', snap => {
           let pvcStr = '';
-          const ringDataObj = snap.val();
-          if (ringDataObj) {
-            const record = Object.values(ringDataObj)[0];
-            if (record && record.pvcRing) pvcStr = ` - PVC: ${record.pvcRing}`;
+          const record = snap.val();
+          if (record && record.pvcRing) {
+            pvcStr = ` - PVC: ${record.pvcRing}`;
           }
           newLogEntries.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}${pvcStr}).`);
           finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries, adultDeathStatus, chickDeathVal);
@@ -644,7 +645,7 @@
 
         if (Object.keys(updatesSync).length > 0) db.ref().update(updatesSync);
 
-        // ALERTA PERSONALIZADA DE CAMBIOS GUARDADOS CON ÉXITO
+        // Alerta de confirmación exacta solicitada
         alert('¡Se guardaron los cambios con éxito!');
         window.location.href = 'dashboard.html';
       });
