@@ -393,7 +393,6 @@
       });
     }
 
-    // CARGA DE POLLOS VIVOS EN EL DESPLEGABLE (OMITE LOS MUERTOS)
     function loadChicksDropdown(selectedVal = 'Sin baja') {
       const currentNest = document.getElementById('nestId').value.trim().toUpperCase();
       const select = document.getElementById('chickDeathRing');
@@ -424,7 +423,6 @@
       });
     }
 
-    // CRONOLOGÍA DE EJEMPLARES VIVOS (POLLOS Y ADULTOS)
     function updateNestHistoryPreview() {
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       const container = document.getElementById('nest-history-container');
@@ -440,7 +438,6 @@
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
         
-        // Excluimos absolutamente cualquier ave marcada como muerta o seleccionada como baja
         const matched = Object.values(ringsData).filter(r => {
           const isThisNest = (r.nestId || '').toUpperCase() === nestId;
           const isDeadInDb = r.status === 'Muerto';
@@ -452,7 +449,6 @@
           return isThisNest && !isDeadInDb && !isSelectedChickDead && !isAdultDead;
         });
 
-        // Incluir manualmente los adultos en pantalla si están escritos en las casillas pero no guardados aún
         const mRing = document.getElementById('maleRing').value.trim().toUpperCase();
         const mPvc = document.getElementById('malePvcCode').value.trim().toUpperCase();
         const fRing = document.getElementById('femaleRing').value.trim().toUpperCase();
@@ -597,21 +593,8 @@
         newLogEntries.push(`[${visitDateFormatted}] ⚠️ ${adultInfoText}.`);
       }
 
-      // Procesamiento directo de la baja de pollo (sin bloqueos de consulta)
       if (chickDeathVal !== 'Sin baja') {
-        const chickKey = chickDeathVal.replace(/[\/\.#$\[\]]/g, '_');
-        db.ref('anillados/' + chickKey).once('value').then(snap => {
-          let pvcStr = '';
-          const record = snap.val();
-          if (record && record.pvcRing) {
-            pvcStr = ` - PVC: ${record.pvcRing}`;
-          }
-          newLogEntries.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}${pvcStr}).`);
-          finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries, adultDeathStatus, chickDeathVal);
-        }).catch(() => {
-          finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries, adultDeathStatus, chickDeathVal);
-        });
-        return;
+        newLogEntries.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}).`);
       }
 
       finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries, adultDeathStatus, chickDeathVal);
@@ -625,6 +608,7 @@
 
       const locationNameVal = document.getElementById('locationName').value.trim();
       const rawVisitDate = document.getElementById('layDate').value;
+      const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
 
       const nestData = {
         nestId: nestId,
@@ -648,44 +632,37 @@
         lastReview: new Date().toISOString().split('T')[0]
       };
 
-      db.ref('nidos/' + nestId).set(nestData, err => {
-        if (err) { alert('Error: ' + err.message); return; }
+      // Construcción del objeto de actualización global multinodo
+      let updatesSync = {};
+      updatesSync['nidos/' + nestId] = nestData;
 
-        let updatesSync = {};
+      // Sincronizar macho
+      if (maleRing && maleRing !== 'Sin anillar' && adultDeathStatus !== 'Macho muerto' && adultDeathStatus !== 'Ambos muertos') {
+        updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Vivo' };
+      } else if ((adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') && maleRing && maleRing !== 'Sin anillar') {
+        updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Muerto' };
+      }
 
-        // Sincronizar macho
-        if (maleRing && maleRing !== 'Sin anillar' && adultDeathStatus !== 'Macho muerto' && adultDeathStatus !== 'Ambos muertos') {
-          updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Vivo' };
-        } else if ((adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') && maleRing && maleRing !== 'Sin anillar') {
-          updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Muerto' };
-        }
+      // Sincronizar hembra
+      if (femaleRing && femaleRing !== 'Sin anillar' && adultDeathStatus !== 'Hembra muerta' && adultDeathStatus !== 'Ambos muertos') {
+        updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Vivo' };
+      } else if ((adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') && femaleRing && femaleRing !== 'Sin anillar') {
+        updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Muerto' };
+      }
 
-        // Sincronizar hembra
-        if (femaleRing && femaleRing !== 'Sin anillar' && adultDeathStatus !== 'Hembra muerta' && adultDeathStatus !== 'Ambos muertos') {
-          updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Vivo' };
-        } else if ((adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') && femaleRing && femaleRing !== 'Sin anillar') {
-          updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Muerto' };
-        }
+      // Marcar el pollo como MUERTO de manera permanente
+      if (chickDeathVal && chickDeathVal !== 'Sin baja') {
+        const chickKey = chickDeathVal.replace(/[\/\.#$\[\]]/g, '_');
+        updatesSync['anillados/' + chickKey + '/status'] = 'Muerto';
+        updatesSync['anillados/' + chickKey + '/lastObservation'] = `Fallecido en nido ${nestId} con fecha ${visitDateFormatted}`;
+      }
 
-        // Marcar pollo como MUERTO de forma permanente
-        if (chickDeathVal && chickDeathVal !== 'Sin baja') {
-          const chickKey = chickDeathVal.replace(/[\/\.#$\[\]]/g, '_');
-          updatesSync['anillados/' + chickKey + '/status'] = 'Muerto';
-          updatesSync['anillados/' + chickKey + '/lastObservation'] = `Fallecido en nido ${nestId} con fecha ${visitDateFormatted}`;
-        }
-
-        if (Object.keys(updatesSync).length > 0) {
-          db.ref().update(updatesSync).then(() => {
-            alert('¡Se guardaron los cambios con éxito!');
-            window.location.href = 'dashboard.html';
-          }).catch(() => {
-            alert('¡Se guardaron los cambios con éxito!');
-            window.location.href = 'dashboard.html';
-          });
-        } else {
-          alert('¡Se guardaron los cambios con éxito!');
-          window.location.href = 'dashboard.html';
-        }
+      // Ejecución directa de la transacción multibranquis
+      db.ref().update(updatesSync).then(() => {
+        alert('¡Se guardaron los cambios con éxito!');
+        window.location.href = 'dashboard.html';
+      }).catch(err => {
+        alert('Error al guardar en Firebase: ' + err.message);
       });
     }
 
