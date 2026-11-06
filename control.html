@@ -376,7 +376,8 @@
           select.innerHTML = '<option value="Sin baja">Sin baja (Ningún pollo muerto)</option>';
 
           Object.values(data).forEach(r => {
-            if (r.birdAge === 'Pollo') {
+            // Solo incluimos pollos de este nido que NO estén muertos previamente
+            if (r.birdAge === 'Pollo' && r.status !== 'Muerto') {
               const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
               if (isThisNest && r.metalRing !== alreadyDeadRing) {
                 const label = `MUERTO: Pollo Anilla [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
@@ -407,40 +408,17 @@
 
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
-        const matched = Object.values(ringsData).filter(r => (r.nestId || '').toUpperCase() === nestId);
+        // Filtramos para excluir de la cronología a las aves que ya constan como muertas (status === 'Muerto')
+        const matched = Object.values(ringsData).filter(r => {
+          const isThisNest = (r.nestId || '').toUpperCase() === nestId;
+          const isDead = (r.status === 'Muerto' || r.metalRing === deadChickRing);
+          return isThisNest && !isDead;
+        });
+
         let html = '';
 
-        const mRing = document.getElementById('maleRing').value.trim();
-        const mPvc = document.getElementById('malePvcCode').value.trim();
-        const fRing = document.getElementById('femaleRing').value.trim();
-        const fPvc = document.getElementById('femalePvcCode').value.trim();
-
-        if ((adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') && mRing && mRing !== 'Sin anillar') {
-          html += `
-            <div class="bg-rose-50/40 border border-rose-300 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 shadow-sm">
-              <div class="flex items-center gap-3">
-                <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center gap-1">⚠️ Adulto Fallecido (Macho)</span>
-                <span class="metal-ring-badge-dead text-sm">${mRing}</span>
-                ${mPvc ? `<span class="pvc-badge text-xs">${mPvc}</span>` : ''}
-              </div>
-              <div class="text-stone-500 text-xs font-medium">Fecha: <strong class="text-stone-800">${visitDateFormatted}</strong> | Sexo: <strong class="text-stone-800">Macho</strong> | Peso: <strong class="text-stone-800">-</strong></div>
-            </div>`;
-        }
-
-        if ((adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') && fRing && fRing !== 'Sin anillar') {
-          html += `
-            <div class="bg-rose-50/40 border border-rose-300 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 shadow-sm">
-              <div class="flex items-center gap-3">
-                <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center gap-1">⚠️ Adulto Fallecido (Hembra)</span>
-                <span class="metal-ring-badge-dead text-sm">${fRing}</span>
-                ${fPvc ? `<span class="pvc-badge text-xs">${fPvc}</span>` : ''}
-              </div>
-              <div class="text-stone-500 text-xs font-medium">Fecha: <strong class="text-stone-800">${visitDateFormatted}</strong> | Sexo: <strong class="text-stone-800">Hembra</strong> | Peso: <strong class="text-stone-800">-</strong></div>
-            </div>`;
-        }
-
         if (matched.length === 0 && adultDeathStatus === 'Ninguno' && deadChickRing === 'Sin baja') {
-          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento asociados al nido "${nestId}".</div>`;
+          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento activos asociados al nido "${nestId}".</div>`;
           return;
         }
 
@@ -448,20 +426,18 @@
 
         matched.forEach(r => {
           const isAdult = r.birdAge === 'Adulto';
-          const isDead = (r.metalRing === deadChickRing && deadChickRing !== 'Sin baja') || r.status === 'Muerto';
-          let badgeHTML = isDead ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center gap-1">⚠️ Pollo Fallecido (Muerto)</span>' : (isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>');
-          let cardBg = isDead ? 'bg-rose-50/40 border-rose-300 shadow-sm' : 'bg-white border-stone-200';
-          let ringClass = isDead ? 'metal-ring-badge-dead' : 'metal-ring-badge';
-
+          let badgeHTML = isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
+          
           html += `
-            <div class="${cardBg} border rounded-xl p-3 flex flex-wrap justify-between items-center gap-2">
+            <div class="bg-white border border-stone-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2">
               <div class="flex items-center gap-3">
                 ${badgeHTML}
-                <span class="${ringClass} text-sm">${r.metalRing}</span>
+                <span class="metal-ring-badge text-sm">${r.metalRing}</span>
                 ${r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : ''}
               </div>
               <div class="text-stone-500 text-xs font-medium">Fecha: <strong class="text-stone-800">${r.ringDate ? formatDateToDDMMYYYY(r.ringDate) : '-'}</strong> | Sexo: <strong class="text-stone-800">${r.sex || 'Desconocido'}</strong> | Peso: <strong class="text-stone-800">${r.weight ? r.weight + 'g' : '-'}</strong></div>
-            </div>`;
+            </div>
+          `;
         });
         container.innerHTML = html;
       });
