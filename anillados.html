@@ -111,7 +111,6 @@
               <select id="birdAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
                 <option value="Pollo">Pollo</option>
                 <option value="Adulto">Adulto</option>
-                <option value="Juvenil">Juvenil</option>
               </select>
             </div>
           </div>
@@ -151,10 +150,15 @@
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Edad EURING</label>
               <select id="euringAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="1: Pollo en el nido">1: Pollo en el nido</option>
-                <option value="3: Juvenil volandero">3: Juvenil volandero</option>
-                <option value="4: Adulto 2er año o más">4: Adulto 2er año o más</option>
-                <option value="5: Adulto pleno">5: Adulto pleno</option>
+                <option value="[1] Pollo en nido: incapaz de volar; todavía se alimenta en el nido">[1] Pollo en nido: incapaz de volar</option>
+                <option value="[2] Ave totalmente desarrollada; capaz de volar">[2] Ave totalmente desarrollada; capaz de volar</option>
+                <option value="[3] Primer año calendario">[3] Primer año calendario</option>
+                <option value="[4] Más de un año calendario">[4] Más de un año calendario</option>
+                <option value="[5] Segundo año calendario">[5] Segundo año calendario</option>
+                <option value="[6] Más de dos años calendario">[6] Más de dos años calendario</option>
+                <option value="[7] Tercer año calendario">[7] Tercer año calendario</option>
+                <option value="[8] Más de tres años calendario">[8] Más de tres años calendario</option>
+                <option value="[9] Cuarto año calendario">[9] Cuarto año calendario</option>
               </select>
             </div>
             <div>
@@ -260,7 +264,6 @@
 
     let allRingsData = [];
 
-    // Cargar lista de nidos disponibles en el desplegable
     function loadNestsDropdown() {
       const select = document.getElementById('nestId');
       db.ref('nidos').once('value', snapshot => {
@@ -384,7 +387,7 @@
           document.getElementById('ringDate').value = r.ringDate || '';
           document.getElementById('birdAge').value = r.birdAge || 'Pollo';
           document.getElementById('sex').value = r.sex || 'Desconocido';
-          document.getElementById('euringAge').value = r.euringAge || '1: Pollo en el nido';
+          document.getElementById('euringAge').value = r.euringAge || '[1] Pollo en nido: incapaz de volar; todavía se alimenta en el nido';
           document.getElementById('wingLength').value = r.wingLength || '';
           document.getElementById('p8Length').value = r.p8Length || '';
           document.getElementById('tarsusLength').value = r.tarsusLength || '';
