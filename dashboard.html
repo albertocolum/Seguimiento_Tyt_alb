@@ -3,18 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Panel General</title>
+  <title>Tyto Alba | Panel General de Seguimiento</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   
-  <!-- LIBRERÍAS DE LEAFLET (MAPA) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- LIBRERÍA DE EXCEL (SheetJS / XLSX) -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
   <!-- LIBRERÍAS DE FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
@@ -39,27 +32,6 @@
       background-repeat: no-repeat;
       background-size: cover;
     }
-    #dashboard-map { height: 400px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
-    
-    .metal-ring-badge {
-      background-color: #e5e7eb;
-      color: #111827;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-      display: inline-block;
-    }
-
-    .pvc-badge {
-      background-color: #000000;
-      color: #ffffff;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-      display: inline-block;
-    }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
@@ -81,7 +53,7 @@
       </div>
 
       <nav class="flex items-center space-x-1.5 sm:space-x-2">
-        <a href="dashboard.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 bg-brand-accent text-white shadow-sm">
+        <a href="dashboard.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-brand-accent text-white shadow-sm">
           <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Panel</span>
         </a>
         <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
@@ -101,120 +73,98 @@
   <!-- CONTENIDO PRINCIPAL -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
     
-    <!-- BARRA DE ACCIONES GLOBALES (EXCEL) Y CONTADORES -->
-    <div class="bg-white/95 backdrop-blur-sm p-4 rounded-2xl border border-brand-border shadow-sm flex flex-col lg:flex-row justify-between items-center gap-4">
-      <div>
-        <h2 class="text-sm font-bold text-stone-900">Copias de Seguridad y Datos (Excel)</h2>
-        <p class="text-xs text-stone-500">Exporta o importa toda la base de datos de nidos y anillados en un libro de Excel (.xlsx)</p>
-      </div>
-
-      <div class="flex items-center gap-4 flex-wrap justify-end">
-        <div class="flex items-center gap-3 bg-stone-50 border px-3.5 py-2 rounded-xl text-xs">
-          <div class="flex items-center gap-1.5" title="Visitas totales acumuladas">
-            <i data-lucide="eye" class="w-3.5 h-3.5 text-brand-accent"></i>
-            <span class="text-stone-500 font-semibold">Visitas:</span>
-            <span id="total-visits-count" class="font-bold text-stone-900">0</span>
+    <!-- TARJETAS DE ESTADÍSTICAS SUPERIORES (CORREGIDAS) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      
+      <!-- 1. Nidos Activos -->
+      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-brand-border shadow-sm flex flex-col justify-between h-32 relative overflow-hidden">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">Nidos Activos</span>
+          <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <i data-lucide="home" class="w-4 h-4"></i>
           </div>
         </div>
-
-        <div class="flex items-center gap-2">
-          <button onclick="exportFullExcel()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar Excel
-          </button>
-          <button onclick="document.getElementById('excelFileInput').click()" class="bg-sky-700 hover:bg-sky-800 text-white font-semibold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition-all">
-            <i data-lucide="upload" class="w-4 h-4"></i> Importar Excel
-          </button>
-          <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="importFullExcel(event)">
-        </div>
-      </div>
-    </div>
-
-    <!-- TARJETAS DE ESTADÍSTICAS KPI -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-          <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Nidos Activos</span>
-          <div class="p-2 rounded-xl bg-emerald-50 text-emerald-600"><i data-lucide="home" class="w-4 h-4"></i></div>
-        </div>
-        <div class="mt-3">
-          <span id="stat-active" class="text-2xl font-black text-stone-900">0</span>
-          <p class="text-[10px] font-medium text-stone-500 mt-0.5">Ocupación en caja</p>
-        </div>
-      </div>
-
-      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-          <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Nidos Inactivos</span>
-          <div class="p-2 rounded-xl bg-rose-50 text-rose-500"><i data-lucide="x-circle" class="w-4 h-4"></i></div>
-        </div>
-        <div class="mt-3">
-          <span id="stat-inactive" class="text-2xl font-black text-stone-900">0</span>
-          <p class="text-[10px] font-medium text-rose-600 mt-0.5">Inactivos / Abandonados</p>
-        </div>
-      </div>
-
-      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-          <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Parejas</span>
-          <div class="p-2 rounded-xl bg-amber-50 text-amber-600"><i data-lucide="heart" class="w-4 h-4"></i></div>
-        </div>
-        <div class="mt-3">
-          <span id="stat-pairs" class="text-2xl font-black text-stone-900">0</span>
-          <p class="text-[10px] font-medium text-amber-700 mt-0.5">Identificadas</p>
-        </div>
-      </div>
-
-      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
-        <div class="flex justify-between items-start">
-          <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Crías</span>
-          <div class="p-2 rounded-xl bg-teal-50 text-teal-600"><i data-lucide="smile" class="w-4 h-4"></i></div>
-        </div>
-        <div class="mt-3">
-          <span id="stat-chicks" class="text-2xl font-black text-stone-900">0</span>
-          <p class="text-[10px] font-medium text-teal-700 mt-0.5">Eclosionadas / Pollos</p>
-        </div>
-      </div>
-
-      <div class="bg-white/95 backdrop-blur-sm p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between col-span-2 sm:col-span-1">
-        <div class="flex justify-between items-start">
-          <span class="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Anillados</span>
-          <div class="p-2 rounded-xl bg-sky-50 text-sky-600"><i data-lucide="tag" class="w-4 h-4"></i></div>
-        </div>
-        <div class="mt-3">
-          <span id="stat-ringed" class="text-2xl font-black text-stone-900">0</span>
-          <a href="anillados.html" class="text-[10px] font-bold text-sky-600 hover:text-sky-800 mt-0.5 inline-block">Ver Biometría →</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- SECCIÓN DE TABLA CON FILTRO POR ESTADO -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-3">
         <div>
-          <h2 class="text-lg font-bold text-stone-900">Resumen de Nidos y Parejas Asignadas</h2>
-          <p class="text-xs text-stone-500">Estado actual y adultos anillados en cada caja</p>
+          <span id="stat-active-nests" class="text-3xl font-extrabold text-stone-900 tracking-tight">0</span>
+          <p class="text-[11px] font-medium text-stone-500 mt-0.5">Ocupación en caja</p>
         </div>
-        
-        <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-          <select id="occupancyFilter" onchange="renderNestsTableAndMap()" class="px-3 py-2 border border-stone-300 rounded-xl text-xs font-semibold bg-stone-50/80 text-stone-700 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 transition-all">
-            <option value="all">Todos los Estados</option>
-            <option value="Activo">Solo Cajas Ocupadas (Activas)</option>
-            <option value="Inactivo">Cajas Libres / Abandonadas</option>
-            <option value="Restos">Masia con Restos</option>
-          </select>
+      </div>
 
-          <div class="relative flex-grow sm:flex-grow-0">
-            <input 
-              type="text" 
-              id="searchNestsInput" 
-              oninput="renderNestsTableAndMap()" 
-              placeholder="Filtrar por nido o anilla..." 
-              class="w-full sm:w-56 px-4 py-2 border border-stone-300 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-brand-accent/50 focus:border-brand-accent bg-stone-50/50 transition-all placeholder:text-stone-400"
-            />
+      <!-- 2. Nidos Inactivos -->
+      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-brand-border shadow-sm flex flex-col justify-between h-32 relative overflow-hidden">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">Nidos Inactivos</span>
+          <div class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+            <i data-lucide="x-circle" class="w-4 h-4"></i>
           </div>
+        </div>
+        <div>
+          <span id="stat-inactive-nests" class="text-3xl font-extrabold text-stone-900 tracking-tight">0</span>
+          <p class="text-[11px] font-medium text-rose-600 mt-0.5">Inactivos / Abandonados</p>
+        </div>
+      </div>
 
-          <a href="control.html" class="text-xs font-bold text-brand-dark hover:text-brand-accent flex items-center gap-1 transition-colors shrink-0 ml-1">
-            Registrar nido <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+      <!-- 3. Parejas -->
+      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-brand-border shadow-sm flex flex-col justify-between h-32 relative overflow-hidden">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">Parejas</span>
+          <div class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <i data-lucide="heart" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div>
+          <span id="stat-pairs" class="text-3xl font-extrabold text-stone-900 tracking-tight">0</span>
+          <p class="text-[11px] font-medium text-amber-700 mt-0.5">Identificadas</p>
+        </div>
+      </div>
+
+      <!-- 4. Crías -->
+      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-brand-border shadow-sm flex flex-col justify-between h-32 relative overflow-hidden">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">Crías</span>
+          <div class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+            <i data-lucide="smile" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div>
+          <span id="stat-chicks" class="text-3xl font-extrabold text-stone-900 tracking-tight">0</span>
+          <p class="text-[11px] font-medium text-teal-700 mt-0.5">Eclosionadas / Pollos</p>
+        </div>
+      </div>
+
+      <!-- 5. Anillados (Alineado verticalmente igual que las demás) -->
+      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-brand-border shadow-sm flex flex-col justify-between h-32 relative overflow-hidden">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">Anillados</span>
+          <div class="w-8 h-8 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+            <i data-lucide="tag" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div>
+          <span id="stat-rings" class="text-3xl font-extrabold text-stone-900 tracking-tight">0</span>
+          <a href="anillados.html" class="text-[11px] font-bold text-sky-600 hover:text-sky-800 transition-all block mt-0.5">Ver Biometría →</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SECCIÓN DE GESTIÓN Y LISTADO DE NIDOS -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-3">
+        <div>
+          <h2 class="text-xl font-extrabold text-stone-900 tracking-tight">Gestión de Cajas Nido</h2>
+          <p class="text-xs text-stone-500 mt-0.5">Listado general de nidos registrados, estado actual y parejas reproductoras.</p>
+        </div>
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <input 
+            type="text" 
+            id="searchNestInput" 
+            oninput="renderDashboardNests()" 
+            placeholder="Buscar por ID, paraje o anilla..." 
+            class="w-full sm:w-64 px-4 py-2 border border-stone-300 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-brand-accent/50 bg-stone-50/50"
+          />
+          <a href="control.html" class="bg-brand-dark hover:bg-brand-hover text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 shrink-0">
+            <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Nido
           </a>
         </div>
       </div>
@@ -223,39 +173,23 @@
         <table class="w-full text-left text-xs text-stone-700">
           <thead class="bg-stone-50/80 text-stone-500 border-b border-stone-200 uppercase font-bold text-[10px] tracking-wider">
             <tr>
-              <th class="p-3">ID Nido</th>
-              <th class="p-3">Tipo</th>
-              <th class="p-3">Ubicación</th>
+              <th class="p-3">ID Nido / Tipo</th>
+              <th class="p-3">Paraje / Ubicación</th>
               <th class="p-3">Estado</th>
-              <th class="p-3">Macho (Anilla / PVC)</th>
-              <th class="p-3">Hembra (Anilla / PVC)</th>
+              <th class="p-3">Pareja (Macho / Hembra)</th>
+              <th class="p-3">Nidada / Crías</th>
               <th class="p-3 text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody id="nests-table-body" class="divide-y divide-stone-100">
+          <tbody id="dashboard-nests-tbody" class="divide-y divide-stone-100">
             <tr>
-              <td colspan="7" class="p-4 text-center text-stone-400">Cargando datos en la nube...</td>
+              <td colspan="6" class="p-4 text-center text-stone-400">Cargando nidos desde Firebase...</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- MAPA GENERAL -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-3">
-        <h2 class="text-lg font-bold text-stone-900 flex items-center gap-2">
-          <i data-lucide="map" class="w-5 h-5 text-brand-accent"></i> Mapa General de Nidos
-        </h2>
-        <div class="flex items-center gap-4 text-xs flex-wrap">
-          <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-blue-600 inline-block shadow-sm"></span><span class="font-semibold text-stone-700">Activo</span></div>
-          <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-amber-600 inline-block shadow-sm"></span><span class="font-semibold text-stone-700">Restos</span></div>
-          <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-stone-400 inline-block shadow-sm"></span><span class="font-semibold text-stone-700">Inactivo / Abandonado</span></div>
-          <span id="total-nests-badge" class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full">0 nidos</span>
-        </div>
-      </div>
-      <div id="dashboard-map"></div>
-    </div>
   </main>
 
   <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo — Firebase Cloud Mode</footer>
@@ -275,224 +209,126 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    auth.onAuthStateChanged(user => { if (!user) window.location.href = 'index.html'; });
+    auth.onAuthStateChanged(user => {
+      if (!user) window.location.href = 'index.html';
+    });
 
     function cerrarSesion() {
       auth.signOut().then(() => window.location.href = 'index.html').catch(err => console.error(err));
     }
 
-    let dashboardMap = null;
-    let markersLayer = null;
-    let allNestsData = [];
-    let allRingsData = {};
-    let totalRingedCount = 0;
-
-    function initVisitorTracking() {
-      const visitsRef = db.ref('estadisticas/totalVisits');
-      visitsRef.transaction(c => (c || 0) + 1);
-      visitsRef.on('value', snapshot => {
-        document.getElementById('total-visits-count').textContent = (snapshot.val() || 0).toLocaleString();
-      });
-    }
-
-    function initDashboardMap() {
-      if (dashboardMap) return;
-      const orthoLayer = L.layerGroup([
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
-        L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: 0.8 })
-      ]);
-      dashboardMap = L.map('dashboard-map', { center: [39.98, -0.05], zoom: 11, layers: [orthoLayer] });
-      markersLayer = L.layerGroup().addTo(dashboardMap);
-    }
+    let allNestsData = {};
 
     function loadDashboardData() {
-      initDashboardMap();
-      initVisitorTracking();
-      
-      // Escuchamos anillados y nidos simultáneamente para cruzar la información
-      db.ref('anillados').on('value', ringSnapshot => {
-        allRingsData = ringSnapshot.val() || {};
-        totalRingedCount = Object.keys(allRingsData).length;
-        document.getElementById('stat-ringed').textContent = totalRingedCount;
+      db.ref('nidos').on('value', snapshot => {
+        allNestsData = snapshot.val() || {};
+        updateDashboardStats(allNestsData);
+        renderDashboardNests();
+      });
 
-        db.ref('nidos').on('value', nestSnapshot => {
-          allNestsData = nestSnapshot.val() ? Object.values(nestSnapshot.val()) : [];
-          renderNestsTableAndMap();
-        });
+      db.ref('anillados').on('value', snapshot => {
+        const rings = snapshot.val() || {};
+        const aliveRings = Object.values(rings).filter(r => r.status !== 'Muerto');
+        document.getElementById('stat-rings').textContent = aliveRings.length;
       });
     }
 
-    function renderNestsTableAndMap() {
-      const tbody = document.getElementById('nests-table-body');
-      tbody.innerHTML = '';
-      markersLayer.clearLayers();
+    function updateDashboardStats(nidos) {
+      let activeCount = 0;
+      let inactiveCount = 0;
+      let pairsCount = 0;
+      let totalChicks = 0;
 
-      const query = (document.getElementById('searchNestsInput').value || '').trim().toLowerCase();
-      const selectedOccupancy = document.getElementById('occupancyFilter').value;
+      Object.values(nidos).forEach(n => {
+        if (n.status === 'Activo') activeCount++;
+        else inactiveCount++;
 
-      const filteredNests = allNestsData.filter(nest => {
-        // Cruzamos también con las anillas de los adultos si están en el nodo anillados
-        let mRingStr = nest.maleRing || '';
-        let fRingStr = nest.femaleRing || '';
-        
-        Object.values(allRingsData).forEach(r => {
-          if ((r.nestId || '').toUpperCase() === (nest.nestId || '').toUpperCase() && r.birdAge === 'Adulto' && r.status !== 'Muerto') {
-            if (r.sex === 'Macho' && (!mRingStr || mRingStr === 'Sin anillar')) mRingStr = r.metalRing || '';
-            if (r.sex === 'Hembra' && (!fRingStr || fRingStr === 'Sin anillar')) fRingStr = r.metalRing || '';
-          }
-        });
+        const hasMale = n.maleRing && n.maleRing !== 'Sin anillar';
+        const hasFemale = n.femaleRing && n.femaleRing !== 'Sin anillar';
+        if (hasMale || hasFemale) pairsCount++;
 
-        const target = [nest.nestId, nest.nestType, nest.locationName, nest.status, mRingStr, nest.malePvcCode, fRingStr, nest.femalePvcCode].join(' ').toLowerCase();
-        const matchesQuery = !query || target.includes(query);
-        let matchesOccupancy = true;
-        if (selectedOccupancy !== 'all') {
-          matchesOccupancy = selectedOccupancy === 'Restos' ? (nest.nestType === 'Masia con restos' || nest.status === 'Restos') : (nest.status === selectedOccupancy);
+        if (n.visitationState === 'Pollos' && n.fledgedChicks) {
+          totalChicks += parseInt(n.fledgedChicks) || 0;
         }
-        return matchesQuery && matchesOccupancy;
       });
 
-      if (filteredNests.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-stone-400">No se encontraron nidos.</td></tr>`;
-        document.getElementById('total-nests-badge').textContent = '0 nidos';
-        updateKpis(filteredNests, totalRingedCount);
+      document.getElementById('stat-active-nests').textContent = activeCount;
+      document.getElementById('stat-inactive-nests').textContent = inactiveCount;
+      document.getElementById('stat-pairs').textContent = pairsCount;
+      document.getElementById('stat-chicks').textContent = totalChicks;
+    }
+
+    function renderDashboardNests() {
+      const tbody = document.getElementById('dashboard-nests-tbody');
+      tbody.innerHTML = '';
+
+      const query = (document.getElementById('searchNestInput').value || '').trim().toLowerCase();
+      const nestsArray = Object.entries(allNestsData);
+
+      const filtered = nestsArray.filter(([id, n]) => {
+        const target = [
+          id,
+          n.locationName || '',
+          n.nestType || '',
+          n.status || '',
+          n.maleRing || '',
+          n.femaleRing || ''
+        ].join(' ').toLowerCase();
+
+        return !query || target.includes(query);
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-stone-400">No se encontraron nidos registrados.</td></tr>`;
         return;
       }
 
-      document.getElementById('total-nests-badge').textContent = `${filteredNests.length} nidos`;
-      updateKpis(filteredNests, totalRingedCount);
+      filtered.forEach(([id, n]) => {
+        let statusBadge = '';
+        if (n.status === 'Activo') statusBadge = '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Activo</span>';
+        else if (n.status === 'Inactivo') statusBadge = '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800">Inactivo</span>';
+        else statusBadge = '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-stone-100 text-stone-700">Restos</span>';
 
-      const latLngs = [];
-      filteredNests.forEach(nest => {
-        // Buscar anillas adultas cruzadas si el nido no las tiene registradas directamente
-        let finalMaleRing = nest.maleRing;
-        let finalMalePvc = nest.malePvcCode;
-        let finalFemaleRing = nest.femaleRing;
-        let finalFemalePvc = nest.femalePvcCode;
-
-        Object.values(allRingsData).forEach(r => {
-          if ((r.nestId || '').toUpperCase() === (nest.nestId || '').toUpperCase() && r.birdAge === 'Adulto' && r.status !== 'Muerto') {
-            if (r.sex === 'Macho' && (!finalMaleRing || finalMaleRing === 'Sin anillar')) {
-              finalMaleRing = r.metalRing;
-              finalMalePvc = r.pvcRing;
-            }
-            if (r.sex === 'Hembra' && (!finalFemaleRing || finalFemaleRing === 'Sin anillar')) {
-              finalFemaleRing = r.metalRing;
-              finalFemalePvc = r.pvcRing;
-            }
-          }
-        });
-
-        const maleInfo = finalMaleRing && finalMaleRing !== 'Sin anillar' ? 
-          `<span class="metal-ring-badge">${finalMaleRing}</span> ${finalMalePvc ? `<span class="pvc-badge ml-1">${finalMalePvc}</span>` : ''}` : 
-          '<span class="italic text-stone-400">Sin anillar</span>';
-        
-        const femaleInfo = finalFemaleRing && finalFemaleRing !== 'Sin anillar' ? 
-          `<span class="metal-ring-badge">${finalFemaleRing}</span> ${finalFemalePvc ? `<span class="pvc-badge ml-1">${finalFemalePvc}</span>` : ''}` : 
-          '<span class="italic text-stone-400">Sin anillar</span>';
-
-        let statusBadgeClass = 'bg-emerald-100 text-emerald-800';
-        let displayStatus = nest.status || 'Activo';
-        if (nest.nestType === 'Masia con restos' || nest.status === 'Restos') { statusBadgeClass = 'bg-amber-100 text-amber-800 font-semibold'; displayStatus = 'Restos'; }
-        else if (nest.status !== 'Activo') { statusBadgeClass = 'bg-rose-100 text-rose-800'; }
+        const maleInfo = n.maleRing && n.maleRing !== 'Sin anillar' ? `<span class="text-sky-700 font-mono font-bold">♂ ${n.maleRing}</span>` : '<span class="text-stone-400">♂ -</span>';
+        const femaleInfo = n.femaleRing && n.femaleRing !== 'Sin anillar' ? `<span class="text-pink-700 font-mono font-bold">♀ ${n.femaleRing}</span>` : '<span class="text-stone-400">♀ -</span>';
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-stone-50/60 transition-colors';
         tr.innerHTML = `
-          <td class="p-3 font-extrabold text-stone-900">${nest.nestId}</td>
-          <td class="p-3 font-semibold text-amber-800">${nest.nestType || 'Nido Artificial'}</td>
-          <td class="p-3 font-medium text-stone-600">${nest.locationName || 'Sin paraje'}</td>
-          <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusBadgeClass}">${displayStatus}</span></td>
-          <td class="p-3">${maleInfo}</td>
-          <td class="p-3">${femaleInfo}</td>
+          <td class="p-3">
+            <div class="font-bold text-stone-900">${id}</div>
+            <div class="text-[10px] text-stone-500">${n.nestType || 'Artificial'}</div>
+          </td>
+          <td class="p-3 font-semibold text-stone-700">${n.locationName || 'Sin ubicación'}</td>
+          <td class="p-3">${statusBadge}</td>
+          <td class="p-3 space-x-2">${maleInfo} ${femaleInfo}</td>
+          <td class="p-3">
+            <div class="font-bold text-stone-800">${n.visitationState || 'Huevos'}</div>
+            <div class="text-[10px] text-stone-500">Volados: ${n.fledgedChicks || 0}</div>
+          </td>
           <td class="p-3 text-right space-x-2">
-            <a href="control.html?edit=${nest.nestId}" class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold">Editar</a>
-            <button onclick="deleteNest('${nest.nestId}')" class="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
+            <a href="control.html?edit=${id}" class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold inline-block">Editar</a>
+            <button onclick="deleteNest('${id}')" class="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
           </td>
         `;
         tbody.appendChild(tr);
-
-        if (nest.lat && nest.lng) {
-          const isActive = (nest.status === 'Activo');
-          const isMasia = (nest.nestType === 'Masia con restos' || nest.status === 'Restos');
-          let circleColor = isMasia ? '#d97706' : (isActive ? '#2563eb' : '#9ca3af');
-          const circleMarker = L.circleMarker([nest.lat, nest.lng], { radius: 8, fillColor: circleColor, color: '#ffffff', weight: 2, fillOpacity: 0.95 });
-          circleMarker.bindPopup(`<b>${nest.nestId}</b><br>${nest.locationName || ''}`);
-          markersLayer.addLayer(circleMarker);
-          latLngs.push([nest.lat, nest.lng]);
-        }
       });
-
-      if (latLngs.length > 0) dashboardMap.fitBounds(latLngs, { padding: [50, 50], maxZoom: 14 });
-      setTimeout(() => { if (dashboardMap) dashboardMap.invalidateSize(); }, 300);
-    }
-
-    function updateKpis(nests, ringedCount) {
-      let active = 0, inactive = 0, pairs = 0, chicks = 0;
-      nests.forEach(n => {
-        if (n.status === 'Activo') active++; else inactive++;
-        
-        let hasMale = (n.maleRing && n.maleRing !== 'Sin anillar');
-        let hasFemale = (n.femaleRing && n.femaleRing !== 'Sin anillar');
-
-        Object.values(allRingsData).forEach(r => {
-          if ((r.nestId || '').toUpperCase() === (n.nestId || '').toUpperCase() && r.birdAge === 'Adulto' && r.status !== 'Muerto') {
-            if (r.sex === 'Macho') hasMale = true;
-            if (r.sex === 'Hembra') hasFemale = true;
-          }
-        });
-
-        if (hasMale || hasFemale) pairs++;
-        if (n.fledgedChicks) chicks += parseInt(n.fledgedChicks) || 0;
-      });
-      document.getElementById('stat-active').textContent = active;
-      document.getElementById('stat-inactive').textContent = inactive;
-      document.getElementById('stat-pairs').textContent = pairs;
-      document.getElementById('stat-chicks').textContent = chicks;
-      document.getElementById('stat-ringed').textContent = ringedCount;
-    }
-
-    function exportFullExcel() {
-      db.ref('/').once('value', snapshot => {
-        const fullData = snapshot.val();
-        if (!fullData) return;
-        const wb = XLSX.utils.book_new();
-        if (fullData.nidos) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Object.values(fullData.nidos)), "Nidos");
-        if (fullData.anillados) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Object.values(fullData.anillados)), "Anillados");
-        XLSX.writeFile(wb, `TytoAlba_Backup_${new Date().toISOString().split('T')[0]}.xlsx`);
-      });
-    }
-
-    function importFullExcel(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-        let importedData = {};
-        workbook.SheetNames.forEach(sheetName => {
-          const jsonSheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-          if (sheetName.toLowerCase().includes('nido')) {
-            importedData.nidos = {};
-            jsonSheet.forEach(item => { if (item.nestId) importedData.nidos[item.nestId] = item; });
-          } else if (sheetName.toLowerCase().includes('anillado')) {
-            importedData.anillados = {};
-            jsonSheet.forEach(item => { if (item.metalRing) importedData.anillados[item.metalRing.replace(/[\/\.#$\[\]]/g, '_')] = item; });
-          }
-        });
-        if (confirm('¿Estás seguro de importar este archivo de Excel?')) {
-          db.ref('/').update(importedData, err => {
-            if (!err) { alert('¡Importado con éxito!'); window.location.reload(); }
-          });
-        }
-      };
-      reader.readAsArrayBuffer(file);
     }
 
     function deleteNest(nestId) {
-      if (confirm(`¿Eliminar nido ${nestId}?`)) db.ref('nidos/' + nestId).remove();
+      if (confirm(`¿Estás seguro de eliminar el nido "${nestId}"?`)) {
+        db.ref('nidos/' + nestId).remove().then(() => {
+          alert('Nido eliminado correctamente.');
+        }).catch(err => {
+          alert('Error al eliminar: ' + err.message);
+        });
+      }
     }
 
-    window.addEventListener('DOMContentLoaded', () => { loadDashboardData(); if (typeof lucide !== 'undefined') lucide.createIcons(); });
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDashboardData();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
   </script>
 </body>
 </html>
