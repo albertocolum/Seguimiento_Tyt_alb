@@ -39,9 +39,13 @@
     #control-map { height: 350px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
     
     .metal-ring-badge {
-      color: #0284c7;
+      background-color: #e5e7eb;
+      color: #1f2937;
       font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
       font-family: monospace;
+      display: inline-block;
     }
     .metal-ring-badge-dead {
       color: #e11d48;
@@ -438,6 +442,7 @@
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
         
+        // 1. Filtrar registros de la base de datos (excluyendo muertos)
         const matched = Object.values(ringsData).filter(r => {
           const isThisNest = (r.nestId || '').toUpperCase() === nestId;
           const isDeadInDb = r.status === 'Muerto';
@@ -449,43 +454,57 @@
           return isThisNest && !isDeadInDb && !isSelectedChickDead && !isAdultDead;
         });
 
+        // 2. Obtener los valores actuales escritos en los inputs del macho y la hembra
         const mRing = document.getElementById('maleRing').value.trim().toUpperCase();
         const mPvc = document.getElementById('malePvcCode').value.trim().toUpperCase();
         const fRing = document.getElementById('femaleRing').value.trim().toUpperCase();
         const fPvc = document.getElementById('femalePvcCode').value.trim().toUpperCase();
 
-        let extraAdults = [];
+        let activeAdults = [...matched];
+
+        // Asegurar que el macho escrito en la casilla aparezca en la cronología aunque no esté guardado todavía
         if (mRing && mRing !== 'SIN ANILLAR' && !adultDeathStatus.includes('Macho') && adultDeathStatus !== 'Ambos muertos') {
-          if (!matched.some(r => r.metalRing === mRing)) {
-            extraAdults.push({ metalRing: mRing, pvcRing: mPvc, birdAge: 'Adulto', sex: 'Macho', ringDate: rawVisitDate });
+          const existingMaleIndex = activeAdults.findIndex(r => r.sex === 'Macho' && r.birdAge === 'Adulto');
+          if (existingMaleIndex >= 0) {
+            activeAdults[existingMaleIndex].metalRing = mRing;
+            activeAdults[existingMaleIndex].pvcRing = mPvc;
+          } else {
+            activeAdults.push({ metalRing: mRing, pvcRing: mPvc, birdAge: 'Adulto', sex: 'Macho', ringDate: rawVisitDate });
           }
         }
+
+        // Asegurar que la hembra escrita en la casilla aparezca en la cronología
         if (fRing && fRing !== 'SIN ANILLAR' && !adultDeathStatus.includes('Hembra') && adultDeathStatus !== 'Ambos muertos') {
-          if (!matched.some(r => r.metalRing === fRing)) {
-            extraAdults.push({ metalRing: fRing, pvcRing: fPvc, birdAge: 'Adulto', sex: 'Hembra', ringDate: rawVisitDate });
+          const existingFemaleIndex = activeAdults.findIndex(r => r.sex === 'Hembra' && r.birdAge === 'Adulto');
+          if (existingFemaleIndex >= 0) {
+            activeAdults[existingFemaleIndex].metalRing = fRing;
+            activeAdults[existingFemaleIndex].pvcRing = fPvc;
+          } else {
+            activeAdults.push({ metalRing: fRing, pvcRing: fPvc, birdAge: 'Adulto', sex: 'Hembra', ringDate: rawVisitDate });
           }
         }
 
-        const listToRender = [...matched, ...extraAdults];
-
-        if (listToRender.length === 0) {
+        if (activeAdults.length === 0) {
           container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento vivos asociados al nido "${nestId}".</div>`;
           return;
         }
 
-        listToRender.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
+        activeAdults.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
 
         let html = '';
-        listToRender.forEach(r => {
+        activeAdults.forEach(r => {
           const isAdult = r.birdAge === 'Adulto';
           let badgeHTML = isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
           
+          const metalBadge = `<span class="metal-ring-badge text-sm">${r.metalRing}</span>`;
+          const pvcBadge = r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : '';
+
           html += `
             <div class="bg-white border border-stone-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2">
               <div class="flex items-center gap-3">
                 ${badgeHTML}
-                <span class="metal-ring-badge text-sm">${r.metalRing}</span>
-                ${r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : ''}
+                ${metalBadge}
+                ${pvcBadge}
               </div>
               <div class="text-stone-500 text-xs font-medium">Fecha: <strong class="text-stone-800">${r.ringDate ? formatDateToDDMMYYYY(r.ringDate) : '-'}</strong> | Sexo: <strong class="text-stone-800">${r.sex || 'Desconocido'}</strong> | Peso: <strong class="text-stone-800">${r.weight ? r.weight + 'g' : '-'}</strong></div>
             </div>
@@ -593,7 +612,6 @@
         newLogEntries.push(`[${visitDateFormatted}] ⚠️ ${adultInfoText}.`);
       }
 
-      // Validación estricta para evitar que aparezca una baja vacía
       if (chickDeathVal && chickDeathVal !== 'Sin baja' && chickDeathVal !== 'Sin baja (Ningún pollo muerto)') {
         newLogEntries.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}).`);
       }
