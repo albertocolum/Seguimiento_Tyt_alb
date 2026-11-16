@@ -442,7 +442,6 @@
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
         
-        // 1. Filtrar registros de la base de datos (excluyendo muertos)
         const matched = Object.values(ringsData).filter(r => {
           const isThisNest = (r.nestId || '').toUpperCase() === nestId;
           const isDeadInDb = r.status === 'Muerto';
@@ -454,7 +453,6 @@
           return isThisNest && !isDeadInDb && !isSelectedChickDead && !isAdultDead;
         });
 
-        // 2. Obtener los valores actuales escritos en los inputs del macho y la hembra
         const mRing = document.getElementById('maleRing').value.trim().toUpperCase();
         const mPvc = document.getElementById('malePvcCode').value.trim().toUpperCase();
         const fRing = document.getElementById('femaleRing').value.trim().toUpperCase();
@@ -462,7 +460,6 @@
 
         let activeAdults = [...matched];
 
-        // Asegurar que el macho escrito en la casilla aparezca en la cronología aunque no esté guardado todavía
         if (mRing && mRing !== 'SIN ANILLAR' && !adultDeathStatus.includes('Macho') && adultDeathStatus !== 'Ambos muertos') {
           const existingMaleIndex = activeAdults.findIndex(r => r.sex === 'Macho' && r.birdAge === 'Adulto');
           if (existingMaleIndex >= 0) {
@@ -473,7 +470,6 @@
           }
         }
 
-        // Asegurar que la hembra escrita en la casilla aparezca en la cronología
         if (fRing && fRing !== 'SIN ANILLAR' && !adultDeathStatus.includes('Hembra') && adultDeathStatus !== 'Ambos muertos') {
           const existingFemaleIndex = activeAdults.findIndex(r => r.sex === 'Hembra' && r.birdAge === 'Adulto');
           if (existingFemaleIndex >= 0) {
@@ -491,26 +487,57 @@
 
         activeAdults.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
 
-        let html = '';
+        // Agrupar por años
+        const groupedByYear = {};
         activeAdults.forEach(r => {
-          const isAdult = r.birdAge === 'Adulto';
-          let badgeHTML = isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
-          
-          const metalBadge = `<span class="metal-ring-badge text-sm">${r.metalRing}</span>`;
-          const pvcBadge = r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : '';
-
-          html += `
-            <div class="bg-white border border-stone-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2">
-              <div class="flex items-center gap-3">
-                ${badgeHTML}
-                ${metalBadge}
-                ${pvcBadge}
-              </div>
-              <div class="text-stone-500 text-xs font-medium">Fecha: <strong class="text-stone-800">${r.ringDate ? formatDateToDDMMYYYY(r.ringDate) : '-'}</strong> | Sexo: <strong class="text-stone-800">${r.sex || 'Desconocido'}</strong> | Peso: <strong class="text-stone-800">${r.weight ? r.weight + 'g' : '-'}</strong></div>
-            </div>
-          `;
+          let year = 'Sin año';
+          if (r.ringDate) {
+            const parts = r.ringDate.split('-');
+            if (parts.length === 3) year = parts[0];
+            else if (r.ringDate.includes('/')) {
+              const p = r.ringDate.split('/');
+              if (p.length === 3) year = p[2];
+            }
+          }
+          if (!groupedByYear[year]) groupedByYear[year] = [];
+          groupedByYear[year].push(r);
         });
+
+        let html = '';
+        const sortedYears = Object.keys(groupedByYear).sort((a, b) => b.localeCompare(a));
+
+        sortedYears.forEach(year => {
+          html += `
+            <div class="space-y-2 mb-4">
+              <div class="bg-brand-dark/10 text-brand-dark px-3 py-1 rounded-lg font-extrabold text-xs uppercase tracking-wide flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-accent"></i> Temporada / Año: ${year}
+              </div>
+          `;
+
+          groupedByYear[year].forEach(r => {
+            const isAdult = r.birdAge === 'Adulto';
+            let badgeHTML = isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
+            
+            const metalBadge = `<span class="metal-ring-badge text-sm">${r.metalRing}</span>`;
+            const pvcBadge = r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : '';
+
+            html += `
+              <div class="bg-white border border-stone-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 ml-2">
+                <div class="flex items-center gap-3">
+                  ${badgeHTML}
+                  ${metalBadge}
+                  ${pvcBadge}
+                </div>
+                <div class="text-stone-500 text-xs font-medium">Fecha: <strong class="text-stone-800">${r.ringDate ? formatDateToDDMMYYYY(r.ringDate) : '-'}</strong> | Sexo: <strong class="text-stone-800">${r.sex || 'Desconocido'}</strong> | Peso: <strong class="text-stone-800">${r.weight ? r.weight + 'g' : '-'}</strong></div>
+              </div>
+            `;
+          });
+
+          html += `</div>`;
+        });
+
         container.innerHTML = html;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
       });
     }
 
