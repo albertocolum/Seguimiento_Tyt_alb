@@ -664,7 +664,9 @@
         db.ref('nidos/' + editId).once('value', snapshot => {
           const nest = snapshot.val();
           if (nest) {
-            originalNestData = nest;
+            // Guardamos una copia exacta de los datos originales cargados de Firebase
+            originalNestData = JSON.parse(JSON.stringify(nest));
+
             document.getElementById('nestId').value = nest.nestId || '';
             document.getElementById('nestType').value = nest.nestType || 'Nido Artificial';
             document.getElementById('locationName').value = nest.locationName || '';
@@ -733,12 +735,22 @@
       if (!originalNestData) {
         changesDescription.push(`Nido registrado (Estado: ${newVisitationState}, Cámara: ${newCameraState})`);
       } else {
-        // Detección exhaustiva de cualquier cambio realizado en el formulario
-        if (originalNestData.visitationState !== newVisitationState) changesDescription.push(`Estado nidada cambiado a "${newVisitationState}"`);
-        if (originalNestData.hasCamera !== newCameraState) changesDescription.push(newCameraState === 'Sí' ? `Cámara activada` : `Cámara desactivada`);
-        if (originalNestData.healthStatus !== newHealth) changesDescription.push(`Salud modificada a "${newHealth}"`);
-        if (parseInt(originalNestData.fledgedChicks || 0) !== parseInt(newFledged)) changesDescription.push(`Pollos volados actualizados a: ${newFledged}`);
-        if (originalNestData.status !== newStatus) changesDescription.push(`Estado del nido cambiado a "${newStatus}"`);
+        // Comparación estricta de cada campo modificado con respecto al original
+        if (originalNestData.visitationState !== newVisitationState) {
+          changesDescription.push(`Estado nidada cambiado a "${newVisitationState}"`);
+        }
+        if (originalNestData.hasCamera !== newCameraState) {
+          changesDescription.push(newCameraState === 'Sí' ? `Cámara activada` : `Cámara desactivada`);
+        }
+        if (originalNestData.healthStatus !== newHealth) {
+          changesDescription.push(`Salud modificada a "${newHealth}"`);
+        }
+        if (parseInt(originalNestData.fledgedChicks || 0) !== parseInt(newFledged)) {
+          changesDescription.push(`Pollos volados actualizados a: ${newFledged}`);
+        }
+        if (originalNestData.status !== newStatus) {
+          changesDescription.push(`Estado del nido cambiado a "${newStatus}"`);
+        }
         
         const oldMale = (originalNestData.maleRing || 'SIN ANILLAR').toUpperCase();
         const oldFemale = (originalNestData.femaleRing || 'SIN ANILLAR').toUpperCase();
@@ -767,7 +779,7 @@
         logText += `\n[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}).`;
       }
 
-      // Añadir de forma limpia al año correspondiente en la memoria
+      // Añadir la nueva línea cronológica al año activo en las notas
       fullNotesStorage[currentVisitYear] = fullNotesStorage[currentVisitYear] ? fullNotesStorage[currentVisitYear] + '\n' + logText : logText;
 
       const combinedNotes = getCombinedNotesString();
