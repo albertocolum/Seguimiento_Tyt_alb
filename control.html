@@ -265,10 +265,19 @@
           <p class="text-[10px] text-stone-400 italic">Nota: Al cambiar de año en el selector superior, puedes consultar o redactar las notas específicas de esa temporada sin mezclar con los demás años.</p>
         </div>
 
+        <!-- HISTORIAL CRONOLÓGICO DE ANILLADOS FILTRADO POR AÑO -->
         <div class="space-y-3 pt-4 border-t">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> Historial Cronológico de Anillados y Adultos en este Nido
-          </h3>
+          <div class="flex flex-wrap justify-between items-center gap-2">
+            <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> Historial Cronológico de Anillados y Adultos en este Nido
+            </h3>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-bold text-stone-500">Temporada / Año:</span>
+              <select id="historyYearFilter" onchange="onHistoryYearFilterChange()" class="px-3 py-1 border rounded-lg text-xs bg-white font-bold text-brand-dark">
+                <!-- Se rellena dinámicamente -->
+              </select>
+            </div>
+          </div>
           <div id="nest-history-container" class="space-y-2.5">
             <div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>
           </div>
@@ -314,6 +323,7 @@
     let originalNestData = null;
     let baseNotesStorage = {};
     let activeNotesYear = new Date().getFullYear().toString();
+    let activeHistoryYear = new Date().getFullYear().toString();
     let liveAutoLine = "";
     let liveAutoYear = "";
 
@@ -461,7 +471,6 @@
           changesDescription.push(femaleRing ? `Hembra asignada [${femaleRing}${femalePvc ? ' - PVC: ' + femalePvc : ''}]` : `Hembra retirada`);
         }
 
-        // Si ha cambiado la fecha de visita respecto a la guardada y no hubo otros cambios de selectores, registrar la nueva revisión
         if (changesDescription.length === 0 && (originalNestData.layDate || '') !== rawVisitDate) {
           changesDescription.push(`Revisión de campo (Estado: ${newVisitationState}, Salud: ${newHealth}, Cámara: ${newCameraState})`);
         }
@@ -502,9 +511,17 @@
     function onVisitDateChange() {
       const visitDateVal = document.getElementById('layDate').value;
       if (visitDateVal) {
-        activeNotesYear = visitDateVal.split('-')[0];
+        const vYear = visitDateVal.split('-')[0];
+        activeNotesYear = vYear;
+        activeHistoryYear = vYear;
       }
       updateLiveNotesPreview();
+      updateNestHistoryPreview();
+    }
+
+    function onHistoryYearFilterChange() {
+      const select = document.getElementById('historyYearFilter');
+      activeHistoryYear = select.value;
       updateNestHistoryPreview();
     }
 
@@ -610,7 +627,6 @@
           }
         });
 
-        // Sincronizar originalNestData con los adultos cargados de la BD para no generar falsos cambios
         if (syncOriginal && originalNestData) {
           originalNestData.maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
           originalNestData.malePvcCode = document.getElementById('malePvcCode').value.trim().toUpperCase() || '';
@@ -655,11 +671,13 @@
     function updateNestHistoryPreview() {
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       const container = document.getElementById('nest-history-container');
+      const yearFilterSelect = document.getElementById('historyYearFilter');
       const deadChickRing = document.getElementById('chickDeathRing').value;
       const adultDeathStatus = document.getElementById('adultDeath').value;
       const rawVisitDate = document.getElementById('layDate').value || new Date().toISOString().split('T')[0];
 
       if (!nestId) {
+        yearFilterSelect.innerHTML = `<option value="${activeHistoryYear}">Año ${activeHistoryYear}</option>`;
         container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>';
         return;
       }
@@ -705,14 +723,13 @@
           }
         }
 
-        if (activeAdults.length === 0) {
-          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento vivos asociados al nido "${nestId}".</div>`;
-          return;
-        }
-
         activeAdults.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
 
         const groupedByYear = {};
+        const yearsSet = new Set();
+        const currentVisitYear = rawVisitDate ? rawVisitDate.split('-')[0] : new Date().getFullYear().toString();
+        yearsSet.add(currentVisitYear);
+
         activeAdults.forEach(r => {
           let year = 'Sin año';
           if (r.ringDate) {
@@ -723,18 +740,48 @@
               if (p.length === 3) year = p[2];
             }
           }
+          yearsSet.add(year);
           if (!groupedByYear[year]) groupedByYear[year] = [];
           groupedByYear[year].push(r);
         });
 
-        let html = '';
-        const sortedYears = Object.keys(groupedByYear).sort((a, b) => b.localeCompare(a));
+        // Actualizar selector desplegable de años del historial
+        const sortedAvailableYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+        yearFilterSelect.innerHTML = '<option value="ALL">Todos los años</option>';
+        sortedAvailableYears.forEach(y => {
+          const opt = document.createElement('option');
+          opt.value = y;
+          opt.textContent = y === 'Sin año' ? 'Sin año' : `Año ${y}`;
+          yearFilterSelect.appendChild(opt);
+        });
 
-        sortedYears.forEach(year => {
+        if (activeHistoryYear === 'ALL' || sortedAvailableYears.includes(activeHistoryYear)) {
+          yearFilterSelect.value = activeHistoryYear;
+        } else {
+          activeHistoryYear = sortedAvailableYears[0];
+          yearFilterSelect.value = activeHistoryYear;
+        }
+
+        if (activeAdults.length === 0) {
+          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento vivos asociados al nido "${nestId}".</div>`;
+          return;
+        }
+
+        const yearsToRender = activeHistoryYear === 'ALL'
+          ? Object.keys(groupedByYear).sort((a, b) => b.localeCompare(a))
+          : (groupedByYear[activeHistoryYear] ? [activeHistoryYear] : []);
+
+        if (yearsToRender.length === 0) {
+          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento para el año ${activeHistoryYear} en este nido.</div>`;
+          return;
+        }
+
+        let html = '';
+        yearsToRender.forEach(year => {
           html += `
             <div class="space-y-2 mb-4">
               <div class="bg-brand-dark/10 text-brand-dark px-3 py-1 rounded-lg font-extrabold text-xs uppercase tracking-wide flex items-center gap-1.5">
-                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-accent"></i> Temporada / Año: ${year}
+                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-accent"></i> Temporada / Año: ${year} (${groupedByYear[year].length})
               </div>
           `;
 
@@ -787,7 +834,10 @@
             document.getElementById('status').value = nest.status || 'Activo';
             document.getElementById('lat').value = nest.lat || '';
             document.getElementById('lng').value = nest.lng || '';
-            document.getElementById('layDate').value = nest.layDate || new Date().toISOString().split('T')[0];
+            const initialDate = nest.layDate || new Date().toISOString().split('T')[0];
+            document.getElementById('layDate').value = initialDate;
+            activeHistoryYear = initialDate.split('-')[0];
+
             document.getElementById('visitationState').value = nest.visitationState || 'Huevos';
             document.getElementById('healthStatus').value = nest.healthStatus || 'Excelente';
             document.getElementById('adultDeath').value = nest.adultDeath || 'Ninguno';
@@ -816,7 +866,9 @@
       } else {
         originalNestData = null;
         initControlMap();
-        document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('layDate').value = today;
+        activeHistoryYear = today.split('-')[0];
         document.getElementById('adultDeath').value = 'Ninguno';
         parseNotesToStorage('');
         updateLiveNotesPreview();
