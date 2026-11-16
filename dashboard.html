@@ -171,7 +171,7 @@
 
     </div>
 
-    <!-- SECCIÓN DE GESTIÓN Y LISTADO DE NIDOS -->
+    <!-- SECCIÓN DE GESTIÓN Y LISTADO DE NIDOS CON PAGINACIÓN -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-6">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-3">
         <div>
@@ -182,7 +182,7 @@
           <input 
             type="text" 
             id="searchNestInput" 
-            oninput="renderDashboardNests()" 
+            oninput="currentPage = 1; renderDashboardNests();" 
             placeholder="Buscar por ID, paraje o anilla..." 
             class="w-full sm:w-64 px-4 py-2 border border-stone-300 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-brand-accent/50 bg-stone-50/50"
           />
@@ -209,6 +209,20 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- CONTROLES DE PAGINACIÓN (ANTERIOR / SIGUIENTE) -->
+      <div id="pagination-controls" class="flex justify-between items-center pt-4 border-t border-stone-200 text-xs">
+        <span id="pagination-info" class="font-semibold text-stone-500">Mostrando 0 - 0 de 0 nidos</span>
+        <div class="flex items-center gap-2">
+          <button id="prev-page-btn" onclick="changePage(-1)" class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+            ← Anterior
+          </button>
+          <span id="page-indicator" class="font-bold px-2 text-stone-700">Página 1 de 1</span>
+          <button id="next-page-btn" onclick="changePage(1)" class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+            Siguiente →
+          </button>
+        </div>
       </div>
     </div>
 
@@ -260,6 +274,10 @@
     let allRingsData = {};
     let dashMap = null;
     let markersLayer = null;
+
+    // Variables de Paginación
+    let currentPage = 1;
+    const pageSize = 5;
 
     function initDashboardMap() {
       if (dashMap) return;
@@ -359,6 +377,11 @@
       document.getElementById('stat-chicks').textContent = totalChicks;
     }
 
+    function changePage(direction) {
+      currentPage += direction;
+      renderDashboardNests();
+    }
+
     function renderDashboardNests() {
       const tbody = document.getElementById('dashboard-nests-tbody');
       tbody.innerHTML = '';
@@ -388,12 +411,30 @@
         return !query || target.includes(query);
       });
 
-      if (filtered.length === 0) {
+      const totalItems = filtered.length;
+      const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedItems = filtered.slice(startIndex, endIndex);
+
+      // Actualizar textos de paginación
+      const infoText = totalItems === 0 ? 'Mostrando 0 nidos' : `Mostrando ${startIndex + 1} - ${Math.min(endIndex, totalItems)} de ${totalItems} nidos`;
+      document.getElementById('pagination-info').textContent = infoText;
+      document.getElementById('page-indicator').textContent = `Página ${currentPage} de ${totalPages}`;
+
+      document.getElementById('prev-page-btn').disabled = (currentPage === 1);
+      document.getElementById('next-page-btn').disabled = (currentPage === totalPages || totalItems === 0);
+
+      if (paginatedItems.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-stone-400">No se encontraron nidos registrados.</td></tr>`;
         return;
       }
 
-      filtered.forEach(([id, n]) => {
+      paginatedItems.forEach(([id, n]) => {
         let statusBadge = '';
         if (n.status === 'Activo') statusBadge = '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Activo</span>';
         else if (n.status === 'Inactivo') statusBadge = '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800">Inactivo</span>';
