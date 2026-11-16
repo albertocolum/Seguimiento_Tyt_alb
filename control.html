@@ -176,7 +176,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de la Visita *</label>
-              <input type="date" id="layDate" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+              <input type="date" id="layDate" onchange="onVisitDateChange()" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Estado de la Visita / Nidada</label>
@@ -255,9 +255,19 @@
           </div>
         </div>
 
+        <!-- OBSERVACIONES DE CAMPO FILTRADAS POR AÑO -->
         <div class="space-y-2 pt-2">
-          <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo</label>
-          <textarea id="notes" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white fixed-textarea"></textarea>
+          <div class="flex justify-between items-center">
+            <label class="block text-xs font-bold text-stone-600">Observaciones de Campo</label>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-bold text-stone-500">Temporada / Año:</span>
+              <select id="notesYearFilter" onchange="switchNotesYear()" class="px-3 py-1 border rounded-lg text-xs bg-white font-bold text-brand-dark">
+                <!-- Se rellena dinámicamente -->
+              </select>
+            </div>
+          </div>
+          <textarea id="notes" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white fixed-textarea" oninput="saveCurrentYearNotes()"></textarea>
+          <p class="text-[10px] text-stone-400 italic">Nota: Al cambiar de año en el selector superior, puedes consultar o redactar las notas específicas de esa temporada sin mezclar con los demás años.</p>
         </div>
 
         <div class="space-y-3 pt-4 border-t">
@@ -307,11 +317,113 @@
     let controlMap = null;
     let selectedMarker = null;
     let originalNestData = null;
+    let fullNotesStorage = {}; // Almacena notas divididas por año: { "2025": "...", "2026": "..." }
+    let activeNotesYear = new Date().getFullYear().toString();
 
     function formatDateToDDMMYYYY(dateStr) {
       if (!dateStr) return '';
       const parts = dateStr.split('-');
       return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+    }
+
+    function parseNotesToStorage(rawNotes) {
+      fullNotesStorage = {};
+      if (!rawNotes) {
+        const currentYear = new Date().getFullYear().toString();
+        fullNotesStorage[currentYear] = "";
+        updateNotesYearDropdown();
+        return;
+      }
+
+      // Detectar líneas que empiezan por [DD/MM/YYYY] o [YYYY-MM-DD] para extraer su año
+      const lines = rawNotes.split('\n');
+      let currentYearKey = new Date().getFullYear().toString();
+      
+      lines.forEach(line => {
+        const match = line.match(/\[(\d{2}\/\d{2}\/(\d{4})|(\d{4})-\d{2}-\d{2})/);
+        if (match) {
+          currentYearKey = match[2] || match[3] || currentYearKey;
+        }
+        if (!fullNotesStorage[currentYearKey]) fullNotesStorage[currentYearKey] = "";
+        fullNotesStorage[currentYearKey] += (fullNotesStorage[currentYearKey] ? '\n' : '') + line;
+      });
+
+      // Asegurar que al menos exista el año actual o el de la fecha de visita
+      const visitDateVal = document.getElementById('layDate').value;
+      if (visitDateVal) {
+        const visitYear = visitDateVal.split('-')[0];
+        if (!fullNotesStorage[visitYear]) fullNotesStorage[visitYear] = "";
+        activeNotesYear = visitYear;
+      } else {
+        const keys = Object.keys(fullNotesStorage);
+        if (keys.length > 0) activeNotesYear = keys[keys.length - 1];
+      }
+
+      updateNotesYearDropdown();
+    }
+
+    function updateNotesYearDropdown() {
+      const select = document.getElementById('notesYearFilter');
+      const years = Object.keys(fullNotesStorage).sort().reverse();
+      
+      const visitDateVal = document.getElementById('layDate').value;
+      if (visitDateVal) {
+        const vYear = visitDateVal.split('-')[0];
+        if (!years.includes(vYear)) years.unshift(vYear);
+      }
+
+      if (years.length === 0) years.push(new Date().getFullYear().toString());
+
+      select.innerHTML = '';
+      years.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = `Año ${y}`;
+        select.appendChild(opt);
+      });
+
+      if (years.includes(activeNotesYear)) {
+        select.value = activeNotesYear;
+      } else {
+        activeNotesYear = years[0];
+        select.value = activeNotesYear;
+      }
+
+      document.getElementById('notes').value = fullNotesStorage[activeNotesYear] || "";
+    }
+
+    function switchNotesYear() {
+      saveCurrentYearNotes();
+      const select = document.getElementById('notesYearFilter');
+      activeNotesYear = select.value;
+      document.getElementById('notes').value = fullNotesStorage[activeNotesYear] || "";
+    }
+
+    function saveCurrentYearNotes() {
+      const textareaVal = document.getElementById('notes').value;
+      fullNotesStorage[activeNotesYear] = textareaVal;
+    }
+
+    function onVisitDateChange() {
+      const visitDateVal = document.getElementById('layDate').value;
+      if (visitDateVal) {
+        const vYear = visitDateVal.split('-')[0];
+        if (!fullNotesStorage[vYear]) fullNotesStorage[vYear] = "";
+        activeNotesYear = vYear;
+        updateNotesYearDropdown();
+      }
+      updateNestHistoryPreview();
+    }
+
+    function getCombinedNotesString() {
+      saveCurrentYearNotes();
+      let combined = "";
+      Object.keys(fullNotesStorage).sort().forEach(y => {
+        if (fullNotesStorage[y] && fullNotesStorage[y].trim() !== "") {
+          combined += (combined ? '\n' : '') + fullNotesStorage[y].trim();
+        }
+      });
+      return combined;
     }
 
     function reverseGeocode(lat, lng) {
@@ -487,7 +599,6 @@
 
         activeAdults.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
 
-        // Agrupar por años
         const groupedByYear = {};
         activeAdults.forEach(r => {
           let year = 'Sin año';
@@ -572,7 +683,8 @@
             document.getElementById('malePvcCode').value = nest.malePvcCode || '';
             document.getElementById('femaleRing').value = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? nest.femaleRing : '';
             document.getElementById('femalePvcCode').value = nest.femalePvcCode || '';
-            document.getElementById('notes').value = nest.notes || '';
+            
+            parseNotesToStorage(nest.notes || '');
 
             autoLoadAdultsForNest();
             loadChicksDropdown(nest.chickDeathRing || 'Sin baja');
@@ -591,6 +703,7 @@
         initControlMap();
         document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('adultDeath').value = 'Ninguno';
+        parseNotesToStorage('');
         loadChicksDropdown('Sin baja');
         updateNestHistoryPreview();
       }
@@ -603,14 +716,16 @@
       const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
       const adultDeathStatus = document.getElementById('adultDeath').value;
       const chickDeathVal = document.getElementById('chickDeathRing').value;
-      const notesField = document.getElementById('notes');
 
       let maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
       let malePvc = document.getElementById('malePvcCode').value.trim().toUpperCase() || '';
       let femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
       let femalePvc = document.getElementById('femalePvcCode').value.trim().toUpperCase() || '';
 
-      let currentNotes = notesField.value.trim();
+      // Obtener el año de la visita actual para añadir el log en su año correspondiente
+      const currentVisitYear = rawVisitDate ? rawVisitDate.split('-')[0] : new Date().getFullYear().toString();
+      if (!fullNotesStorage[currentVisitYear]) fullNotesStorage[currentVisitYear] = "";
+
       let newLogEntries = [];
       let changesDescription = [];
       const newVisitationState = document.getElementById('visitationState').value;
@@ -643,18 +758,17 @@
         newLogEntries.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}).`);
       }
 
-      finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries, adultDeathStatus, chickDeathVal);
-    }
-
-    function finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, currentNotes, newLogEntries, adultDeathStatus, chickDeathVal) {
       if (newLogEntries.length > 0) {
         const logText = newLogEntries.join('\n');
-        currentNotes = currentNotes ? currentNotes + '\n' + logText : logText;
+        fullNotesStorage[currentVisitYear] = fullNotesStorage[currentVisitYear] ? fullNotesStorage[currentVisitYear] + '\n' + logText : logText;
       }
 
+      const combinedNotes = getCombinedNotesString();
+      finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, combinedNotes, adultDeathStatus, chickDeathVal, rawVisitDate);
+    }
+
+    function finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, combinedNotes, adultDeathStatus, chickDeathVal, rawVisitDate) {
       const locationNameVal = document.getElementById('locationName').value.trim();
-      const rawVisitDate = document.getElementById('layDate').value;
-      const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
 
       const nestData = {
         nestId: nestId,
@@ -674,7 +788,7 @@
         malePvcCode: (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') ? '' : malePvc,
         femaleRing: (adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') ? 'Sin anillar' : femaleRing,
         femalePvcCode: (adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') ? '' : femalePvc,
-        notes: currentNotes,
+        notes: combinedNotes,
         lastReview: new Date().toISOString().split('T')[0]
       };
 
@@ -682,21 +796,21 @@
       updatesSync['nidos/' + nestId] = nestData;
 
       if (maleRing && maleRing !== 'Sin anillar' && adultDeathStatus !== 'Macho muerto' && adultDeathStatus !== 'Ambos muertos') {
-        updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Vivo' };
+        updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: combinedNotes, status: 'Vivo' };
       } else if ((adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') && maleRing && maleRing !== 'Sin anillar') {
-        updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Muerto' };
+        updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: combinedNotes, status: 'Muerto' };
       }
 
       if (femaleRing && femaleRing !== 'Sin anillar' && adultDeathStatus !== 'Hembra muerta' && adultDeathStatus !== 'Ambos muertos') {
-        updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Vivo' };
+        updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: combinedNotes, status: 'Vivo' };
       } else if ((adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') && femaleRing && femaleRing !== 'Sin anillar') {
-        updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: currentNotes, status: 'Muerto' };
+        updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: combinedNotes, status: 'Muerto' };
       }
 
       if (chickDeathVal && chickDeathVal !== 'Sin baja' && chickDeathVal !== 'Sin baja (Ningún pollo muerto)') {
         const chickKey = chickDeathVal.replace(/[\/\.#$\[\]]/g, '_');
         updatesSync['anillados/' + chickKey + '/status'] = 'Muerto';
-        updatesSync['anillados/' + chickKey + '/lastObservation'] = `Fallecido en nido ${nestId} con fecha ${visitDateFormatted}`;
+        updatesSync['anillados/' + chickKey + '/lastObservation'] = `Fallecido en nido ${nestId} con fecha ${formatDateToDDMMYYYY(rawVisitDate)}`;
       }
 
       db.ref().update(updatesSync).then(() => {
