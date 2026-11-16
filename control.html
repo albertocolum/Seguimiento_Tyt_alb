@@ -47,11 +47,6 @@
       font-family: monospace;
       display: inline-block;
     }
-    .metal-ring-badge-dead {
-      color: #e11d48;
-      font-weight: 700;
-      font-family: monospace;
-    }
     .pvc-badge {
       background-color: #000000;
       color: #ffffff;
@@ -64,8 +59,8 @@
     textarea.fixed-textarea {
       resize: vertical;
       overflow-y: auto;
-      height: 120px;
-      max-height: 250px;
+      height: 130px;
+      max-height: 260px;
     }
   </style>
 </head>
@@ -131,7 +126,7 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido *</label>
-              <select id="nestType" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <select id="nestType" onchange="updateLiveNotesPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
                 <option value="Nido Artificial">Nido Artificial</option>
                 <option value="Nido Natural">Nido Natural</option>
                 <option value="Masia con restos">Masia con restos</option>
@@ -143,7 +138,7 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Estado Actual *</label>
-              <select id="status" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <select id="status" onchange="updateLiveNotesPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
                 <option value="Activo">Activo</option>
                 <option value="Inactivo">Inactivo / Abandonado</option>
                 <option value="Restos">Restos</option>
@@ -180,7 +175,7 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Estado de la Visita / Nidada</label>
-              <select id="visitationState" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <select id="visitationState" onchange="updateLiveNotesPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
                 <option value="Huevos">Huevos</option>
                 <option value="Pollos">Pollos</option>
                 <option value="Fracaso">Fracaso</option>
@@ -189,7 +184,7 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Salud General</label>
-              <select id="healthStatus" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <select id="healthStatus" onchange="updateLiveNotesPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
                 <option value="Excelente">Excelente</option>
                 <option value="Buena">Buena</option>
                 <option value="Regular">Regular</option>
@@ -201,13 +196,13 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Baja de Pollo por Mortalidad (Muerto)</label>
-              <select id="chickDeathRing" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-stone-800">
+              <select id="chickDeathRing" onchange="updateNestHistoryPreview(); updateLiveNotesPreview();" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-stone-800">
                 <option value="Sin baja">Sin baja (Ningún pollo muerto)</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Adulto Muerto / Incidencias</label>
-              <select id="adultDeath" onchange="updateNestHistoryPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-stone-800">
+              <select id="adultDeath" onchange="updateNestHistoryPreview(); updateLiveNotesPreview();" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-stone-800">
                 <option value="Ninguno">Ninguno</option>
                 <option value="Macho muerto">Macho muerto</option>
                 <option value="Hembra muerta">Hembra muerta</option>
@@ -216,7 +211,7 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Pollos Volados / Exitosos</label>
-              <input type="number" id="fledgedChicks" min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+              <input type="number" id="fledgedChicks" oninput="updateLiveNotesPreview()" min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
             </div>
           </div>
         </div>
@@ -228,19 +223,19 @@
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-stone-50/80 p-4 rounded-xl border border-stone-200">
             <div>
               <label class="block text-[11px] font-bold text-stone-600 mb-1">Macho - Anilla Metálica</label>
-              <input type="text" id="maleRing" oninput="updateNestHistoryPreview()" placeholder="Ej. G-14869" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
+              <input type="text" id="maleRing" oninput="updateNestHistoryPreview(); updateLiveNotesPreview();" placeholder="Ej. G-14869" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
             </div>
             <div>
               <label class="block text-[11px] font-bold text-stone-600 mb-1">Macho - PVC</label>
-              <input type="text" id="malePvcCode" oninput="updateNestHistoryPreview()" placeholder="Ej. 04T" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+              <input type="text" id="malePvcCode" oninput="updateNestHistoryPreview(); updateLiveNotesPreview();" placeholder="Ej. 04T" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
             </div>
             <div>
               <label class="block text-[11px] font-bold text-stone-600 mb-1">Hembra - Anilla Metálica</label>
-              <input type="text" id="femaleRing" oninput="updateNestHistoryPreview()" placeholder="Ej. G-14875" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
+              <input type="text" id="femaleRing" oninput="updateNestHistoryPreview(); updateLiveNotesPreview();" placeholder="Ej. G-14875" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
             </div>
             <div>
               <label class="block text-[11px] font-bold text-stone-600 mb-1">Hembra - PVC</label>
-              <input type="text" id="femalePvcCode" oninput="updateNestHistoryPreview()" placeholder="Ej. 04W" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+              <input type="text" id="femalePvcCode" oninput="updateNestHistoryPreview(); updateLiveNotesPreview();" placeholder="Ej. 04W" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
             </div>
           </div>
         </div>
@@ -248,14 +243,14 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Cámara de Fototrampeo</label>
-            <select id="hasCamera" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+            <select id="hasCamera" onchange="updateLiveNotesPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
               <option value="No">No</option>
               <option value="Sí">Sí</option>
             </select>
           </div>
         </div>
 
-        <!-- OBSERVACIONES DE CAMPO FILTRADAS POR AÑO -->
+        <!-- OBSERVACIONES DE CAMPO FILTRADAS POR AÑO CON VISTA PREVIA AUTOMÁTICA -->
         <div class="space-y-2 pt-2">
           <div class="flex justify-between items-center">
             <label class="block text-xs font-bold text-stone-600">Observaciones de Campo</label>
@@ -266,8 +261,8 @@
               </select>
             </div>
           </div>
-          <textarea id="notes" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white fixed-textarea" oninput="saveCurrentYearNotes()"></textarea>
-          <p class="text-[10px] text-stone-400 italic">Nota: Al cambiar de año en el selector superior, puedes consultar o redactar las notas específicas de esa temporada sin mezclar con los demás años.</p>
+          <textarea id="notes" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white fixed-textarea" oninput="onManualTextareaEdit()"></textarea>
+          <p class="text-[10px] text-stone-400 italic">Cualquier cambio en estado, cámara, nidada o pareja se registra automáticamente arriba en la temporada de la fecha de visita.</p>
         </div>
 
         <div class="space-y-3 pt-4 border-t">
@@ -317,8 +312,10 @@
     let controlMap = null;
     let selectedMarker = null;
     let originalNestData = null;
-    let fullNotesStorage = {}; 
+    let baseNotesStorage = {}; // Guarda las notas consolidadas previas sin la línea en vivo
     let activeNotesYear = new Date().getFullYear().toString();
+    let liveAutoLine = "";
+    let liveAutoYear = "";
 
     function formatDateToDDMMYYYY(dateStr) {
       if (!dateStr) return '';
@@ -327,10 +324,10 @@
     }
 
     function parseNotesToStorage(rawNotes) {
-      fullNotesStorage = {};
+      baseNotesStorage = {};
       if (!rawNotes) {
         const currentYear = new Date().getFullYear().toString();
-        fullNotesStorage[currentYear] = "";
+        baseNotesStorage[currentYear] = "";
         updateNotesYearDropdown();
         return;
       }
@@ -343,17 +340,17 @@
         if (match) {
           currentYearKey = match[2] || match[3] || currentYearKey;
         }
-        if (!fullNotesStorage[currentYearKey]) fullNotesStorage[currentYearKey] = "";
-        fullNotesStorage[currentYearKey] += (fullNotesStorage[currentYearKey] ? '\n' : '') + line;
+        if (!baseNotesStorage[currentYearKey]) baseNotesStorage[currentYearKey] = "";
+        baseNotesStorage[currentYearKey] += (baseNotesStorage[currentYearKey] ? '\n' : '') + line;
       });
 
       const visitDateVal = document.getElementById('layDate').value;
       if (visitDateVal) {
         const visitYear = visitDateVal.split('-')[0];
-        if (!fullNotesStorage[visitYear]) fullNotesStorage[visitYear] = "";
+        if (!baseNotesStorage[visitYear]) baseNotesStorage[visitYear] = "";
         activeNotesYear = visitYear;
       } else {
-        const keys = Object.keys(fullNotesStorage);
+        const keys = Object.keys(baseNotesStorage);
         if (keys.length > 0) activeNotesYear = keys[keys.length - 1];
       }
 
@@ -362,15 +359,16 @@
 
     function updateNotesYearDropdown() {
       const select = document.getElementById('notesYearFilter');
-      const years = Object.keys(fullNotesStorage).sort().reverse();
+      const yearsSet = new Set(Object.keys(baseNotesStorage));
       
       const visitDateVal = document.getElementById('layDate').value;
       if (visitDateVal) {
-        const vYear = visitDateVal.split('-')[0];
-        if (!years.includes(vYear)) years.unshift(vYear);
+        yearsSet.add(visitDateVal.split('-')[0]);
       }
+      if (liveAutoYear) yearsSet.add(liveAutoYear);
+      if (yearsSet.size === 0) yearsSet.add(new Date().getFullYear().toString());
 
-      if (years.length === 0) years.push(new Date().getFullYear().toString());
+      const years = Array.from(yearsSet).sort().reverse();
 
       select.innerHTML = '';
       years.forEach(y => {
@@ -387,38 +385,137 @@
         select.value = activeNotesYear;
       }
 
-      document.getElementById('notes').value = fullNotesStorage[activeNotesYear] || "";
+      renderTextareaForActiveYear();
+    }
+
+    function renderTextareaForActiveYear() {
+      let text = baseNotesStorage[activeNotesYear] || "";
+      if (liveAutoLine && liveAutoYear === activeNotesYear) {
+        text = text ? text + '\n' + liveAutoLine : liveAutoLine;
+      }
+      document.getElementById('notes').value = text;
     }
 
     function switchNotesYear() {
-      saveCurrentYearNotes();
       const select = document.getElementById('notesYearFilter');
       activeNotesYear = select.value;
-      document.getElementById('notes').value = fullNotesStorage[activeNotesYear] || "";
+      renderTextareaForActiveYear();
     }
 
-    function saveCurrentYearNotes() {
-      const textareaVal = document.getElementById('notes').value;
-      fullNotesStorage[activeNotesYear] = textareaVal;
+    function onManualTextareaEdit() {
+      let currentVal = document.getElementById('notes').value;
+      // Si el usuario edita manualmente, quitamos la línea automática temporal si estaba al final para guardar su texto base
+      if (liveAutoLine && liveAutoYear === activeNotesYear && currentVal.endsWith(liveAutoLine)) {
+        currentVal = currentVal.slice(0, -liveAutoLine.length).replace(/\n$/, '');
+      }
+      baseNotesStorage[activeNotesYear] = currentVal;
+    }
+
+    function buildAutoLogLine() {
+      const rawVisitDate = document.getElementById('layDate').value;
+      const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
+      const adultDeathStatus = document.getElementById('adultDeath').value;
+      const chickDeathVal = document.getElementById('chickDeathRing').value;
+
+      let maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
+      let malePvc = document.getElementById('malePvcCode').value.trim().toUpperCase() || '';
+      let femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
+      let femalePvc = document.getElementById('femalePvcCode').value.trim().toUpperCase() || '';
+
+      let changesDescription = [];
+      const newVisitationState = document.getElementById('visitationState').value;
+      const newCameraState = document.getElementById('hasCamera').value;
+      const newHealth = document.getElementById('healthStatus').value;
+      const newFledged = document.getElementById('fledgedChicks').value;
+      const newStatus = document.getElementById('status').value;
+
+      if (!originalNestData) {
+        changesDescription.push(`Nido registrado (Estado: ${newVisitationState}, Cámara: ${newCameraState})`);
+      } else {
+        if (originalNestData.visitationState !== newVisitationState) {
+          changesDescription.push(`Estado nidada cambiado a "${newVisitationState}"`);
+        }
+        if (originalNestData.hasCamera !== newCameraState) {
+          changesDescription.push(newCameraState === 'Sí' ? `Cámara activada` : `Cámara desactivada`);
+        }
+        if (originalNestData.healthStatus !== newHealth) {
+          changesDescription.push(`Salud modificada a "${newHealth}"`);
+        }
+        if (parseInt(originalNestData.fledgedChicks || 0) !== parseInt(newFledged)) {
+          changesDescription.push(`Pollos volados actualizados a: ${newFledged}`);
+        }
+        if (originalNestData.status !== newStatus) {
+          changesDescription.push(`Estado del nido cambiado a "${newStatus}"`);
+        }
+        
+        const oldMale = (originalNestData.maleRing || 'SIN ANILLAR').toUpperCase();
+        const oldFemale = (originalNestData.femaleRing || 'SIN ANILLAR').toUpperCase();
+        if (maleRing.toUpperCase() !== oldMale) {
+          changesDescription.push(maleRing.toUpperCase() !== 'SIN ANILLAR' ? `Macho asignado [${maleRing}${malePvc ? ' - PVC: ' + malePvc : ''}]` : `Macho retirado/desvinculado`);
+        }
+        if (femaleRing.toUpperCase() !== oldFemale) {
+          changesDescription.push(femaleRing.toUpperCase() !== 'SIN ANILLAR' ? `Hembra asignada [${femaleRing}${femalePvc ? ' - PVC: ' + femalePvc : ''}]` : `Hembra retirada/desvinculada`);
+        }
+      }
+
+      let lines = [];
+      if (changesDescription.length > 0) {
+        lines.push(`[${visitDateFormatted}] ${changesDescription.join(' | ')}.`);
+      }
+
+      if (adultDeathStatus !== 'Ninguno') {
+        let adultInfoText = `Baja de adulto: ${adultDeathStatus}`;
+        if (adultDeathStatus.includes('Macho') && maleRing !== 'Sin anillar') adultInfoText += ` (${maleRing})`;
+        else if (adultDeathStatus.includes('Hembra') && femaleRing !== 'Sin anillar') adultInfoText += ` (${femaleRing})`;
+        lines.push(`[${visitDateFormatted}] ⚠️ ${adultInfoText}.`);
+      }
+
+      if (chickDeathVal && chickDeathVal !== 'Sin baja' && chickDeathVal !== 'Sin baja (Ningún pollo muerto)') {
+        lines.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}).`);
+      }
+
+      return lines.join('\n');
+    }
+
+    function updateLiveNotesPreview() {
+      const rawVisitDate = document.getElementById('layDate').value;
+      const visitYear = rawVisitDate ? rawVisitDate.split('-')[0] : new Date().getFullYear().toString();
+      
+      liveAutoLine = buildAutoLogLine();
+      liveAutoYear = visitYear;
+
+      if (liveAutoLine) {
+        activeNotesYear = visitYear;
+      }
+      updateNotesYearDropdown();
     }
 
     function onVisitDateChange() {
       const visitDateVal = document.getElementById('layDate').value;
       if (visitDateVal) {
-        const vYear = visitDateVal.split('-')[0];
-        if (!fullNotesStorage[vYear]) fullNotesStorage[vYear] = "";
-        activeNotesYear = vYear;
-        updateNotesYearDropdown();
+        activeNotesYear = visitDateVal.split('-')[0];
       }
+      updateLiveNotesPreview();
       updateNestHistoryPreview();
     }
 
     function getCombinedNotesString() {
-      saveCurrentYearNotes();
+      const rawVisitDate = document.getElementById('layDate').value;
+      const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
+      const visitYear = rawVisitDate ? rawVisitDate.split('-')[0] : new Date().getFullYear().toString();
+
+      let finalLog = liveAutoLine;
+      if (!finalLog) {
+        finalLog = `[${visitDateFormatted}] Visita registrada / nido actualizado.`;
+      }
+
+      const finalStorage = { ...baseNotesStorage };
+      finalStorage[visitYear] = finalStorage[visitYear] ? finalStorage[visitYear] + '\n' + finalLog : finalLog;
+
       let combined = "";
-      Object.keys(fullNotesStorage).sort().forEach(y => {
-        if (fullNotesStorage[y] && fullNotesStorage[y].trim() !== "") {
-          combined += (combined ? '\n' : '') + fullNotesStorage[y].trim();
+      Object.keys(finalStorage).sort().forEach(y => {
+        if (finalStorage[y] && finalStorage[y].trim() !== "") {
+          combined += (combined ? '\n' : '') + finalStorage[y].trim();
         }
       });
       return combined;
@@ -664,7 +761,6 @@
         db.ref('nidos/' + editId).once('value', snapshot => {
           const nest = snapshot.val();
           if (nest) {
-            // Guardamos una copia exacta de los datos originales cargados de Firebase
             originalNestData = JSON.parse(JSON.stringify(nest));
 
             document.getElementById('nestId').value = nest.nestId || '';
@@ -684,6 +780,7 @@
             document.getElementById('femaleRing').value = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? nest.femaleRing : '';
             document.getElementById('femalePvcCode').value = nest.femalePvcCode || '';
             
+            liveAutoLine = "";
             parseNotesToStorage(nest.notes || '');
 
             autoLoadAdultsForNest();
@@ -704,6 +801,7 @@
         document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('adultDeath').value = 'Ninguno';
         parseNotesToStorage('');
+        updateLiveNotesPreview();
         loadChicksDropdown('Sin baja');
         updateNestHistoryPreview();
       }
@@ -713,7 +811,6 @@
       e.preventDefault();
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       const rawVisitDate = document.getElementById('layDate').value;
-      const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
       const adultDeathStatus = document.getElementById('adultDeath').value;
       const chickDeathVal = document.getElementById('chickDeathRing').value;
 
@@ -721,66 +818,6 @@
       let malePvc = document.getElementById('malePvcCode').value.trim().toUpperCase() || '';
       let femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
       let femalePvc = document.getElementById('femalePvcCode').value.trim().toUpperCase() || '';
-
-      const currentVisitYear = rawVisitDate ? rawVisitDate.split('-')[0] : new Date().getFullYear().toString();
-      if (!fullNotesStorage[currentVisitYear]) fullNotesStorage[currentVisitYear] = "";
-
-      let changesDescription = [];
-      const newVisitationState = document.getElementById('visitationState').value;
-      const newCameraState = document.getElementById('hasCamera').value;
-      const newHealth = document.getElementById('healthStatus').value;
-      const newFledged = document.getElementById('fledgedChicks').value;
-      const newStatus = document.getElementById('status').value;
-
-      if (!originalNestData) {
-        changesDescription.push(`Nido registrado (Estado: ${newVisitationState}, Cámara: ${newCameraState})`);
-      } else {
-        // Comparación estricta de cada campo modificado con respecto al original
-        if (originalNestData.visitationState !== newVisitationState) {
-          changesDescription.push(`Estado nidada cambiado a "${newVisitationState}"`);
-        }
-        if (originalNestData.hasCamera !== newCameraState) {
-          changesDescription.push(newCameraState === 'Sí' ? `Cámara activada` : `Cámara desactivada`);
-        }
-        if (originalNestData.healthStatus !== newHealth) {
-          changesDescription.push(`Salud modificada a "${newHealth}"`);
-        }
-        if (parseInt(originalNestData.fledgedChicks || 0) !== parseInt(newFledged)) {
-          changesDescription.push(`Pollos volados actualizados a: ${newFledged}`);
-        }
-        if (originalNestData.status !== newStatus) {
-          changesDescription.push(`Estado del nido cambiado a "${newStatus}"`);
-        }
-        
-        const oldMale = (originalNestData.maleRing || 'SIN ANILLAR').toUpperCase();
-        const oldFemale = (originalNestData.femaleRing || 'SIN ANILLAR').toUpperCase();
-        if (maleRing !== oldMale) {
-          changesDescription.push(maleRing !== 'SIN ANILLAR' ? `Macho asignado [${maleRing}${malePvc ? ' - PVC: ' + malePvc : ''}]` : `Macho retirado/desvinculado`);
-        }
-        if (femaleRing !== oldFemale) {
-          changesDescription.push(femaleRing !== 'SIN ANILLAR' ? `Hembra asignada [${femaleRing}${femalePvc ? ' - PVC: ' + femalePvc : ''}]` : `Hembra retirada/desvinculada`);
-        }
-
-        if (changesDescription.length === 0) {
-          changesDescription.push(`Visita registrada / nido actualizado`);
-        }
-      }
-
-      let logText = `[${visitDateFormatted}] ${changesDescription.join(' | ')}.`;
-
-      if (adultDeathStatus !== 'Ninguno') {
-        let adultInfoText = `Baja de adulto: ${adultDeathStatus}`;
-        if (adultDeathStatus.includes('Macho') && maleRing !== 'Sin anillar') adultInfoText += ` (${maleRing})`;
-        else if (adultDeathStatus.includes('Hembra') && femaleRing !== 'Sin anillar') adultInfoText += ` (${femaleRing})`;
-        logText += `\n[${visitDateFormatted}] ⚠️ ${adultInfoText}.`;
-      }
-
-      if (chickDeathVal && chickDeathVal !== 'Sin baja' && chickDeathVal !== 'Sin baja (Ningún pollo muerto)') {
-        logText += `\n[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}).`;
-      }
-
-      // Añadir la nueva línea cronológica al año activo en las notas
-      fullNotesStorage[currentVisitYear] = fullNotesStorage[currentVisitYear] ? fullNotesStorage[currentVisitYear] + '\n' + logText : logText;
 
       const combinedNotes = getCombinedNotesString();
       finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, combinedNotes, adultDeathStatus, chickDeathVal, rawVisitDate);
@@ -842,11 +879,6 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       checkEditMode();
-      document.getElementById('maleRing').addEventListener('input', updateNestHistoryPreview);
-      document.getElementById('femaleRing').addEventListener('input', updateNestHistoryPreview);
-      document.getElementById('malePvcCode').addEventListener('input', updateNestHistoryPreview);
-      document.getElementById('femalePvcCode').addEventListener('input', updateNestHistoryPreview);
-      document.getElementById('layDate').addEventListener('change', updateNestHistoryPreview);
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
   </script>
