@@ -723,7 +723,6 @@
       const currentVisitYear = rawVisitDate ? rawVisitDate.split('-')[0] : new Date().getFullYear().toString();
       if (!fullNotesStorage[currentVisitYear]) fullNotesStorage[currentVisitYear] = "";
 
-      let newLogEntries = [];
       let changesDescription = [];
       const newVisitationState = document.getElementById('visitationState').value;
       const newCameraState = document.getElementById('hasCamera').value;
@@ -734,40 +733,42 @@
       if (!originalNestData) {
         changesDescription.push(`Nido registrado (Estado: ${newVisitationState}, Cámara: ${newCameraState})`);
       } else {
+        // Detección exhaustiva de cualquier cambio realizado en el formulario
         if (originalNestData.visitationState !== newVisitationState) changesDescription.push(`Estado nidada cambiado a "${newVisitationState}"`);
         if (originalNestData.hasCamera !== newCameraState) changesDescription.push(newCameraState === 'Sí' ? `Cámara activada` : `Cámara desactivada`);
         if (originalNestData.healthStatus !== newHealth) changesDescription.push(`Salud modificada a "${newHealth}"`);
-        if (parseInt(originalNestData.fledgedChicks || 0) !== parseInt(newFledged)) changesDescription.push(`Pollos volados: ${newFledged}`);
-        if (originalNestData.status !== newStatus) changesDescription.push(`Estado cambiado a "${newStatus}"`);
+        if (parseInt(originalNestData.fledgedChicks || 0) !== parseInt(newFledged)) changesDescription.push(`Pollos volados actualizados a: ${newFledged}`);
+        if (originalNestData.status !== newStatus) changesDescription.push(`Estado del nido cambiado a "${newStatus}"`);
         
-        // Detección automática si se ha introducido o cambiado el anillamiento de adulto o macho/hembra
-        if (maleRing !== 'SIN ANILLAR' && maleRing !== (originalNestData.maleRing || '')) {
-          changesDescription.push(`Macho asignado/actualizado [${maleRing}${malePvc ? ' - PVC: ' + malePvc : ''}]`);
+        const oldMale = (originalNestData.maleRing || 'SIN ANILLAR').toUpperCase();
+        const oldFemale = (originalNestData.femaleRing || 'SIN ANILLAR').toUpperCase();
+        if (maleRing !== oldMale) {
+          changesDescription.push(maleRing !== 'SIN ANILLAR' ? `Macho asignado [${maleRing}${malePvc ? ' - PVC: ' + malePvc : ''}]` : `Macho retirado/desvinculado`);
         }
-        if (femaleRing !== 'SIN ANILLAR' && femaleRing !== (originalNestData.femaleRing || '')) {
-          changesDescription.push(`Hembra asignada/actualizada [${femaleRing}${femalePvc ? ' - PVC: ' + femalePvc : ''}]`);
+        if (femaleRing !== oldFemale) {
+          changesDescription.push(femaleRing !== 'SIN ANILLAR' ? `Hembra asignada [${femaleRing}${femalePvc ? ' - PVC: ' + femalePvc : ''}]` : `Hembra retirada/desvinculada`);
         }
 
-        if (changesDescription.length === 0) changesDescription.push(`Nido visitado / actualizado`);
+        if (changesDescription.length === 0) {
+          changesDescription.push(`Visita registrada / nido actualizado`);
+        }
       }
 
-      newLogEntries.push(`[${visitDateFormatted}] ${changesDescription.join(' | ')}.`);
+      let logText = `[${visitDateFormatted}] ${changesDescription.join(' | ')}.`;
 
       if (adultDeathStatus !== 'Ninguno') {
         let adultInfoText = `Baja de adulto: ${adultDeathStatus}`;
         if (adultDeathStatus.includes('Macho') && maleRing !== 'Sin anillar') adultInfoText += ` (${maleRing})`;
         else if (adultDeathStatus.includes('Hembra') && femaleRing !== 'Sin anillar') adultInfoText += ` (${femaleRing})`;
-        newLogEntries.push(`[${visitDateFormatted}] ⚠️ ${adultInfoText}.`);
+        logText += `\n[${visitDateFormatted}] ⚠️ ${adultInfoText}.`;
       }
 
       if (chickDeathVal && chickDeathVal !== 'Sin baja' && chickDeathVal !== 'Sin baja (Ningún pollo muerto)') {
-        newLogEntries.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}).`);
+        logText += `\n[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}).`;
       }
 
-      if (newLogEntries.length > 0) {
-        const logText = newLogEntries.join('\n');
-        fullNotesStorage[currentVisitYear] = fullNotesStorage[currentVisitYear] ? fullNotesStorage[currentVisitYear] + '\n' + logText : logText;
-      }
+      // Añadir de forma limpia al año correspondiente en la memoria
+      fullNotesStorage[currentVisitYear] = fullNotesStorage[currentVisitYear] ? fullNotesStorage[currentVisitYear] + '\n' + logText : logText;
 
       const combinedNotes = getCombinedNotesString();
       finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, combinedNotes, adultDeathStatus, chickDeathVal, rawVisitDate);
@@ -820,7 +821,7 @@
       }
 
       db.ref().update(updatesSync).then(() => {
-        alert('¡Se guardaron los cambios con éxito!');
+        alert('¡Se guardaron los cambios y las observaciones con éxito!');
         window.location.href = 'dashboard.html';
       }).catch(err => {
         alert('Error al guardar en Firebase: ' + err.message);
