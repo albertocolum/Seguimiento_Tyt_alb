@@ -47,6 +47,16 @@
       font-family: monospace;
       display: inline-block;
     }
+    .metal-ring-badge-dead {
+      background-color: #ffe4e6;
+      color: #be123c;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      display: inline-block;
+      text-decoration: line-through;
+    }
     .pvc-badge {
       background-color: #000000;
       color: #ffffff;
@@ -685,15 +695,19 @@
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
         
+        // Incluimos tanto los vivos como los muertos asociados al nido para poder marcarlos como Muerto en el historial
         const matched = Object.values(ringsData).filter(r => {
-          const isThisNest = (r.nestId || '').toUpperCase() === nestId;
-          const isDeadInDb = r.status === 'Muerto';
-          const isSelectedChickDead = (r.metalRing === deadChickRing && deadChickRing !== 'Sin baja');
-          const isAdultDead = (adultDeathStatus.includes('Macho') && r.sex === 'Macho' && r.birdAge === 'Adulto') ||
-                              (adultDeathStatus.includes('Hembra') && r.sex === 'Hembra' && r.birdAge === 'Adulto') ||
-                              (adultDeathStatus === 'Ambos muertos' && r.birdAge === 'Adulto');
-          
-          return isThisNest && !isDeadInDb && !isSelectedChickDead && !isAdultDead;
+          return (r.nestId || '').toUpperCase() === nestId;
+        }).map(r => {
+          const copy = { ...r };
+          const isSelectedChickDead = (copy.metalRing === deadChickRing && deadChickRing !== 'Sin baja');
+          const isAdultDead = (adultDeathStatus.includes('Macho') && copy.sex === 'Macho' && copy.birdAge === 'Adulto') ||
+                              (adultDeathStatus.includes('Hembra') && copy.sex === 'Hembra' && copy.birdAge === 'Adulto') ||
+                              (adultDeathStatus === 'Ambos muertos' && copy.birdAge === 'Adulto');
+          if (isSelectedChickDead || isAdultDead) {
+            copy.status = 'Muerto';
+          }
+          return copy;
         });
 
         const mRing = document.getElementById('maleRing').value.trim().toUpperCase();
@@ -701,36 +715,52 @@
         const fRing = document.getElementById('femaleRing').value.trim().toUpperCase();
         const fPvc = document.getElementById('femalePvcCode').value.trim().toUpperCase();
 
-        let activeAdults = [...matched];
+        let allBirds = [...matched];
 
-        if (mRing && mRing !== 'SIN ANILLAR' && !adultDeathStatus.includes('Macho') && adultDeathStatus !== 'Ambos muertos') {
-          const existingMaleIndex = activeAdults.findIndex(r => r.sex === 'Macho' && r.birdAge === 'Adulto');
+        if (mRing && mRing !== 'SIN ANILLAR') {
+          const isMaleMarkedDead = adultDeathStatus.includes('Macho') || adultDeathStatus === 'Ambos muertos';
+          const existingMaleIndex = allBirds.findIndex(r => r.metalRing === mRing && r.birdAge === 'Adulto');
           if (existingMaleIndex >= 0) {
-            activeAdults[existingMaleIndex].metalRing = mRing;
-            activeAdults[existingMaleIndex].pvcRing = mPvc;
+            allBirds[existingMaleIndex].pvcRing = mPvc;
+            if (isMaleMarkedDead) allBirds[existingMaleIndex].status = 'Muerto';
           } else {
-            activeAdults.push({ metalRing: mRing, pvcRing: mPvc, birdAge: 'Adulto', sex: 'Macho', ringDate: rawVisitDate });
+            allBirds.push({
+              metalRing: mRing,
+              pvcRing: mPvc,
+              birdAge: 'Adulto',
+              sex: 'Macho',
+              ringDate: rawVisitDate,
+              status: isMaleMarkedDead ? 'Muerto' : 'Vivo'
+            });
           }
         }
 
-        if (fRing && fRing !== 'SIN ANILLAR' && !adultDeathStatus.includes('Hembra') && adultDeathStatus !== 'Ambos muertos') {
-          const existingFemaleIndex = activeAdults.findIndex(r => r.sex === 'Hembra' && r.birdAge === 'Adulto');
+        if (fRing && fRing !== 'SIN ANILLAR') {
+          const isFemaleMarkedDead = adultDeathStatus.includes('Hembra') || adultDeathStatus === 'Ambos muertos';
+          const existingFemaleIndex = allBirds.findIndex(r => r.metalRing === fRing && r.birdAge === 'Adulto');
           if (existingFemaleIndex >= 0) {
-            activeAdults[existingFemaleIndex].metalRing = fRing;
-            activeAdults[existingFemaleIndex].pvcRing = fPvc;
+            allBirds[existingFemaleIndex].pvcRing = fPvc;
+            if (isFemaleMarkedDead) allBirds[existingFemaleIndex].status = 'Muerto';
           } else {
-            activeAdults.push({ metalRing: fRing, pvcRing: fPvc, birdAge: 'Adulto', sex: 'Hembra', ringDate: rawVisitDate });
+            allBirds.push({
+              metalRing: fRing,
+              pvcRing: fPvc,
+              birdAge: 'Adulto',
+              sex: 'Hembra',
+              ringDate: rawVisitDate,
+              status: isFemaleMarkedDead ? 'Muerto' : 'Vivo'
+            });
           }
         }
 
-        activeAdults.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
+        allBirds.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
 
         const groupedByYear = {};
         const yearsSet = new Set();
         const currentVisitYear = rawVisitDate ? rawVisitDate.split('-')[0] : new Date().getFullYear().toString();
         yearsSet.add(currentVisitYear);
 
-        activeAdults.forEach(r => {
+        allBirds.forEach(r => {
           let year = 'Sin año';
           if (r.ringDate) {
             const parts = r.ringDate.split('-');
@@ -745,7 +775,6 @@
           groupedByYear[year].push(r);
         });
 
-        // Actualizar selector desplegable de años del historial
         const sortedAvailableYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
         yearFilterSelect.innerHTML = '<option value="ALL">Todos los años</option>';
         sortedAvailableYears.forEach(y => {
@@ -762,8 +791,8 @@
           yearFilterSelect.value = activeHistoryYear;
         }
 
-        if (activeAdults.length === 0) {
-          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento vivos asociados al nido "${nestId}".</div>`;
+        if (allBirds.length === 0) {
+          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento asociados al nido "${nestId}".</div>`;
           return;
         }
 
@@ -787,15 +816,23 @@
 
           groupedByYear[year].forEach(r => {
             const isAdult = r.birdAge === 'Adulto';
+            const isDead = r.status === 'Muerto';
             let badgeHTML = isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
+            const statusBadgeHTML = isDead ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-200 uppercase">Muerto</span>' : '';
             
-            const metalBadge = `<span class="metal-ring-badge text-sm">${r.metalRing}</span>`;
+            const metalBadge = isDead
+              ? `<span class="metal-ring-badge-dead text-sm">${r.metalRing}</span>`
+              : `<span class="metal-ring-badge text-sm">${r.metalRing}</span>`;
             const pvcBadge = r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : '';
+            const rowClasses = isDead
+              ? 'bg-rose-50/60 border border-rose-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 ml-2'
+              : 'bg-white border border-stone-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 ml-2';
 
             html += `
-              <div class="bg-white border border-stone-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 ml-2">
-                <div class="flex items-center gap-3">
+              <div class="${rowClasses}">
+                <div class="flex items-center gap-2.5 flex-wrap">
                   ${badgeHTML}
+                  ${statusBadgeHTML}
                   ${metalBadge}
                   ${pvcBadge}
                 </div>
@@ -896,6 +933,10 @@
     function finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, combinedNotes, adultDeathStatus, chickDeathVal, rawVisitDate) {
       const locationNameVal = document.getElementById('locationName').value.trim();
 
+      const isMaleDead = (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos');
+      const isFemaleDead = (adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos');
+
+      // Al estar muerto el adulto, en el nodo del nido se limpia la anilla ('Sin anillar') para que desaparezca del Dashboard
       const nestData = {
         nestId: nestId,
         nestType: document.getElementById('nestType').value,
@@ -910,10 +951,10 @@
         adultDeath: adultDeathStatus,
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         hasCamera: document.getElementById('hasCamera').value,
-        maleRing: (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') ? 'Sin anillar' : maleRing,
-        malePvcCode: (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') ? '' : malePvc,
-        femaleRing: (adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') ? 'Sin anillar' : femaleRing,
-        femalePvcCode: (adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') ? '' : femalePvc,
+        maleRing: isMaleDead ? 'Sin anillar' : maleRing,
+        malePvcCode: isMaleDead ? '' : malePvc,
+        femaleRing: isFemaleDead ? 'Sin anillar' : femaleRing,
+        femalePvcCode: isFemaleDead ? '' : femalePvc,
         notes: combinedNotes,
         lastReview: new Date().toISOString().split('T')[0]
       };
@@ -921,16 +962,38 @@
       let updatesSync = {};
       updatesSync['nidos/' + nestId] = nestData;
 
-      if (maleRing && maleRing !== 'Sin anillar' && adultDeathStatus !== 'Macho muerto' && adultDeathStatus !== 'Ambos muertos') {
-        updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: combinedNotes, status: 'Vivo' };
-      } else if ((adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos') && maleRing && maleRing !== 'Sin anillar') {
-        updatesSync['anillados/' + maleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: maleRing, pvcRing: malePvc, birdAge: 'Adulto', sex: 'Macho', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: combinedNotes, status: 'Muerto' };
+      if (maleRing && maleRing !== 'Sin anillar' && maleRing !== 'SIN ANILLAR') {
+        const maleKey = maleRing.replace(/[\/\.#$\[\]]/g, '_');
+        updatesSync['anillados/' + maleKey] = {
+          metalRing: maleRing,
+          pvcRing: malePvc,
+          birdAge: 'Adulto',
+          sex: 'Macho',
+          nestId: nestId,
+          locationName: locationNameVal,
+          ringDate: rawVisitDate,
+          lastObservation: isMaleDead
+            ? `Fallecido en nido ${nestId} con fecha ${formatDateToDDMMYYYY(rawVisitDate)}`
+            : combinedNotes,
+          status: isMaleDead ? 'Muerto' : 'Vivo'
+        };
       }
 
-      if (femaleRing && femaleRing !== 'Sin anillar' && adultDeathStatus !== 'Hembra muerta' && adultDeathStatus !== 'Ambos muertos') {
-        updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: combinedNotes, status: 'Vivo' };
-      } else if ((adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos') && femaleRing && femaleRing !== 'Sin anillar') {
-        updatesSync['anillados/' + femaleRing.replace(/[\/\.#$\[\]]/g, '_')] = { metalRing: femaleRing, pvcRing: femalePvc, birdAge: 'Adulto', sex: 'Hembra', nestId: nestId, locationName: locationNameVal, ringDate: rawVisitDate, lastObservation: combinedNotes, status: 'Muerto' };
+      if (femaleRing && femaleRing !== 'Sin anillar' && femaleRing !== 'SIN ANILLAR') {
+        const femaleKey = femaleRing.replace(/[\/\.#$\[\]]/g, '_');
+        updatesSync['anillados/' + femaleKey] = {
+          metalRing: femaleRing,
+          pvcRing: femalePvc,
+          birdAge: 'Adulto',
+          sex: 'Hembra',
+          nestId: nestId,
+          locationName: locationNameVal,
+          ringDate: rawVisitDate,
+          lastObservation: isFemaleDead
+            ? `Fallecida en nido ${nestId} con fecha ${formatDateToDDMMYYYY(rawVisitDate)}`
+            : combinedNotes,
+          status: isFemaleDead ? 'Muerto' : 'Vivo'
+        };
       }
 
       if (chickDeathVal && chickDeathVal !== 'Sin baja' && chickDeathVal !== 'Sin baja (Ningún pollo muerto)') {
