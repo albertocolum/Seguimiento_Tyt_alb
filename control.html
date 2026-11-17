@@ -481,7 +481,7 @@
           changesDescription.push(femaleRing ? `Hembra asignada [${femaleRing}${femalePvc ? ' - PVC: ' + femalePvc : ''}]` : `Hembra retirada`);
         }
 
-        if (changesDescription.length === 0 && (originalNestData.layDate || '') !== rawVisitDate) {
+        if (changesDescription.length === 0 && (originalNestData.layDate || '') !== rawVisitDate && adultDeathStatus === 'Ninguno') {
           changesDescription.push(`Revisión de campo (Estado: ${newVisitationState}, Salud: ${newHealth}, Cámara: ${newCameraState})`);
         }
       }
@@ -695,15 +695,14 @@
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
         
-        // Incluimos tanto los vivos como los muertos asociados al nido para poder marcarlos como Muerto en el historial
         const matched = Object.values(ringsData).filter(r => {
           return (r.nestId || '').toUpperCase() === nestId;
         }).map(r => {
           const copy = { ...r };
           const isSelectedChickDead = (copy.metalRing === deadChickRing && deadChickRing !== 'Sin baja');
-          const isAdultDead = (adultDeathStatus.includes('Macho') && copy.sex === 'Macho' && copy.birdAge === 'Adulto') ||
-                              (adultDeathStatus.includes('Hembra') && copy.sex === 'Hembra' && copy.birdAge === 'Adulto') ||
-                              (adultDeathStatus === 'Ambos muertos' && copy.birdAge === 'Adulto');
+          const isAdultDead = (adultDeathStatus.includes('Macho') && copy.sex === 'Macho' && copy.birdAge === 'Adulto' && copy.status !== 'Muerto') ||
+                              (adultDeathStatus.includes('Hembra') && copy.sex === 'Hembra' && copy.birdAge === 'Adulto' && copy.status !== 'Muerto') ||
+                              (adultDeathStatus === 'Ambos muertos' && copy.birdAge === 'Adulto' && copy.status !== 'Muerto');
           if (isSelectedChickDead || isAdultDead) {
             copy.status = 'Muerto';
           }
@@ -877,7 +876,10 @@
 
             document.getElementById('visitationState').value = nest.visitationState || 'Huevos';
             document.getElementById('healthStatus').value = nest.healthStatus || 'Excelente';
-            document.getElementById('adultDeath').value = nest.adultDeath || 'Ninguno';
+            
+            // Siempre inicia en 'Ninguno' al abrir para poder registrar un nuevo evento si ocurre
+            document.getElementById('adultDeath').value = 'Ninguno';
+            
             document.getElementById('fledgedChicks').value = nest.fledgedChicks || 0;
             document.getElementById('hasCamera').value = nest.hasCamera || 'No';
             document.getElementById('maleRing').value = nest.maleRing && nest.maleRing !== 'Sin anillar' ? nest.maleRing : '';
@@ -889,7 +891,7 @@
             parseNotesToStorage(nest.notes || '');
 
             autoLoadAdultsForNest(true);
-            loadChicksDropdown(nest.chickDeathRing || 'Sin baja');
+            loadChicksDropdown('Sin baja');
             updateNestHistoryPreview();
 
             if (nest.lat && nest.lng) {
@@ -936,7 +938,6 @@
       const isMaleDead = (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos');
       const isFemaleDead = (adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos');
 
-      // Al estar muerto el adulto, en el nodo del nido se limpia la anilla ('Sin anillar') para que desaparezca del Dashboard
       const nestData = {
         nestId: nestId,
         nestType: document.getElementById('nestType').value,
@@ -948,7 +949,7 @@
         visitationState: document.getElementById('visitationState').value,
         healthStatus: document.getElementById('healthStatus').value,
         chickDeathRing: (chickDeathVal === 'Sin baja' || chickDeathVal === 'Sin baja (Ningún pollo muerto)') ? 'Sin baja' : chickDeathVal,
-        adultDeath: adultDeathStatus,
+        adultDeath: 'Ninguno',
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         hasCamera: document.getElementById('hasCamera').value,
         maleRing: isMaleDead ? 'Sin anillar' : maleRing,
