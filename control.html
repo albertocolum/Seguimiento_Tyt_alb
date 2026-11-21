@@ -347,6 +347,19 @@
       return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
     }
 
+    function extractPairFromNest(nest) {
+      if (!nest) return { maleRing: '', malePvc: '', femaleRing: '', femalePvc: '' };
+      const rawMale = (nest.maleRing || nest.maleRingCode || '').trim();
+      const maleRing = (!rawMale || rawMale.toUpperCase() === 'SIN ANILLAR') ? '' : rawMale.toUpperCase();
+      const malePvc = (nest.malePvcCode || nest.malePvc || '').trim().toUpperCase();
+
+      const rawFemale = (nest.femaleRing || nest.femaleRingCode || '').trim();
+      const femaleRing = (!rawFemale || rawFemale.toUpperCase() === 'SIN ANILLAR') ? '' : rawFemale.toUpperCase();
+      const femalePvc = (nest.femalePvcCode || nest.femalePvc || '').trim().toUpperCase();
+
+      return { maleRing, malePvc, femaleRing, femalePvc };
+    }
+
     function parseNotesToStorage(rawNotes) {
       baseNotesStorage = {};
       if (!rawNotes) {
@@ -528,12 +541,11 @@
           changesDescription.push(`Estado del nido cambiado a "${newStatus}"`);
         }
         
-        const oldMale = normalizeRing(originalNestData.maleRing);
-        const oldFemale = normalizeRing(originalNestData.femaleRing);
-        if (maleRing !== oldMale) {
+        const origPair = extractPairFromNest(originalNestData);
+        if (maleRing !== origPair.maleRing) {
           changesDescription.push(maleRing ? `Macho asignado [${maleRing}${malePvc ? ' - PVC: ' + malePvc : ''}]` : `Macho retirado`);
         }
-        if (femaleRing !== oldFemale) {
+        if (femaleRing !== origPair.femaleRing) {
           changesDescription.push(femaleRing ? `Hembra asignada [${femaleRing}${femalePvc ? ' - PVC: ' + femalePvc : ''}]` : `Hembra retirada`);
         }
 
@@ -677,17 +689,17 @@
 
         Object.values(ringsData).forEach(r => {
           const isThisNest = (r.nestId || '').toUpperCase() === nestId;
-          const isAdult = r.birdAge === 'Adulto';
+          const isAdult = r.birdAge === 'Adulto' || (r.euringAge && r.euringAge !== 'EURING 1');
           const isAlive = r.status !== 'Muerto';
 
           if (isThisNest && isAdult && isAlive) {
             if (r.sex === 'Macho' && !foundMale) {
-              document.getElementById('maleRing').value = r.metalRing || '';
-              document.getElementById('malePvcCode').value = r.pvcRing || '';
+              if (r.metalRing) document.getElementById('maleRing').value = r.metalRing;
+              if (r.pvcRing) document.getElementById('malePvcCode').value = r.pvcRing;
               foundMale = true;
             } else if (r.sex === 'Hembra' && !foundFemale) {
-              document.getElementById('femaleRing').value = r.metalRing || '';
-              document.getElementById('femalePvcCode').value = r.pvcRing || '';
+              if (r.metalRing) document.getElementById('femaleRing').value = r.metalRing;
+              if (r.pvcRing) document.getElementById('femalePvcCode').value = r.pvcRing;
               foundFemale = true;
             }
           }
@@ -718,7 +730,7 @@
 
           Object.values(data).forEach(r => {
             const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
-            const isChick = r.birdAge === 'Pollo';
+            const isChick = r.birdAge === 'Pollo' || r.euringAge === 'EURING 1';
             const isAlive = r.status !== 'Muerto';
 
             if (isChick && isThisNest && isAlive) {
@@ -776,7 +788,7 @@
           const isMaleMarkedDead = adultDeathStatus.includes('Macho') || adultDeathStatus === 'Ambos muertos';
           const existingMaleIndex = allBirds.findIndex(r => r.metalRing === mRing && r.birdAge === 'Adulto');
           if (existingMaleIndex >= 0) {
-            allBirds[existingMaleIndex].pvcRing = mPvc;
+            if (mPvc) allBirds[existingMaleIndex].pvcRing = mPvc;
             if (isMaleMarkedDead) allBirds[existingMaleIndex].status = 'Muerto';
           } else {
             allBirds.push({
@@ -794,7 +806,7 @@
           const isFemaleMarkedDead = adultDeathStatus.includes('Hembra') || adultDeathStatus === 'Ambos muertos';
           const existingFemaleIndex = allBirds.findIndex(r => r.metalRing === fRing && r.birdAge === 'Adulto');
           if (existingFemaleIndex >= 0) {
-            allBirds[existingFemaleIndex].pvcRing = fPvc;
+            if (fPvc) allBirds[existingFemaleIndex].pvcRing = fPvc;
             if (isFemaleMarkedDead) allBirds[existingFemaleIndex].status = 'Muerto';
           } else {
             allBirds.push({
@@ -919,8 +931,9 @@
           const nest = snapshot.val();
           if (nest) {
             originalNestData = JSON.parse(JSON.stringify(nest));
+            const pair = extractPairFromNest(nest);
 
-            document.getElementById('nestId').value = nest.nestId || '';
+            document.getElementById('nestId').value = nest.nestId || editId;
             document.getElementById('nestType').value = nest.nestType || 'Nido Artificial';
             document.getElementById('locationName').value = nest.locationName || '';
             document.getElementById('status').value = nest.status || 'Activo';
@@ -935,10 +948,10 @@
             document.getElementById('adultDeath').value = 'Ninguno';
             document.getElementById('fledgedChicks').value = nest.fledgedChicks || 0;
             document.getElementById('hasCamera').value = nest.hasCamera || 'No';
-            document.getElementById('maleRing').value = nest.maleRing && nest.maleRing !== 'Sin anillar' ? nest.maleRing : '';
-            document.getElementById('malePvcCode').value = nest.malePvcCode || '';
-            document.getElementById('femaleRing').value = nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? nest.femaleRing : '';
-            document.getElementById('femalePvcCode').value = nest.femalePvcCode || '';
+            document.getElementById('maleRing').value = pair.maleRing;
+            document.getElementById('malePvcCode').value = pair.malePvc;
+            document.getElementById('femaleRing').value = pair.femaleRing;
+            document.getElementById('femalePvcCode').value = pair.femalePvc;
             
             liveAutoLine = "";
             parseNotesToStorage(nest.notes || '');
@@ -992,6 +1005,11 @@
       const isMaleDead = (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos');
       const isFemaleDead = (adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos');
 
+      const finalMaleRing = isMaleDead ? 'Sin anillar' : maleRing;
+      const finalMalePvc = isMaleDead ? '' : malePvc;
+      const finalFemaleRing = isFemaleDead ? 'Sin anillar' : femaleRing;
+      const finalFemalePvc = isFemaleDead ? '' : femalePvc;
+
       const nestData = {
         nestId: nestId,
         nestType: document.getElementById('nestType').value,
@@ -1006,10 +1024,14 @@
         adultDeath: 'Ninguno',
         fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
         hasCamera: document.getElementById('hasCamera').value,
-        maleRing: isMaleDead ? 'Sin anillar' : maleRing,
-        malePvcCode: isMaleDead ? '' : malePvc,
-        femaleRing: isFemaleDead ? 'Sin anillar' : femaleRing,
-        femalePvcCode: isFemaleDead ? '' : femalePvc,
+        maleRing: finalMaleRing,
+        maleRingCode: finalMaleRing,
+        malePvcCode: finalMalePvc,
+        malePvc: finalMalePvc,
+        femaleRing: finalFemaleRing,
+        femaleRingCode: finalFemaleRing,
+        femalePvcCode: finalFemalePvc,
+        femalePvc: finalFemalePvc,
         notes: combinedNotes,
         lastReview: new Date().toISOString().split('T')[0]
       };
@@ -1017,11 +1039,11 @@
       let updatesSync = {};
       updatesSync['nidos/' + nestId] = nestData;
 
-      if (maleRing && maleRing !== 'Sin anillar' && maleRing !== 'SIN ANILLAR') {
-        const maleKey = maleRing.replace(/[\/\.#$\[\]]/g, '_');
+      if (finalMaleRing && finalMaleRing !== 'Sin anillar' && finalMaleRing !== 'SIN ANILLAR') {
+        const maleKey = finalMaleRing.replace(/[\/\.#$\[\]]/g, '_');
         updatesSync['anillados/' + maleKey] = {
-          metalRing: maleRing,
-          pvcRing: malePvc,
+          metalRing: finalMaleRing,
+          pvcRing: finalMalePvc,
           birdAge: 'Adulto',
           sex: 'Macho',
           nestId: nestId,
@@ -1034,11 +1056,11 @@
         };
       }
 
-      if (femaleRing && femaleRing !== 'Sin anillar' && femaleRing !== 'SIN ANILLAR') {
-        const femaleKey = femaleRing.replace(/[\/\.#$\[\]]/g, '_');
+      if (finalFemaleRing && finalFemaleRing !== 'Sin anillar' && finalFemaleRing !== 'SIN ANILLAR') {
+        const femaleKey = finalFemaleRing.replace(/[\/\.#$\[\]]/g, '_');
         updatesSync['anillados/' + femaleKey] = {
-          metalRing: femaleRing,
-          pvcRing: femalePvc,
+          metalRing: finalFemaleRing,
+          pvcRing: finalFemalePvc,
           birdAge: 'Adulto',
           sex: 'Hembra',
           nestId: nestId,
