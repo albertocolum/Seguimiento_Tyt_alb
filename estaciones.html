@@ -100,7 +100,7 @@
       <div class="border-b pb-4 flex flex-wrap justify-between items-center gap-3">
         <div>
           <h1 id="form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Estaciones de Muestreo</h1>
-          <p class="text-xs text-stone-500 mt-0.5">Crea, edita o elimina estaciones de muestreo y registra capturas/anillamientos propios de cada estación.</p>
+          <p class="text-xs text-stone-500 mt-0.5">Crea, edita o elimina estaciones de muestreo y consulta o registra capturas/anillamientos de cada estación.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -180,7 +180,7 @@
             <h2 id="ring-form-title" class="text-sm font-extrabold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
               <i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Anillamiento de Muestreo en Estación
             </h2>
-            <p class="text-[11px] text-stone-600 mt-0.5">Registro independiente de los anillamientos de nido, vinculado a la estación de muestreo seleccionada.</p>
+            <p class="text-[11px] text-stone-600 mt-0.5">Registra o edita una captura de muestreo vinculada a la estación seleccionada.</p>
           </div>
           <button type="button" onclick="collapseStationRingForm(true)" class="bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 font-semibold px-3 py-1.5 rounded-xl transition-all text-xs inline-flex items-center gap-1">
             <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i> Cerrar ficha
@@ -216,6 +216,7 @@
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Edad EURING *</label>
             <select id="ringEuringInput" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <option value="EURING 1">EURING 1 (Pollo / No volado)</option>
               <option value="EURING 3">EURING 3 (Nacido este año calendario)</option>
               <option value="EURING 4">EURING 4 (Nacido antes de este año, año exacto desconocido)</option>
               <option value="EURING 5">EURING 5 (Nacido el año calendario anterior)</option>
@@ -304,7 +305,7 @@
       <div class="flex flex-wrap justify-between items-center gap-3 border-b pb-4">
         <div>
           <h2 class="text-lg font-extrabold text-stone-900 tracking-tight">Anillamientos Realizados en Estaciones</h2>
-          <p class="text-xs text-stone-500">Consulta, filtra o edita las fichas de anillamiento de muestreo realizadas en cada estación.</p>
+          <p class="text-xs text-stone-500">Muestra los registros guardados en estaciones y los ya existentes en la base de datos vinculados a estaciones.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <select id="stationRingFilter" onchange="renderStationRings()" class="px-3 py-1.5 border rounded-xl text-xs bg-white font-bold text-brand-dark">
@@ -349,9 +350,11 @@
     }
 
     let stationsCache = {};
-    let stationRingsCache = {};
+    let stationRingsDirectCache = {};
+    let legacyStationRingsCache = {};
+    let allStationRingsMap = {};
     let editingStationKey = null;
-    let editingRingKey = null;
+    let editingRingMeta = null; // { sourcePath: 'anillamientos_estacion' | 'anillados', key }
     let geocodeTimer = null;
 
     function formatDateToDDMMYYYY(dateStr) {
@@ -359,6 +362,81 @@
       if (dateStr.includes('/')) return dateStr;
       const parts = dateStr.split('-');
       return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+    }
+
+    function normalizeCode(val) {
+      return (val || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    }
+
+    function findMatchingStationKey(record) {
+      const entries = Object.entries(stationsCache || {});
+      if (record.stationKey && stationsCache[record.stationKey]) {
+        return record.stationKey;
+      }
+
+      const rawRef = (record.stationId || record.nestId || '').trim().toUpperCase();
+      if (!rawRef) return null;
+
+      const normRef = normalizeCode(rawRef);
+
+      for (const [stKey, stObj] of entries) {
+        const stId = (stObj.stationId || stKey || '').trim().toUpperCase();
+        const normStId = normalizeCode(stId);
+        const normKey = normalizeCode(stKey);
+
+        if (rawRef === stId || rawRef === stKey.toUpperCase()) return stKey;
+        if (normRef && (normRef === normStId || normRef === normKey)) return stKey;
+
+        if (normRef.startsWith('EST_') && normStId.startsWith('EST_')) {
+          if (normRef.replace(/^EST_/, '') === normStId.replace(/^EST_/, '')) return stKey;
+        }
+
+        const cleanSt = normStId.replace(/^EST_/, '');
+        const cleanRef = normRef.replace(/^EST_/, '');
+        if (cleanSt && cleanRef && (cleanSt.includes(cleanRef) || cleanRef.includes(cleanSt))) {
+          return stKey;
+        }
+      }
+
+      return null;
+    }
+
+    function rebuildCombinedStationRings() {
+      const combined = {};
+
+      Object.entries(legacyStationRingsCache || {}).forEach(([key, val]) => {
+        const matchedKey = findMatchingStationKey(val);
+        if (matchedKey || val.recordType === 'estacion') {
+          const uniqueId = `legacy_${key}`;
+          combined[uniqueId] = {
+            ...val,
+            _uid: uniqueId,
+            _sourcePath: 'anillados',
+            _dbKey: key,
+            stationKey: matchedKey || val.stationKey || ''
+          };
+        }
+      });
+
+      Object.entries(stationRingsDirectCache || {}).forEach(([key, val]) => {
+        const matchedKey = findMatchingStationKey(val);
+        const uniqueId = `station_${key}`;
+        combined[uniqueId] = {
+          ...val,
+          _uid: uniqueId,
+          _sourcePath: 'anillamientos_estacion',
+          _dbKey: key,
+          stationKey: matchedKey || val.stationKey || ''
+        };
+      });
+
+      allStationRingsMap = combined;
+    }
+
+    function getRingsForStation(stationKey, stationObj) {
+      return Object.values(allStationRingsMap || {})
+        .filter(r => r.stationKey === stationKey || findMatchingStationKey(r) === stationKey)
+        .sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
     }
 
     function expandStationForm() {
@@ -441,7 +519,7 @@
     function collapseStationRingForm(resetFields = false) {
       document.getElementById('stationRingForm').classList.add('hidden');
       if (resetFields) {
-        editingRingKey = null;
+        editingRingMeta = null;
         document.getElementById('stationRingForm').reset();
         document.getElementById('ringDateInput').value = new Date().toISOString().split('T')[0];
         document.getElementById('ring-form-title').innerHTML = '<i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Anillamiento de Muestreo en Estación';
@@ -457,7 +535,7 @@
         openNewStationForm();
         return;
       }
-      editingRingKey = null;
+      editingRingMeta = null;
       document.getElementById('stationRingForm').reset();
       document.getElementById('ringDateInput').value = new Date().toISOString().split('T')[0];
       document.getElementById('ring-form-title').innerHTML = '<i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Anillamiento de Muestreo en Estación';
@@ -471,22 +549,19 @@
       document.getElementById('stationRingForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    function editStationRing(key) {
-      const r = stationRingsCache[key];
+    function editStationRing(uid) {
+      const r = allStationRingsMap[uid];
       if (!r) return;
-      editingRingKey = key;
+      editingRingMeta = { sourcePath: r._sourcePath, key: r._dbKey };
       expandStationRingForm();
 
-      const matchedKey = stationsCache[r.stationKey]
-        ? r.stationKey
-        : Object.keys(stationsCache).find(k => (stationsCache[k].stationId || k) === r.stationId) || '';
-
+      const matchedKey = r.stationKey && stationsCache[r.stationKey] ? r.stationKey : '';
       populateRingStationDropdown(matchedKey);
       document.getElementById('ringMetalInput').value = r.metalRing || '';
       document.getElementById('ringPvcInput').value = r.pvcRing || '';
       document.getElementById('ringDateInput').value = r.ringDate || '';
       document.getElementById('ringTimeInput').value = r.captureTime || '';
-      document.getElementById('ringEuringInput').value = r.euringAge || 'EURING 3';
+      document.getElementById('ringEuringInput').value = r.euringAge || (r.birdAge === 'Pollo' ? 'EURING 1' : 'EURING 3');
       document.getElementById('ringSexInput').value = r.sex || 'Desconocido';
       document.getElementById('ringMethodInput').value = r.captureMethod || '';
       document.getElementById('ringWingInput').value = r.wingLength ?? '';
@@ -497,17 +572,21 @@
       document.getElementById('ringP10Input').value = r.p10Length ?? '';
       document.getElementById('ringP8SecInput').value = r.p8SecondaryLength ?? '';
       document.getElementById('ringLocationInput').value = r.locationName || '';
-      document.getElementById('ringNotesInput').value = r.notes || '';
+      document.getElementById('ringNotesInput').value = r.notes || r.lastObservation || '';
       document.getElementById('ring-form-title').innerHTML = `<i data-lucide="pencil" class="w-4 h-4 text-brand-accent"></i> Editando Anilla en Estación: ${r.metalRing}`;
       document.getElementById('save-ring-btn-text').textContent = 'Actualizar Anillamiento en Estación';
       document.getElementById('stationRingForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    function deleteStationRing(key, metalRing) {
-      if (!confirm(`¿Seguro que deseas eliminar la ficha de anillamiento en estación de la anilla ${metalRing}?`)) return;
-      if (editingRingKey === key) collapseStationRingForm(true);
-      db.ref('anillamientos_estacion/' + key).remove().catch(err => {
+    function deleteStationRing(uid, metalRing) {
+      const r = allStationRingsMap[uid];
+      if (!r) return;
+      if (!confirm(`¿Seguro que deseas eliminar la ficha de anillamiento de la anilla ${metalRing}?`)) return;
+      if (editingRingMeta && editingRingMeta.sourcePath === r._sourcePath && editingRingMeta.key === r._dbKey) {
+        collapseStationRingForm(true);
+      }
+      db.ref(`${r._sourcePath}/${r._dbKey}`).remove().catch(err => {
         alert('Error al eliminar anillamiento: ' + err.message);
       });
     }
@@ -526,6 +605,7 @@
       const ringDate = document.getElementById('ringDateInput').value;
       const captureTime = document.getElementById('ringTimeInput').value;
       const euringAge = document.getElementById('ringEuringInput').value;
+      const birdAge = euringAge === 'EURING 1' ? 'Pollo' : 'Adulto';
       const sex = document.getElementById('ringSexInput').value;
       const captureMethod = document.getElementById('ringMethodInput').value.trim();
       const wingLength = parseFloat(document.getElementById('ringWingInput').value) || null;
@@ -541,19 +621,24 @@
       const stationId = (st.stationId || stKey).toUpperCase();
       const safeRing = metalRing.replace(/[\/\.#$\[\]]/g, '_');
       const safeDate = (ringDate || '').replace(/[\/\.#$\[\]]/g, '_');
-      const recordKey = editingRingKey || `${stKey}_${safeRing}_${safeDate}_${Date.now().toString().slice(-4)}`;
+
+      const targetPath = editingRingMeta ? editingRingMeta.sourcePath : 'anillamientos_estacion';
+      const recordKey = editingRingMeta
+        ? editingRingMeta.key
+        : `${stKey}_${safeRing}_${safeDate}_${Date.now().toString().slice(-4)}`;
 
       const payload = {
         recordType: 'estacion',
         stationKey: stKey,
         stationId,
+        nestId: targetPath === 'anillados' ? stationId : (editingRingMeta ? (allStationRingsMap[`legacy_${recordKey}`]?.nestId || '') : ''),
         stationName: st.stationName || '',
         metalRing,
         pvcRing,
         ringDate,
         captureTime,
         euringAge,
-        birdAge: 'Adulto',
+        birdAge,
         sex,
         captureMethod,
         wingLength,
@@ -565,10 +650,11 @@
         p8SecondaryLength,
         locationName,
         notes,
+        lastObservation: notes,
         updatedAt: new Date().toISOString().split('T')[0]
       };
 
-      db.ref('anillamientos_estacion/' + recordKey).set(payload).then(() => {
+      db.ref(`${targetPath}/${recordKey}`).set(payload).then(() => {
         collapseStationRingForm(true);
       }).catch(err => {
         alert('Error al guardar anillamiento de estación: ' + err.message);
@@ -691,18 +777,6 @@
       });
     }
 
-    function getRingsForStation(stationKey, stationObj) {
-      const stId = (stationObj.stationId || stationKey || '').trim().toUpperCase();
-      return Object.entries(stationRingsCache || {})
-        .map(([key, val]) => ({ key, ...val }))
-        .filter(r => {
-          if (r.stationKey && r.stationKey === stationKey) return true;
-          const rStId = (r.stationId || '').trim().toUpperCase();
-          return rStId && (rStId === stId || rStId === stationKey.toUpperCase());
-        })
-        .sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
-    }
-
     function renderStationsList() {
       const container = document.getElementById('stations-list');
       const entries = Object.entries(stationsCache || {});
@@ -791,7 +865,7 @@
       const prevYear = yearSelect.value;
       const yearsSet = new Set();
 
-      Object.values(stationRingsCache || {}).forEach(r => {
+      Object.values(allStationRingsMap || {}).forEach(r => {
         if (r.ringDate) {
           const y = r.ringDate.includes('-') ? r.ringDate.split('-')[0] : r.ringDate.split('/')[2];
           if (y) yearsSet.add(y);
@@ -816,15 +890,10 @@
       const selectedStationKey = document.getElementById('stationRingFilter').value;
       const selectedYear = document.getElementById('stationYearFilter').value;
 
-      const entries = Object.entries(stationRingsCache || {}).map(([key, val]) => ({ key, ...val }));
+      const entries = Object.values(allStationRingsMap || {});
 
       const filtered = entries.filter(r => {
-        let matchesStation = (selectedStationKey === 'ALL');
-        if (!matchesStation) {
-          const st = stationsCache[selectedStationKey];
-          const stId = st ? (st.stationId || selectedStationKey).toUpperCase() : selectedStationKey.toUpperCase();
-          matchesStation = (r.stationKey === selectedStationKey) || ((r.stationId || '').toUpperCase() === stId);
-        }
+        const matchesStation = (selectedStationKey === 'ALL') || (r.stationKey === selectedStationKey);
         const y = r.ringDate ? (r.ringDate.includes('-') ? r.ringDate.split('-')[0] : r.ringDate.split('/')[2]) : '';
         const matchesYear = (selectedYear === 'ALL' || y === selectedYear);
         return matchesStation && matchesYear;
@@ -842,7 +911,7 @@
         const st = stationsCache[r.stationKey] || Object.values(stationsCache).find(s => (s.stationId || '').toUpperCase() === (r.stationId || '').toUpperCase());
         const stLabel = st
           ? (st.stationName ? `${st.stationId || r.stationKey} — ${st.stationName}` : (st.stationId || r.stationKey))
-          : (r.stationName ? `${r.stationId || ''} — ${r.stationName}` : (r.stationId || 'Estación'));
+          : (r.stationName ? `${r.stationId || r.nestId || ''} — ${r.stationName}` : (r.stationId || r.nestId || 'Estación'));
 
         const biometrics = [
           r.wingLength ? `Ala Máx.: <strong>${r.wingLength}mm</strong>` : '',
@@ -868,10 +937,10 @@
               ${r.captureMethod ? `<span>Método: <strong>${r.captureMethod}</strong></span>` : ''}
               ${biometrics ? `<span>${biometrics}</span>` : ''}
               <div class="flex items-center gap-1 ml-1">
-                <button type="button" onclick="editStationRing('${r.key}')" class="p-1.5 text-stone-500 hover:text-brand-dark hover:bg-stone-100 rounded-lg transition-all" title="Editar ficha">
+                <button type="button" onclick="editStationRing('${r._uid}')" class="p-1.5 text-stone-500 hover:text-brand-dark hover:bg-stone-100 rounded-lg transition-all" title="Editar ficha">
                   <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                 </button>
-                <button type="button" onclick="deleteStationRing('${r.key}', '${r.metalRing}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all" title="Eliminar ficha">
+                <button type="button" onclick="deleteStationRing('${r._uid}', '${r.metalRing}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all" title="Eliminar ficha">
                   <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
@@ -884,22 +953,30 @@
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
+    function refreshAllStationViews() {
+      rebuildCombinedStationRings();
+      renderStationsList();
+      populateStationRingFilters();
+      renderStationRings();
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('ringDateInput').value = new Date().toISOString().split('T')[0];
 
       db.ref('estaciones').on('value', snapshot => {
         stationsCache = snapshot.val() || {};
         populateRingStationDropdown();
-        renderStationsList();
-        populateStationRingFilters();
-        renderStationRings();
+        refreshAllStationViews();
       });
 
       db.ref('anillamientos_estacion').on('value', snapshot => {
-        stationRingsCache = snapshot.val() || {};
-        renderStationsList();
-        populateStationRingFilters();
-        renderStationRings();
+        stationRingsDirectCache = snapshot.val() || {};
+        refreshAllStationViews();
+      });
+
+      db.ref('anillados').on('value', snapshot => {
+        legacyStationRingsCache = snapshot.val() || {};
+        refreshAllStationViews();
       });
 
       if (typeof lucide !== 'undefined') lucide.createIcons();
