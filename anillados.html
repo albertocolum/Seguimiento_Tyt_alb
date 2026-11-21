@@ -143,8 +143,8 @@
           <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
             <i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> 2. Edad EURING, Sexo y Biometría
           </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-7 gap-4">
-            <div class="lg:col-span-2">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Edad EURING *</label>
               <select id="euringAge" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
                 <option value="EURING 1">EURING 1 (Pollo en nido / no volado)</option>
@@ -166,11 +166,18 @@
               </select>
             </div>
             <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Peso (g)</label>
-              <input type="number" step="0.1" id="weight" placeholder="Ej. 320.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+              <label class="block text-xs font-bold text-stone-600 mb-1">Estado Actual</label>
+              <select id="status" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                <option value="Vivo">Vivo / Activo</option>
+                <option value="Muerto">Muerto / Recuperado</option>
+              </select>
             </div>
+          </div>
+
+          <!-- ORDEN BIOMÉTRICO SOLICITADO: Ala Máx., P8, Cola, Tarso, Peso, P10, P8 -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-1">
             <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Ala (mm)</label>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Ala Máx. (mm)</label>
               <input type="number" step="0.1" id="wingLength" placeholder="Ej. 285.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
             </div>
             <div>
@@ -178,20 +185,29 @@
               <input type="number" step="0.1" id="p8Length" placeholder="Ej. 195.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
             </div>
             <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Cola (mm)</label>
+              <input type="number" step="0.1" id="tailLength" placeholder="Ej. 125.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+            </div>
+            <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Tarso (mm)</label>
               <input type="number" step="0.1" id="tarsusLength" placeholder="Ej. 78.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Peso (g)</label>
+              <input type="number" step="0.1" id="weight" placeholder="Ej. 320.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">P10 (mm)</label>
+              <input type="number" step="0.1" id="p10Length" placeholder="Ej. 205.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">P8 (mm)</label>
+              <input type="number" step="0.1" id="p8SecondaryLength" placeholder="Ej. 195.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
             </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Estado Actual</label>
-            <select id="status" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-              <option value="Vivo">Vivo / Activo</option>
-              <option value="Muerto">Muerto / Recuperado</option>
-            </select>
-          </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Paraje / Localidad</label>
             <input type="text" id="locationName" placeholder="Se rellena automáticamente al elegir nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
@@ -395,10 +411,13 @@
         const nestBadge = r.nestId ? `<span class="px-2 py-0.5 rounded bg-brand-dark/10 text-brand-dark font-bold text-[11px]">Nido: ${r.nestId}</span>` : '';
 
         const biometrics = [
-          r.weight ? `Peso: <strong>${r.weight}g</strong>` : '',
-          r.wingLength ? `Ala: <strong>${r.wingLength}mm</strong>` : '',
+          r.wingLength ? `Ala Máx.: <strong>${r.wingLength}mm</strong>` : '',
           r.p8Length ? `P8: <strong>${r.p8Length}mm</strong>` : '',
-          r.tarsusLength ? `Tarso: <strong>${r.tarsusLength}mm</strong>` : ''
+          r.tailLength ? `Cola: <strong>${r.tailLength}mm</strong>` : '',
+          r.tarsusLength ? `Tarso: <strong>${r.tarsusLength}mm</strong>` : '',
+          r.weight ? `Peso: <strong>${r.weight}g</strong>` : '',
+          r.p10Length ? `P10: <strong>${r.p10Length}mm</strong>` : '',
+          r.p8SecondaryLength ? `P8(2): <strong>${r.p8SecondaryLength}mm</strong>` : ''
         ].filter(Boolean).join(' | ');
 
         html += `
@@ -445,10 +464,13 @@
       document.getElementById('ringDate').value = r.ringDate || '';
       document.getElementById('euringAge').value = r.euringAge || (r.birdAge === 'Pollo' ? 'EURING 1' : 'EURING 4');
       document.getElementById('sex').value = r.sex || 'Desconocido';
-      document.getElementById('weight').value = r.weight || '';
       document.getElementById('wingLength').value = r.wingLength || '';
       document.getElementById('p8Length').value = r.p8Length || '';
+      document.getElementById('tailLength').value = r.tailLength || '';
       document.getElementById('tarsusLength').value = r.tarsusLength || '';
+      document.getElementById('weight').value = r.weight || '';
+      document.getElementById('p10Length').value = r.p10Length || '';
+      document.getElementById('p8SecondaryLength').value = r.p8SecondaryLength || '';
       document.getElementById('status').value = r.status || 'Vivo';
       document.getElementById('locationName').value = r.locationName || '';
       document.getElementById('lastObservation').value = r.lastObservation || '';
@@ -480,10 +502,13 @@
       const euringAge = document.getElementById('euringAge').value;
       const birdAge = mapEuringToBirdAge(euringAge);
       const sex = document.getElementById('sex').value;
-      const weight = parseFloat(document.getElementById('weight').value) || null;
       const wingLength = parseFloat(document.getElementById('wingLength').value) || null;
       const p8Length = parseFloat(document.getElementById('p8Length').value) || null;
+      const tailLength = parseFloat(document.getElementById('tailLength').value) || null;
       const tarsusLength = parseFloat(document.getElementById('tarsusLength').value) || null;
+      const weight = parseFloat(document.getElementById('weight').value) || null;
+      const p10Length = parseFloat(document.getElementById('p10Length').value) || null;
+      const p8SecondaryLength = parseFloat(document.getElementById('p8SecondaryLength').value) || null;
       const status = document.getElementById('status').value;
       const locationName = document.getElementById('locationName').value.trim();
       const lastObservation = document.getElementById('lastObservation').value.trim();
@@ -498,10 +523,13 @@
         euringAge,
         birdAge,
         sex,
-        weight,
         wingLength,
         p8Length,
+        tailLength,
         tarsusLength,
+        weight,
+        p10Length,
+        p8SecondaryLength,
         status,
         locationName,
         lastObservation
