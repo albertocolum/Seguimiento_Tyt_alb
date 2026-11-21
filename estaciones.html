@@ -190,7 +190,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Estación de Muestreo *</label>
-            <select id="ringStationSelect" required onchange="onRingStationChange()" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white text-brand-dark">
+            <select id="ringStationSelect" required class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white text-brand-dark">
               <!-- Se rellena dinámicamente -->
             </select>
           </div>
@@ -271,15 +271,9 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Paraje / Localidad</label>
-            <input type="text" id="ringLocationInput" placeholder="Se rellena automáticamente con la estación..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo</label>
-            <input type="text" id="ringNotesInput" placeholder="Muda, grasa, condición física, incidencias..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-          </div>
+        <div>
+          <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo</label>
+          <input type="text" id="ringNotesInput" placeholder="Muda, grasa, condición física, incidencias..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
         </div>
 
         <div class="flex justify-end items-center gap-2 pt-1">
@@ -497,16 +491,6 @@
       } else {
         select.selectedIndex = 0;
       }
-      onRingStationChange();
-    }
-
-    function onRingStationChange() {
-      const stKey = document.getElementById('ringStationSelect').value;
-      const st = stationsCache[stKey];
-      const locInput = document.getElementById('ringLocationInput');
-      if (st && st.stationLocation && !locInput.value.trim()) {
-        locInput.value = st.stationLocation;
-      }
     }
 
     function expandStationRingForm() {
@@ -543,7 +527,6 @@
       expandStationRingForm();
       if (preselectedStationKey && stationsCache[preselectedStationKey]) {
         document.getElementById('ringStationSelect').value = preselectedStationKey;
-        document.getElementById('ringLocationInput').value = stationsCache[preselectedStationKey].stationLocation || '';
       }
       document.getElementById('ringMetalInput').focus();
       document.getElementById('stationRingForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -572,7 +555,6 @@
       const weightVal = pickFirst(r, ['weight', 'peso'], '');
       const p10Val = pickFirst(r, ['p10Length', 'p10'], '');
       const p8SecVal = pickFirst(r, ['p8SecondaryLength', 'p8_2'], '');
-      const locVal = pickFirst(r, ['locationName', 'localidad', 'paraje', 'stationLocation'], '');
       const notesVal = pickFirst(r, ['notes', 'observaciones', 'notas', 'lastObservation'], '');
 
       document.getElementById('ringMetalInput').value = metal;
@@ -589,7 +571,6 @@
       document.getElementById('ringWeightInput').value = weightVal;
       document.getElementById('ringP10Input').value = p10Val;
       document.getElementById('ringP8SecInput').value = p8SecVal;
-      document.getElementById('ringLocationInput').value = locVal;
       document.getElementById('ringNotesInput').value = notesVal;
       document.getElementById('ring-form-title').innerHTML = `<i data-lucide="pencil" class="w-4 h-4 text-brand-accent"></i> Editando Registro: ${metal || key}`;
       document.getElementById('save-ring-btn-text').textContent = 'Actualizar en controles_estaciones';
@@ -628,11 +609,11 @@
       const weight = parseFloat(document.getElementById('ringWeightInput').value) || null;
       const p10Length = parseFloat(document.getElementById('ringP10Input').value) || null;
       const p8SecondaryLength = parseFloat(document.getElementById('ringP8SecInput').value) || null;
-      const locationName = document.getElementById('ringLocationInput').value.trim() || st.stationLocation || '';
       const notes = document.getElementById('ringNotesInput').value.trim();
 
       const stationId = (st.stationId || stKey).toUpperCase();
       const existing = editingControlKey ? (controlsCache[editingControlKey] || {}) : {};
+      const locationName = st.stationLocation || pickFirst(existing, ['locationName', 'localidad', 'paraje', 'stationLocation'], '');
 
       const payload = {
         ...existing,
