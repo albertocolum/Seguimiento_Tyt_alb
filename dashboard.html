@@ -179,6 +179,14 @@
       return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
     }
 
+    function getPairRings(nest) {
+      const mRing = (nest.maleRing || nest.maleRingCode || '').trim();
+      const mPvc = (nest.malePvcCode || nest.malePvc || '').trim();
+      const fRing = (nest.femaleRing || nest.femaleRingCode || '').trim();
+      const fPvc = (nest.femalePvcCode || nest.femalePvc || '').trim();
+      return { mRing, mPvc, fRing, fPvc };
+    }
+
     function initMap() {
       if (map) return;
       const orthoLayer = L.layerGroup([
@@ -204,14 +212,15 @@
       const statusFilter = document.getElementById('nestStatusFilter').value;
 
       const list = Object.values(nestsData || {}).filter(nest => {
+        const { mRing, mPvc, fRing, fPvc } = getPairRings(nest);
         const matchesStatus = (statusFilter === 'ALL' || nest.status === statusFilter);
         const matchesQuery = !query ||
           (nest.nestId || '').toUpperCase().includes(query) ||
           (nest.locationName || '').toUpperCase().includes(query) ||
-          (nest.maleRing || '').toUpperCase().includes(query) ||
-          (nest.femaleRing || '').toUpperCase().includes(query) ||
-          (nest.malePvcCode || '').toUpperCase().includes(query) ||
-          (nest.femalePvcCode || '').toUpperCase().includes(query);
+          mRing.toUpperCase().includes(query) ||
+          fRing.toUpperCase().includes(query) ||
+          mPvc.toUpperCase().includes(query) ||
+          fPvc.toUpperCase().includes(query);
         return matchesStatus && matchesQuery;
       });
 
@@ -250,9 +259,17 @@
 
       let html = '';
       list.forEach(nest => {
+        const { mRing, mPvc, fRing, fPvc } = getPairRings(nest);
         const statusClass = nest.status === 'Activo'
           ? 'bg-emerald-100 text-emerald-800'
           : (nest.status === 'Inactivo' ? 'bg-amber-100 text-amber-800' : 'bg-stone-200 text-stone-700');
+
+        const maleHtml = (mRing && mRing !== 'Sin anillar')
+          ? `<span class="metal-ring-badge">♂ ${mRing}</span>${mPvc ? `<span class="pvc-badge">${mPvc}</span>` : ''}`
+          : '';
+        const femaleHtml = (fRing && fRing !== 'Sin anillar')
+          ? `<span class="metal-ring-badge">♀ ${fRing}</span>${fPvc ? `<span class="pvc-badge">${fPvc}</span>` : ''}`
+          : '';
 
         html += `
           <a href="control.html?edit=${encodeURIComponent(nest.nestId)}" class="block bg-stone-50/90 hover:bg-white border border-stone-200 hover:border-brand-accent rounded-xl p-4 transition-all shadow-sm space-y-2.5">
@@ -269,8 +286,8 @@
               <span>Visita: <strong>${formatDateToDDMMYYYY(nest.layDate)}</strong></span>
             </div>
             <div class="flex flex-wrap gap-2 pt-1 text-xs">
-              ${nest.maleRing && nest.maleRing !== 'Sin anillar' ? `<span class="metal-ring-badge">♂ ${nest.maleRing}</span>${nest.malePvcCode ? `<span class="pvc-badge">${nest.malePvcCode}</span>` : ''}` : ''}
-              ${nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? `<span class="metal-ring-badge">♀ ${nest.femaleRing}</span>${nest.femalePvcCode ? `<span class="pvc-badge">${nest.femalePvcCode}</span>` : ''}` : ''}
+              ${maleHtml}
+              ${femaleHtml}
             </div>
           </a>
         `;
