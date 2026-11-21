@@ -32,34 +32,6 @@
       background-repeat: no-repeat;
       background-size: cover;
     }
-    .metal-ring-badge {
-      background-color: #e5e7eb;
-      color: #1f2937;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-family: monospace;
-      display: inline-block;
-    }
-    .metal-ring-badge-dead {
-      background-color: #ffe4e6;
-      color: #be123c;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-family: monospace;
-      display: inline-block;
-      text-decoration: line-through;
-    }
-    .pvc-badge {
-      background-color: #000000;
-      color: #ffffff;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-family: monospace;
-      display: inline-block;
-    }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
@@ -102,53 +74,64 @@
   </header>
 
   <!-- CONTENIDO PRINCIPAL -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
-
-    <!-- BLOQUE 1: ALTA / EDICIÓN DE ESTACIÓN DE MUESTREO -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-6">
+    
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-6">
-      <div class="border-b pb-4 flex justify-between items-center">
+      
+      <div class="border-b pb-4 flex flex-wrap justify-between items-center gap-3">
         <div>
-          <h1 id="station-form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Estaciones de Muestreo</h1>
+          <h1 id="form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Estaciones de Muestreo</h1>
           <p class="text-xs text-stone-500 mt-0.5">Crea o edita estaciones de muestreo. Al introducir las coordenadas (o usar tu ubicación) se obtiene automáticamente la localidad.</p>
         </div>
-        <button type="button" id="cancel-station-edit-btn" onclick="resetStationForm()" class="hidden text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-3 py-1.5 rounded-xl transition-all">Cancelar Edición</button>
+
+        <div class="flex items-center gap-2">
+          <button type="button" id="toggle-form-btn" onclick="openNewStationForm()" class="bg-brand-dark hover:bg-brand-hover text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow inline-flex items-center gap-1.5 text-xs">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Dar de alta estación</span>
+          </button>
+          <button type="button" id="minimize-form-btn" onclick="collapseStationForm(true)" class="hidden bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold px-3.5 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-xs">
+            <i data-lucide="chevron-up" class="w-4 h-4"></i>
+            <span>Minimizar</span>
+          </button>
+        </div>
       </div>
 
-      <form id="stationForm" onsubmit="saveStation(event)" class="space-y-4">
+      <!-- FORMULARIO PLEGABLE (INICIA MINIMIZADO) -->
+      <form id="stationForm" onsubmit="saveStation(event)" class="hidden space-y-5 bg-stone-50/70 p-5 rounded-2xl border border-stone-200">
+        
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">ID Estación *</label>
-            <input type="text" id="stationId" required placeholder="Ej. EST-01 o POSADERO-NORTE" class="w-full px-3 py-2 border rounded-xl text-xs font-bold uppercase bg-white">
+            <input type="text" id="stationId" required placeholder="EJ. EST-01 O POSADERO-NORTE" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Nombre / Denominación *</label>
-            <input type="text" id="stationName" required placeholder="Ej. Masía del Molí" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+            <input type="text" id="stationName" required placeholder="Ej. Masía del Molí" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Muestreo</label>
             <select id="stationType" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
               <option value="Anillamiento">Anillamiento</option>
               <option value="Fototrampeo">Fototrampeo</option>
-              <option value="Red / Trampa / Captura">Red / Trampa / Captura</option>
-              <option value="Punto de Escucha / Censo">Punto de Escucha / Censo</option>
+              <option value="Censo / Escucha">Censo / Escucha</option>
+              <option value="Mixto">Mixto</option>
             </select>
           </div>
         </div>
 
-        <!-- COORDENADAS JUNTAS + LOCALIDAD AUTOMÁTICA -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end bg-stone-50/80 p-4 rounded-xl border border-stone-200">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-4 rounded-xl border border-stone-200">
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="block text-xs font-bold text-stone-600">Coordenadas (Lat, Lng)</label>
-              <button type="button" onclick="useCurrentGpsLocation()" class="text-[11px] font-bold text-brand-dark hover:text-brand-accent inline-flex items-center gap-1">
-                <i data-lucide="locate-fixed" class="w-3 h-3"></i> GPS actual
+              <button type="button" onclick="useCurrentGps()" class="text-[11px] font-bold text-brand-dark hover:text-brand-accent inline-flex items-center gap-1">
+                <i data-lucide="locate-fixed" class="w-3.5 h-3.5"></i> GPS actual
               </button>
             </div>
-            <input type="text" id="stationCoords" oninput="onCoordsInputChange()" placeholder="Ej. 39.985600, -0.049300" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white font-semibold">
+            <input type="text" id="coordsInput" oninput="onCoordsInput()" placeholder="Ej. 39.985600, -0.049300" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-stone-50">
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Paraje / Localidad (Automática)</label>
-            <input type="text" id="stationLocation" placeholder="Se obtiene automáticamente..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+            <input type="text" id="stationLocation" placeholder="Se obtiene automáticamente..." class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50">
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Notas de la Estación</label>
@@ -156,156 +139,22 @@
           </div>
         </div>
 
-        <div class="flex justify-end">
-          <button type="submit" class="bg-brand-dark hover:bg-brand-hover text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-2 text-xs">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i><span id="save-station-btn-text">Guardar Estación</span>
+        <div class="flex justify-end items-center gap-2 pt-1">
+          <button type="button" onclick="collapseStationForm(true)" class="bg-white hover:bg-stone-100 text-stone-600 border border-stone-300 font-semibold px-4 py-2.5 rounded-xl transition-all text-xs">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-brand-dark hover:bg-brand-hover text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center gap-1.5 text-xs">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span id="save-btn-text">Guardar Estación</span>
           </button>
         </div>
       </form>
 
-      <!-- Píldoras de estaciones registradas -->
-      <div id="stations-chips-container" class="pt-3 border-t flex flex-wrap gap-2">
-        <span class="text-xs text-stone-400">Cargando estaciones...</span>
-      </div>
-    </div>
-
-    <!-- BLOQUE 2: REGISTRO DE CONTROL DE AVE ANILLADA EN ESTACIÓN -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-6">
-      <div class="border-b pb-4 flex justify-between items-center">
-        <div>
-          <h2 id="control-form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Registrar Control de Ave Anillada en Estación</h2>
-          <p class="text-xs text-stone-500 mt-0.5">Anota anillamientos, recapturas o controles de ejemplares anillados en la estación seleccionada.</p>
-        </div>
-        <button type="button" id="cancel-control-edit-btn" onclick="resetControlForm()" class="hidden text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-3 py-1.5 rounded-xl transition-all">Cancelar Edición</button>
+      <!-- LISTADO DE ESTACIONES REGISTRADAS -->
+      <div id="stations-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+        <div class="text-xs text-stone-400 p-4 col-span-full text-center">Cargando estaciones desde Firebase...</div>
       </div>
 
-      <form id="stationControlForm" onsubmit="saveStationControl(event)" class="space-y-5">
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Estación de Muestreo *</label>
-            <select id="controlStationId" required onchange="onControlStationChange()" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white text-brand-dark">
-              <!-- Se rellena dinámicamente -->
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Control *</label>
-            <input type="date" id="controlDate" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Especie (Código)</label>
-            <input type="text" id="controlSpecies" value="TYT_ALB" class="w-full px-3 py-2 border rounded-xl text-xs font-mono font-bold uppercase bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Control</label>
-            <select id="controlType" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-              <option value="Anillamiento">Anillamiento</option>
-              <option value="Recaptura / Control">Recaptura / Control</option>
-              <option value="Fototrampeo">Fototrampeo</option>
-              <option value="Hallazgo / Baja">Hallazgo / Baja</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica</label>
-            <input type="text" id="controlMetalRing" list="known-rings-list" oninput="autofillFromKnownRing('metal')" placeholder="Ej. G-14874" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
-            <datalist id="known-rings-list"></datalist>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla PVC</label>
-            <input type="text" id="controlPvcRing" list="known-pvc-list" oninput="autofillFromKnownRing('pvc')" placeholder="Ej. 052" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
-            <datalist id="known-pvc-list"></datalist>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Edad EURING</label>
-            <select id="controlEuringAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-              <option value="EURING 0">EURING 0 (Desconocida)</option>
-              <option value="EURING 1">EURING 1 (Pollo)</option>
-              <option value="EURING 3">EURING 3</option>
-              <option value="EURING 4">EURING 4</option>
-              <option value="EURING 5">EURING 5</option>
-              <option value="EURING 6">EURING 6</option>
-              <option value="EURING 7">EURING 7</option>
-              <option value="EURING 8">EURING 8</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Sexo</label>
-            <select id="controlSex" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-              <option value="Desconocido">Desconocido</option>
-              <option value="Macho">Macho</option>
-              <option value="Hembra">Hembra</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- BIOMETRÍA EN ORDEN: Ala Máx., P8, Cola, Tarso, Peso, P10, P8 -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 bg-stone-50/70 p-3.5 rounded-xl border border-stone-200">
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Ala Máx. (mm)</label>
-            <input type="number" step="0.1" id="controlWingLength" placeholder="Ej. 285.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">P8 (mm)</label>
-            <input type="number" step="0.1" id="controlP8Length" placeholder="Ej. 195.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Cola (mm)</label>
-            <input type="number" step="0.1" id="controlTailLength" placeholder="Ej. 125.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Tarso (mm)</label>
-            <input type="number" step="0.1" id="controlTarsusLength" placeholder="Ej. 78.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Peso (g)</label>
-            <input type="number" step="0.1" id="controlWeight" placeholder="Ej. 320.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">P10 (mm)</label>
-            <input type="number" step="0.1" id="controlP10Length" placeholder="Ej. 205.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">P8 (mm)</label>
-            <input type="number" step="0.1" id="controlP8SecondaryLength" placeholder="Ej. 195.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones del Control</label>
-          <input type="text" id="controlNotes" placeholder="Comportamiento, estado de lectura, percha, muda, incidencia..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-        </div>
-
-        <div class="flex justify-end pt-1">
-          <button type="submit" class="bg-brand-dark hover:bg-brand-hover text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-2 text-xs">
-            <i data-lucide="save" class="w-4 h-4"></i><span id="save-control-btn-text">Guardar Control en Estación</span>
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- BLOQUE 3: HISTORIAL DE CONTROLES EN ESTACIONES -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-5">
-      <div class="flex flex-wrap justify-between items-center gap-3 border-b pb-4">
-        <div>
-          <h2 class="text-lg font-extrabold text-stone-900 tracking-tight">Historial de Aves Anilladas Controladas en Estaciones</h2>
-          <p class="text-xs text-stone-500">Filtra por estación, temporada o anilla para consultar el historial de controles.</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <select id="filterStationSelect" onchange="renderControlsList()" class="px-3 py-1.5 border rounded-xl text-xs bg-white font-bold text-brand-dark">
-            <option value="ALL">Todas las estaciones</option>
-          </select>
-          <select id="filterYearSelect" onchange="renderControlsList()" class="px-3 py-1.5 border rounded-xl text-xs bg-white font-bold text-brand-dark">
-            <option value="ALL">Todos los años</option>
-          </select>
-          <input type="text" id="filterSearchInput" oninput="renderControlsList()" placeholder="Buscar anilla, PVC o estación..." class="px-3 py-1.5 border rounded-xl text-xs bg-white w-48">
-        </div>
-      </div>
-
-      <div id="controls-list-container" class="space-y-2.5">
-        <div class="text-xs text-stone-400 p-4 text-center">Cargando controles desde Firebase...</div>
-      </div>
     </div>
 
   </main>
@@ -336,33 +185,51 @@
     }
 
     let stationsCache = {};
-    let ringsCache = {};
-    let controlsCache = {};
     let editingStationKey = null;
-    let editingControlId = null;
     let geocodeTimer = null;
 
-    function formatDateToDDMMYYYY(dateStr) {
-      if (!dateStr) return '';
-      if (dateStr.includes('/')) return dateStr;
-      const parts = dateStr.split('-');
-      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+    function expandStationForm() {
+      document.getElementById('stationForm').classList.remove('hidden');
+      document.getElementById('minimize-form-btn').classList.remove('hidden');
+      document.getElementById('toggle-form-btn').classList.add('hidden');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    function parseCoordinatesString(rawCoords) {
-      if (!rawCoords) return { lat: null, lng: null };
-      const cleaned = rawCoords.replace(/[;|\s]+/g, ' ').trim();
-      const parts = rawCoords.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
-      if (parts.length < 2) return { lat: null, lng: null };
+    function collapseStationForm(resetFields = false) {
+      document.getElementById('stationForm').classList.add('hidden');
+      document.getElementById('minimize-form-btn').classList.add('hidden');
+      document.getElementById('toggle-form-btn').classList.remove('hidden');
+      if (resetFields) {
+        editingStationKey = null;
+        document.getElementById('stationForm').reset();
+        document.getElementById('stationId').removeAttribute('readonly');
+        document.getElementById('stationId').classList.remove('bg-stone-100');
+        document.getElementById('save-btn-text').textContent = 'Guardar Estación';
+      }
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function openNewStationForm() {
+      editingStationKey = null;
+      document.getElementById('stationForm').reset();
+      document.getElementById('stationId').removeAttribute('readonly');
+      document.getElementById('stationId').classList.remove('bg-stone-100');
+      document.getElementById('save-btn-text').textContent = 'Guardar Estación';
+      expandStationForm();
+      document.getElementById('stationId').focus();
+    }
+
+    function parseCoords(raw) {
+      if (!raw) return null;
+      const parts = raw.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+      if (parts.length < 2) return null;
       const lat = parseFloat(parts[0]);
       const lng = parseFloat(parts[1]);
-      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-        return { lat: null, lng: null };
-      }
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
       return { lat, lng };
     }
 
-    function reverseGeocodeStation(lat, lng) {
+    function reverseGeocode(lat, lng) {
       const locInput = document.getElementById('stationLocation');
       locInput.placeholder = "Obteniendo localidad...";
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
@@ -371,119 +238,112 @@
           if (data && data.address) {
             const addr = data.address;
             const place = addr.locality || addr.town || addr.village || addr.hamlet || addr.suburb || addr.city || '';
-            const province = addr.province || addr.state || '';
+            const state = addr.province || addr.state || '';
             let name = place;
-            if (province && place) name += ` (${province})`;
-            else if (province) name = province;
+            if (state && place) name += ` (${state})`;
+            else if (state) name = state;
             if (name) locInput.value = name;
           }
         })
         .catch(err => console.error("Error obteniendo localidad:", err));
     }
 
-    function onCoordsInputChange() {
+    function onCoordsInput() {
       clearTimeout(geocodeTimer);
-      const { lat, lng } = parseCoordinatesString(document.getElementById('stationCoords').value);
-      if (lat !== null && lng !== null) {
-        geocodeTimer = setTimeout(() => reverseGeocodeStation(lat, lng), 500);
-      }
+      const parsed = parseCoords(document.getElementById('coordsInput').value);
+      if (!parsed) return;
+      geocodeTimer = setTimeout(() => {
+        reverseGeocode(parsed.lat, parsed.lng);
+      }, 500);
     }
 
-    function useCurrentGpsLocation() {
+    function useCurrentGps() {
       if (!navigator.geolocation) {
         alert('Tu navegador no soporta geolocalización.');
         return;
       }
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          const lat = pos.coords.latitude.toFixed(6);
-          const lng = pos.coords.longitude.toFixed(6);
-          document.getElementById('stationCoords').value = `${lat}, ${lng}`;
-          reverseGeocodeStation(lat, lng);
-        },
-        err => alert('No se pudo obtener la ubicación GPS: ' + err.message)
-      );
-    }
-
-    function loadInitialData() {
-      document.getElementById('controlDate').value = new Date().toISOString().split('T')[0];
-
-      db.ref('estaciones').on('value', snapshot => {
-        stationsCache = snapshot.val() || {};
-        renderStationsChips();
-        populateStationDropdowns();
-        renderControlsList();
-      });
-
-      db.ref('anillados').on('value', snapshot => {
-        ringsCache = snapshot.val() || {};
-        populateKnownRingDatalists();
-      });
-
-      db.ref('controles_estaciones').on('value', snapshot => {
-        controlsCache = snapshot.val() || {};
-        populateControlsYearFilter();
-        renderControlsList();
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude.toFixed(6);
+        const lng = pos.coords.longitude.toFixed(6);
+        document.getElementById('coordsInput').value = `${lat}, ${lng}`;
+        reverseGeocode(lat, lng);
+      }, err => {
+        alert('No se pudo obtener la ubicación GPS: ' + err.message);
       });
     }
 
-    function populateStationDropdowns(selectedId = '') {
-      const controlSelect = document.getElementById('controlStationId');
-      const filterSelect = document.getElementById('filterStationSelect');
-      const currentControlVal = selectedId || controlSelect.value;
-      const currentFilterVal = filterSelect.value;
-
-      const sortedIds = Object.keys(stationsCache).sort();
-
-      controlSelect.innerHTML = '';
-      filterSelect.innerHTML = '<option value="ALL">Todas las estaciones</option>';
-
-      sortedIds.forEach(id => {
-        const st = stationsCache[id];
-        const label = st.stationName ? `${id} — ${st.stationName}` : id;
-
-        const opt1 = document.createElement('option');
-        opt1.value = id;
-        opt1.textContent = label;
-        controlSelect.appendChild(opt1);
-
-        const opt2 = document.createElement('option');
-        opt2.value = id;
-        opt2.textContent = label;
-        filterSelect.appendChild(opt2);
-      });
-
-      if (currentControlVal && stationsCache[currentControlVal]) {
-        controlSelect.value = currentControlVal;
-      } else if (controlSelect.options.length > 0) {
-        controlSelect.selectedIndex = 0;
-      }
-
-      if (currentFilterVal === 'ALL' || stationsCache[currentFilterVal]) {
-        filterSelect.value = currentFilterVal;
-      }
+    function editStation(key) {
+      const st = stationsCache[key];
+      if (!st) return;
+      editingStationKey = key;
+      document.getElementById('stationId').value = st.stationId || key;
+      document.getElementById('stationId').setAttribute('readonly', true);
+      document.getElementById('stationId').classList.add('bg-stone-100');
+      document.getElementById('stationName').value = st.stationName || '';
+      document.getElementById('stationType').value = st.stationType || 'Anillamiento';
+      document.getElementById('coordsInput').value = (st.lat && st.lng) ? `${st.lat}, ${st.lng}` : '';
+      document.getElementById('stationLocation').value = st.stationLocation || '';
+      document.getElementById('stationNotes').value = st.stationNotes || '';
+      document.getElementById('save-btn-text').textContent = 'Actualizar Estación';
+      expandStationForm();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function renderStationsChips() {
-      const container = document.getElementById('stations-chips-container');
-      const ids = Object.keys(stationsCache).sort();
+    function saveStation(e) {
+      e.preventDefault();
+      const stationId = document.getElementById('stationId').value.trim().toUpperCase();
+      const stationName = document.getElementById('stationName').value.trim();
+      const stationType = document.getElementById('stationType').value;
+      const parsedCoords = parseCoords(document.getElementById('coordsInput').value);
+      const stationLocation = document.getElementById('stationLocation').value.trim();
+      const stationNotes = document.getElementById('stationNotes').value.trim();
 
-      if (ids.length === 0) {
-        container.innerHTML = '<span class="text-xs text-stone-400">Aún no hay estaciones creadas. Usa el formulario superior para añadir la primera.</span>';
+      const key = editingStationKey || stationId.replace(/[\/\.#$\[\]]/g, '_');
+
+      const payload = {
+        stationId,
+        stationName,
+        stationType,
+        lat: parsedCoords ? parsedCoords.lat : null,
+        lng: parsedCoords ? parsedCoords.lng : null,
+        stationLocation,
+        stationNotes,
+        updatedAt: new Date().toISOString().split('T')[0]
+      };
+
+      db.ref('estaciones/' + key).set(payload).then(() => {
+        collapseStationForm(true);
+      }).catch(err => {
+        alert('Error al guardar estación: ' + err.message);
+      });
+    }
+
+    function renderStationsList() {
+      const container = document.getElementById('stations-list');
+      const entries = Object.entries(stationsCache || {});
+
+      if (entries.length === 0) {
+        container.innerHTML = '<div class="text-xs text-stone-400 p-4 col-span-full text-center">No hay estaciones registradas todavía. Pulsa "Dar de alta estación" para añadir una.</div>';
         return;
       }
 
       let html = '';
-      ids.forEach(id => {
-        const st = stationsCache[id];
+      entries.forEach(([key, st]) => {
+        const idLabel = st.stationId || key;
         html += `
-          <div class="bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 flex items-center gap-2.5 text-xs">
-            <span class="font-extrabold text-brand-dark">${id}</span>
-            <span class="text-stone-700 font-semibold">${st.stationName || ''}</span>
-            ${st.stationLocation ? `<span class="text-stone-500">(${st.stationLocation})</span>` : ''}
-            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">${st.stationType || 'Anillamiento'}</span>
-            <button type="button" onclick="editStation('${id}')" class="text-stone-500 hover:text-brand-dark p-1 rounded" title="Editar estación">
-              <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+          <div class="bg-white border border-stone-200 rounded-xl px-4 py-3 flex justify-between items-center gap-2 shadow-xs hover:border-brand-accent transition-all">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-extrabold text-brand-dark uppercase">${idLabel}</span>
+                <span class="text-xs font-semibold text-stone-800 truncate">${st.stationName || ''}</span>
+                ${st.stationLocation ? `<span class="text-[11px] text-stone-500 truncate">(${st.stationLocation})</span>` : ''}
+              </div>
+              <div class="mt-1">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">${st.stationType || 'Anillamiento'}</span>
+              </div>
+            </div>
+            <button type="button" onclick="editStation('${key}')" class="p-2 text-stone-500 hover:text-brand-dark hover:bg-stone-100 rounded-lg transition-all shrink-0" title="Editar estación">
+              <i data-lucide="pencil" class="w-4 h-4"></i>
             </button>
           </div>
         `;
@@ -493,343 +353,11 @@
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    function editStation(id) {
-      const st = stationsCache[id];
-      if (!st) return;
-      editingStationKey = id;
-      document.getElementById('station-form-title').textContent = `Editando Estación: ${id}`;
-      document.getElementById('save-station-btn-text').textContent = 'Actualizar Estación';
-      document.getElementById('cancel-station-edit-btn').classList.remove('hidden');
-
-      document.getElementById('stationId').value = id;
-      document.getElementById('stationId').setAttribute('readonly', true);
-      document.getElementById('stationId').classList.add('bg-stone-100');
-      document.getElementById('stationName').value = st.stationName || '';
-      document.getElementById('stationType').value = st.stationType || 'Anillamiento';
-      document.getElementById('stationCoords').value = (st.lat && st.lng) ? `${st.lat}, ${st.lng}` : '';
-      document.getElementById('stationLocation').value = st.stationLocation || '';
-      document.getElementById('stationNotes').value = st.notes || '';
-    }
-
-    function resetStationForm() {
-      editingStationKey = null;
-      document.getElementById('stationForm').reset();
-      const idInput = document.getElementById('stationId');
-      idInput.removeAttribute('readonly');
-      idInput.classList.remove('bg-stone-100');
-      document.getElementById('station-form-title').textContent = 'Estaciones de Muestreo';
-      document.getElementById('save-station-btn-text').textContent = 'Guardar Estación';
-      document.getElementById('cancel-station-edit-btn').classList.add('hidden');
-    }
-
-    async function saveStation(e) {
-      e.preventDefault();
-      const stationId = document.getElementById('stationId').value.trim().toUpperCase().replace(/[\/\.#$\[\]]/g, '_');
-      const stationName = document.getElementById('stationName').value.trim();
-      const stationType = document.getElementById('stationType').value;
-      const { lat, lng } = parseCoordinatesString(document.getElementById('stationCoords').value);
-      let stationLocation = document.getElementById('stationLocation').value.trim();
-      const notes = document.getElementById('stationNotes').value.trim();
-
-      if (!stationLocation && lat !== null && lng !== null) {
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
-          const data = await res.json();
-          if (data && data.address) {
-            const addr = data.address;
-            const place = addr.locality || addr.town || addr.village || addr.hamlet || addr.suburb || addr.city || '';
-            const province = addr.province || addr.state || '';
-            stationLocation = place && province ? `${place} (${province})` : (place || province || '');
-          }
-        } catch (_) {}
-      }
-
-      try {
-        await db.ref('estaciones/' + stationId).set({
-          stationId,
-          stationName,
-          stationType,
-          stationLocation,
-          lat,
-          lng,
-          notes
-        });
-        alert(`Estación ${stationId} guardada correctamente.`);
-        resetStationForm();
-      } catch (err) {
-        alert('Error al guardar la estación: ' + err.message);
-      }
-    }
-
-    function onControlStationChange() {
-      const stId = document.getElementById('controlStationId').value;
-      if (stId && stationsCache[stId]) {
-        document.getElementById('filterStationSelect').value = stId;
-        renderControlsList();
-      }
-    }
-
-    function populateKnownRingDatalists() {
-      const metalList = document.getElementById('known-rings-list');
-      const pvcList = document.getElementById('known-pvc-list');
-      metalList.innerHTML = '';
-      pvcList.innerHTML = '';
-
-      Object.values(ringsCache).forEach(r => {
-        if (r.metalRing) {
-          const opt = document.createElement('option');
-          opt.value = r.metalRing;
-          opt.label = r.pvcRing ? `PVC: ${r.pvcRing}` : (r.euringAge || '');
-          metalList.appendChild(opt);
-        }
-        if (r.pvcRing) {
-          const opt2 = document.createElement('option');
-          opt2.value = r.pvcRing;
-          opt2.label = r.metalRing ? `Anilla: ${r.metalRing}` : '';
-          pvcList.appendChild(opt2);
-        }
-      });
-    }
-
-    function autofillFromKnownRing(source) {
-      const metalVal = document.getElementById('controlMetalRing').value.trim().toUpperCase();
-      const pvcVal = document.getElementById('controlPvcRing').value.trim().toUpperCase();
-
-      const match = Object.values(ringsCache).find(r => {
-        if (source === 'metal' && metalVal) return (r.metalRing || '').toUpperCase() === metalVal;
-        if (source === 'pvc' && pvcVal) return (r.pvcRing || '').toUpperCase() === pvcVal;
-        return false;
-      });
-
-      if (match) {
-        if (match.metalRing && !metalVal) document.getElementById('controlMetalRing').value = match.metalRing;
-        if (match.pvcRing && !pvcVal) document.getElementById('controlPvcRing').value = match.pvcRing;
-        if (match.euringAge) document.getElementById('controlEuringAge').value = match.euringAge;
-        if (match.sex) document.getElementById('controlSex').value = match.sex;
-      }
-    }
-
-    function populateControlsYearFilter() {
-      const select = document.getElementById('filterYearSelect');
-      const prev = select.value;
-      const yearsSet = new Set();
-
-      Object.values(controlsCache).forEach(c => {
-        if (c.controlDate) {
-          const y = c.controlDate.includes('-') ? c.controlDate.split('-')[0] : c.controlDate.split('/')[2];
-          if (y) yearsSet.add(y);
-        }
-      });
-
-      const sorted = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
-      select.innerHTML = '<option value="ALL">Todos los años</option>';
-      sorted.forEach(y => {
-        const opt = document.createElement('option');
-        opt.value = y;
-        opt.textContent = `Año ${y}`;
-        select.appendChild(opt);
-      });
-
-      if (prev && (prev === 'ALL' || sorted.includes(prev))) {
-        select.value = prev;
-      }
-    }
-
-    function renderControlsList() {
-      const container = document.getElementById('controls-list-container');
-      const stFilter = document.getElementById('filterStationSelect').value;
-      const yrFilter = document.getElementById('filterYearSelect').value;
-      const q = document.getElementById('filterSearchInput').value.trim().toUpperCase();
-
-      const items = Object.entries(controlsCache).map(([id, val]) => ({ id, ...val }));
-
-      const filtered = items.filter(c => {
-        const y = c.controlDate ? (c.controlDate.includes('-') ? c.controlDate.split('-')[0] : c.controlDate.split('/')[2]) : '';
-        const matchSt = (stFilter === 'ALL' || c.stationId === stFilter);
-        const matchYr = (yrFilter === 'ALL' || y === yrFilter);
-        const stName = stationsCache[c.stationId]?.stationName || '';
-        const matchQ = !q ||
-          (c.metalRing || '').toUpperCase().includes(q) ||
-          (c.pvcRing || '').toUpperCase().includes(q) ||
-          (c.stationId || '').toUpperCase().includes(q) ||
-          stName.toUpperCase().includes(q) ||
-          (c.species || '').toUpperCase().includes(q);
-        return matchSt && matchYr && matchQ;
-      });
-
-      filtered.sort((a, b) => new Date(b.controlDate || 0) - new Date(a.controlDate || 0));
-
-      if (filtered.length === 0) {
-        container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-6 text-xs text-stone-400 text-center">No hay controles de aves anilladas registrados con estos filtros.</div>';
-        return;
-      }
-
-      let html = '';
-      filtered.forEach(c => {
-        const stInfo = stationsCache[c.stationId];
-        const stLabel = stInfo?.stationName ? `${c.stationId} (${stInfo.stationName})` : c.stationId;
-        const isDead = c.controlType === 'Hallazgo / Baja';
-
-        const metalBadge = c.metalRing
-          ? `<span class="${isDead ? 'metal-ring-badge-dead' : 'metal-ring-badge'} text-sm">${c.metalRing}</span>`
-          : '<span class="px-2 py-0.5 rounded bg-stone-100 text-stone-500 font-mono text-xs">Sin metálica</span>';
-        const pvcBadge = c.pvcRing ? `<span class="pvc-badge text-xs">${c.pvcRing}</span>` : '';
-
-        const biometrics = [
-          c.wingLength ? `Ala Máx.: <strong>${c.wingLength}mm</strong>` : '',
-          c.p8Length ? `P8: <strong>${c.p8Length}mm</strong>` : '',
-          c.tailLength ? `Cola: <strong>${c.tailLength}mm</strong>` : '',
-          c.tarsusLength ? `Tarso: <strong>${c.tarsusLength}mm</strong>` : '',
-          c.weight ? `Peso: <strong>${c.weight}g</strong>` : '',
-          c.p10Length ? `P10: <strong>${c.p10Length}mm</strong>` : '',
-          c.p8SecondaryLength ? `P8(2): <strong>${c.p8SecondaryLength}mm</strong>` : ''
-        ].filter(Boolean).join(' | ');
-
-        html += `
-          <div class="${isDead ? 'bg-rose-50/60 border-rose-200' : 'bg-white border-stone-200'} border rounded-xl p-3.5 flex flex-wrap justify-between items-center gap-3 hover:shadow-sm transition-all">
-            <div class="flex items-center gap-2.5 flex-wrap">
-              <span class="px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-brand-dark/10 text-brand-dark">${stLabel}</span>
-              <span class="px-2 py-0.5 rounded bg-stone-100 text-stone-700 font-mono text-[11px] font-bold">${c.species || 'TYT_ALB'}</span>
-              ${metalBadge}
-              ${pvcBadge}
-              <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">${c.controlType || 'Anillamiento'}</span>
-            </div>
-            <div class="flex items-center gap-3 flex-wrap text-xs text-stone-600">
-              <span>Fecha: <strong>${formatDateToDDMMYYYY(c.controlDate)}</strong></span>
-              ${c.euringAge ? `<span>Edad: <strong>${c.euringAge}</strong></span>` : ''}
-              ${c.sex && c.sex !== 'Desconocido' ? `<span>Sexo: <strong>${c.sex}</strong></span>` : ''}
-              ${biometrics ? `<span>${biometrics}</span>` : ''}
-              ${c.notes ? `<span class="text-stone-500 italic max-w-xs truncate" title="${c.notes}">"${c.notes}"</span>` : ''}
-              <div class="flex items-center gap-1.5 ml-1">
-                <button type="button" onclick="editControl('${c.id}')" class="p-1.5 text-stone-500 hover:text-brand-dark hover:bg-stone-100 rounded-lg transition-all" title="Editar control">
-                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
-                </button>
-                <button type="button" onclick="deleteControl('${c.id}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all" title="Eliminar control">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      });
-
-      container.innerHTML = html;
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-    }
-
-    function editControl(id) {
-      const c = controlsCache[id];
-      if (!c) return;
-      editingControlId = id;
-      document.getElementById('control-form-title').textContent = 'Editando Control de Ave en Estación';
-      document.getElementById('save-control-btn-text').textContent = 'Actualizar Control';
-      document.getElementById('cancel-control-edit-btn').classList.remove('hidden');
-
-      populateStationDropdowns(c.stationId);
-      document.getElementById('controlDate').value = c.controlDate || '';
-      document.getElementById('controlSpecies').value = c.species || 'TYT_ALB';
-      document.getElementById('controlType').value = c.controlType === 'Lectura PVC' ? 'Anillamiento' : (c.controlType || 'Anillamiento');
-      document.getElementById('controlMetalRing').value = c.metalRing || '';
-      document.getElementById('controlPvcRing').value = c.pvcRing || '';
-      document.getElementById('controlEuringAge').value = c.euringAge || 'EURING 0';
-      document.getElementById('controlSex').value = c.sex || 'Desconocido';
-      document.getElementById('controlWingLength').value = c.wingLength || '';
-      document.getElementById('controlP8Length').value = c.p8Length || '';
-      document.getElementById('controlTailLength').value = c.tailLength || '';
-      document.getElementById('controlTarsusLength').value = c.tarsusLength || '';
-      document.getElementById('controlWeight').value = c.weight || '';
-      document.getElementById('controlP10Length').value = c.p10Length || '';
-      document.getElementById('controlP8SecondaryLength').value = c.p8SecondaryLength || '';
-      document.getElementById('controlNotes').value = c.notes || '';
-    }
-
-    function resetControlForm() {
-      editingControlId = null;
-      document.getElementById('stationControlForm').reset();
-      document.getElementById('controlDate').value = new Date().toISOString().split('T')[0];
-      document.getElementById('controlSpecies').value = 'TYT_ALB';
-      document.getElementById('control-form-title').textContent = 'Registrar Control de Ave Anillada en Estación';
-      document.getElementById('save-control-btn-text').textContent = 'Guardar Control en Estación';
-      document.getElementById('cancel-control-edit-btn').classList.add('hidden');
-    }
-
-    function deleteControl(id) {
-      if (!confirm('¿Seguro que deseas eliminar este control de estación?')) return;
-      db.ref('controles_estaciones/' + id).remove().catch(err => alert('Error al eliminar: ' + err.message));
-    }
-
-    async function saveStationControl(e) {
-      e.preventDefault();
-      const stationId = document.getElementById('controlStationId').value;
-      const controlDate = document.getElementById('controlDate').value;
-      const species = document.getElementById('controlSpecies').value.trim().toUpperCase() || 'TYT_ALB';
-      const controlType = document.getElementById('controlType').value;
-      const metalRing = document.getElementById('controlMetalRing').value.trim().toUpperCase();
-      const pvcRing = document.getElementById('controlPvcRing').value.trim().toUpperCase();
-      const euringAge = document.getElementById('controlEuringAge').value;
-      const sex = document.getElementById('controlSex').value;
-      const wingLength = parseFloat(document.getElementById('controlWingLength').value) || null;
-      const p8Length = parseFloat(document.getElementById('controlP8Length').value) || null;
-      const tailLength = parseFloat(document.getElementById('controlTailLength').value) || null;
-      const tarsusLength = parseFloat(document.getElementById('controlTarsusLength').value) || null;
-      const weight = parseFloat(document.getElementById('controlWeight').value) || null;
-      const p10Length = parseFloat(document.getElementById('controlP10Length').value) || null;
-      const p8SecondaryLength = parseFloat(document.getElementById('controlP8SecondaryLength').value) || null;
-      const notes = document.getElementById('controlNotes').value.trim();
-
-      if (!metalRing && !pvcRing) {
-        alert('Introduce al menos la anilla metálica o la anilla PVC del ejemplar controlado.');
-        return;
-      }
-
-      const controlData = {
-        stationId,
-        controlDate,
-        species,
-        controlType,
-        metalRing,
-        pvcRing,
-        euringAge,
-        sex,
-        wingLength,
-        p8Length,
-        tailLength,
-        tarsusLength,
-        weight,
-        p10Length,
-        p8SecondaryLength,
-        notes
-      };
-
-      try {
-        const ref = editingControlId
-          ? db.ref('controles_estaciones/' + editingControlId)
-          : db.ref('controles_estaciones').push();
-
-        await ref.set(controlData);
-
-        if (metalRing) {
-          const ringKey = metalRing.replace(/[\/\.#$\[\]]/g, '_');
-          const ringSnap = await db.ref('anillados/' + ringKey).once('value');
-          if (ringSnap.exists()) {
-            const ringUpdates = {
-              lastObservation: `[${formatDateToDDMMYYYY(controlDate)}] ${controlType} en estación ${stationId}${notes ? ' — ' + notes : ''}`
-            };
-            if (pvcRing) ringUpdates.pvcRing = pvcRing;
-            if (controlType === 'Hallazgo / Baja') ringUpdates.status = 'Muerto';
-            await db.ref('anillados/' + ringKey).update(ringUpdates);
-          }
-        }
-
-        alert('Control de estación guardado correctamente.');
-        resetControlForm();
-      } catch (err) {
-        alert('Error al guardar el control: ' + err.message);
-      }
-    }
-
     window.addEventListener('DOMContentLoaded', () => {
-      loadInitialData();
+      db.ref('estaciones').on('value', snapshot => {
+        stationsCache = snapshot.val() || {};
+        renderStationsList();
+      });
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
   </script>
