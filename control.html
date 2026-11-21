@@ -105,7 +105,7 @@
       <div class="border-b pb-4 flex flex-wrap justify-between items-center gap-2">
         <div>
           <h1 id="form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Nuevo Registro de Caja Nido</h1>
-          <p class="text-xs text-stone-500 mt-0.5">Completa los datos geográficos, estado reproductivo, anillas y observaciones de campo.</p>
+          <p class="text-xs text-stone-500 mt-0.5">Completa los datos geográficos, estado reproductivo, relación de años, anillas y observaciones de campo.</p>
         </div>
         <div class="flex items-center gap-2">
           <button type="button" onclick="resetForm()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all inline-flex items-center gap-1.5">
@@ -120,10 +120,14 @@
       <form id="nestForm" onsubmit="saveNest(event)" class="space-y-6">
         
         <!-- IDENTIFICACIÓN Y ESTADO -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Código Nido *</label>
             <input type="text" id="nestId" required placeholder="EJ. N-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-stone-50 uppercase">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Año Visita</label>
+            <select id="visitYear" onchange="onVisitYearChange()" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50 font-mono font-bold text-brand-dark"></select>
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Estado General *</label>
@@ -145,7 +149,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Fecha Visita / Puesta</label>
-            <input type="date" id="layDate" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50">
+            <input type="date" id="layDate" onchange="syncYearFromDate('layDate', 'visitYear')" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50">
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Polos Volados</label>
@@ -195,6 +199,19 @@
           </div>
         </div>
 
+        <!-- RELACIÓN DE AÑOS: VISITAS AL NIDO -->
+        <div class="bg-stone-50/90 p-4 rounded-2xl border border-stone-200 space-y-2.5">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-extrabold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
+              <i data-lucide="calendar-days" class="w-4 h-4 text-brand-accent"></i> Relación de Años — Visitas al Nido
+            </span>
+            <span class="text-[11px] text-stone-500">Haz clic en un año para cargar o revisar su visita</span>
+          </div>
+          <div id="nest-years-relation" class="flex flex-wrap gap-2 text-xs text-stone-500">
+            <span>Sin visitas históricas registradas aún.</span>
+          </div>
+        </div>
+
         <!-- PAREJA REPRODUCTORA -->
         <div id="active-pair-section" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-emerald-50/40 p-4 rounded-2xl border border-emerald-200/70">
           <div class="space-y-3 bg-white p-4 rounded-xl border border-stone-200">
@@ -221,7 +238,7 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-stone-600 mb-1">Fecha Anillamiento</label>
-                <input type="date" id="maleRingDate" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50">
+                <input type="date" id="maleRingDate" onchange="syncYearFromDate('maleRingDate', 'ringYear')" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50">
               </div>
             </div>
           </div>
@@ -250,7 +267,7 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-stone-600 mb-1">Fecha Anillamiento</label>
-                <input type="date" id="femaleRingDate" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50">
+                <input type="date" id="femaleRingDate" onchange="syncYearFromDate('femaleRingDate', 'ringYear')" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50">
               </div>
             </div>
           </div>
@@ -258,13 +275,30 @@
 
         <!-- POLLOS ANILLADOS EN EL NIDO -->
         <div id="active-chicks-section" class="bg-amber-50/40 p-4 rounded-2xl border border-amber-200/70 space-y-3">
-          <div class="flex justify-between items-center">
+          <div class="flex flex-wrap justify-between items-center gap-2">
             <span class="text-xs font-extrabold text-brand-dark uppercase tracking-wide">Pollos Anillados en el Nido</span>
-            <button type="button" onclick="addChickRow()" class="bg-brand-dark hover:bg-brand-hover text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all inline-flex items-center gap-1">
-              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i><span>Añadir Pollo</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <label class="text-[11px] font-bold text-stone-600">Año anillamiento:</label>
+              <select id="ringYear" onchange="onRingYearChange()" class="px-2.5 py-1 border rounded-lg text-xs bg-white font-mono font-bold text-brand-dark"></select>
+              <button type="button" onclick="addChickRow()" class="bg-brand-dark hover:bg-brand-hover text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all inline-flex items-center gap-1">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5"></i><span>Añadir Pollo</span>
+              </button>
+            </div>
           </div>
           <div id="chicks-container" class="space-y-2.5"></div>
+        </div>
+
+        <!-- RELACIÓN DE AÑOS: ANILLAMIENTOS -->
+        <div class="bg-sky-50/50 p-4 rounded-2xl border border-sky-200/80 space-y-2.5">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-extrabold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
+              <i data-lucide="tag" class="w-4 h-4 text-sky-700"></i> Relación de Años — Anillamientos en el Nido
+            </span>
+            <span class="text-[11px] text-stone-500">Resumen cronológico por año de pareja y pollos</span>
+          </div>
+          <div id="rings-years-relation" class="space-y-2 text-xs text-stone-600">
+            <div>Sin anillamientos registrados en este nido todavía.</div>
+          </div>
         </div>
 
         <!-- OBSERVACIONES Y GUARDAR -->
@@ -314,6 +348,183 @@
     let marker = null;
     let geocodeTimer = null;
     let currentEditingNestId = null;
+    let currentNestData = null;
+    let visitHistoryByYear = {};
+    let nestRingsArchive = {};
+
+    function formatDateToDDMMYYYY(dateStr) {
+      if (!dateStr) return '-';
+      if (dateStr.includes('/')) return dateStr;
+      const parts = dateStr.split('-');
+      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+    }
+
+    function extractYearFromDate(dateStr) {
+      if (!dateStr) return '';
+      const str = String(dateStr).trim();
+      if (str.includes('-')) return str.split('-')[0];
+      if (str.includes('/')) {
+        const parts = str.split('/');
+        return parts[2] || '';
+      }
+      return '';
+    }
+
+    function populateYearSelects(extraYears = []) {
+      const currentYear = String(new Date().getFullYear());
+      const set = new Set(['2021', '2022', '2023', '2024', '2025', '2026', currentYear, ...extraYears.filter(Boolean)]);
+      const sorted = Array.from(set).sort((a, b) => b.localeCompare(a));
+
+      ['visitYear', 'ringYear'].forEach(id => {
+        const sel = document.getElementById(id);
+        const prev = sel.value;
+        sel.innerHTML = sorted.map(y => `<option value="${y}">${y}</option>`).join('');
+        if (prev && sorted.includes(prev)) {
+          sel.value = prev;
+        } else {
+          sel.value = currentYear;
+        }
+      });
+    }
+
+    function syncYearFromDate(dateInputId, yearSelectId) {
+      const y = extractYearFromDate(document.getElementById(dateInputId).value);
+      if (y) {
+        populateYearSelects([y]);
+        document.getElementById(yearSelectId).value = y;
+      }
+      renderRingsYearsRelation();
+    }
+
+    function onVisitYearChange() {
+      const y = document.getElementById('visitYear').value;
+      const entry = visitHistoryByYear[y];
+      if (entry) {
+        if (entry.status) document.getElementById('status').value = entry.status;
+        if (entry.visitationState) document.getElementById('visitationState').value = entry.visitationState;
+        if (entry.layDate) document.getElementById('layDate').value = entry.layDate;
+        if (entry.fledgedChicks !== undefined && entry.fledgedChicks !== null) {
+          document.getElementById('fledgedChicks').value = entry.fledgedChicks;
+        }
+        toggleActiveFields();
+      }
+      renderVisitYearsRelation();
+    }
+
+    function onRingYearChange() {
+      const y = document.getElementById('ringYear').value;
+      const layDateVal = document.getElementById('layDate').value;
+      if (!layDateVal || extractYearFromDate(layDateVal) !== y) {
+        document.querySelectorAll('#chicks-container .chick-date').forEach(inp => {
+          if (!inp.value) inp.value = `${y}-05-15`;
+        });
+      }
+      renderRingsYearsRelation();
+    }
+
+    function selectVisitYear(year) {
+      populateYearSelects([year]);
+      document.getElementById('visitYear').value = year;
+      onVisitYearChange();
+    }
+
+    function renderVisitYearsRelation() {
+      const container = document.getElementById('nest-years-relation');
+      const selectedYear = document.getElementById('visitYear').value;
+
+      const merged = { ...(visitHistoryByYear || {}) };
+      const currentLayDate = document.getElementById('layDate').value;
+      const curYear = extractYearFromDate(currentLayDate) || selectedYear;
+      if (curYear) {
+        merged[curYear] = {
+          ...(merged[curYear] || {}),
+          year: curYear,
+          status: document.getElementById('status').value,
+          visitationState: document.getElementById('visitationState').value,
+          layDate: currentLayDate || merged[curYear]?.layDate || '',
+          fledgedChicks: parseInt(document.getElementById('fledgedChicks').value, 10) || 0
+        };
+      }
+
+      const years = Object.keys(merged).sort((a, b) => b.localeCompare(a));
+      if (years.length === 0) {
+        container.innerHTML = '<span>Sin visitas históricas registradas aún.</span>';
+        return;
+      }
+
+      container.innerHTML = years.map(y => {
+        const item = merged[y];
+        const isSelected = y === selectedYear;
+        return `
+          <button type="button" onclick="selectVisitYear('${y}')" class="px-3 py-1.5 rounded-xl border text-left transition-all ${isSelected ? 'bg-brand-dark text-white border-brand-dark shadow-xs' : 'bg-white hover:bg-stone-100 text-stone-700 border-stone-200'}">
+            <div class="font-mono font-extrabold text-xs">${y}</div>
+            <div class="text-[11px] opacity-90">${item.status || '-'} · ${item.visitationState || '-'} · Volados: ${item.fledgedChicks ?? 0}${item.layDate ? ` (${formatDateToDDMMYYYY(item.layDate)})` : ''}</div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderRingsYearsRelation() {
+      const container = document.getElementById('rings-years-relation');
+      const byYear = {};
+
+      function addToYear(year, label) {
+        const y = year || document.getElementById('ringYear').value || String(new Date().getFullYear());
+        if (!byYear[y]) byYear[y] = [];
+        if (!byYear[y].includes(label)) byYear[y].push(label);
+      }
+
+      const mRing = document.getElementById('maleRing').value.trim().toUpperCase();
+      const mPvc = document.getElementById('malePvcCode').value.trim().toUpperCase();
+      const mDate = document.getElementById('maleRingDate').value;
+      if (mRing && mRing !== 'SIN ANILLAR') {
+        addToYear(extractYearFromDate(mDate), `♂ ${mRing}${mPvc ? ` [PVC ${mPvc}]` : ''}${mDate ? ` (${formatDateToDDMMYYYY(mDate)})` : ''}`);
+      }
+
+      const fRing = document.getElementById('femaleRing').value.trim().toUpperCase();
+      const fPvc = document.getElementById('femalePvcCode').value.trim().toUpperCase();
+      const fDate = document.getElementById('femaleRingDate').value;
+      if (fRing && fRing !== 'SIN ANILLAR') {
+        addToYear(extractYearFromDate(fDate), `♀ ${fRing}${fPvc ? ` [PVC ${fPvc}]` : ''}${fDate ? ` (${formatDateToDDMMYYYY(fDate)})` : ''}`);
+      }
+
+      document.querySelectorAll('#chicks-container .chick-row').forEach(row => {
+        const cMetal = row.querySelector('.chick-metal').value.trim().toUpperCase();
+        const cPvc = row.querySelector('.chick-pvc').value.trim().toUpperCase();
+        const cDate = row.querySelector('.chick-date').value;
+        if (cMetal || cPvc) {
+          addToYear(extractYearFromDate(cDate), `Pollo ${cMetal || '-'}${cPvc ? ` [PVC ${cPvc}]` : ''}${cDate ? ` (${formatDateToDDMMYYYY(cDate)})` : ''}`);
+        }
+      });
+
+      const currentNestIdUpper = (document.getElementById('nestId').value || currentEditingNestId || '').trim().toUpperCase();
+      Object.values(nestRingsArchive || {}).forEach(r => {
+        if (!r || typeof r !== 'object') return;
+        const rNest = String(r.nestId || '').trim().toUpperCase();
+        if (currentNestIdUpper && rNest === currentNestIdUpper) {
+          const rMetal = String(r.metalRing || r.anilla || '').trim().toUpperCase();
+          const rPvc = String(r.pvcRing || r.pvc || '').trim().toUpperCase();
+          const rDate = r.ringDate || r.fecha || '';
+          const rAge = r.birdAge || r.euringAge || '';
+          if (rMetal || rPvc) {
+            addToYear(extractYearFromDate(rDate), `${rAge ? rAge + ' ' : ''}${rMetal || '-'}${rPvc ? ` [PVC ${rPvc}]` : ''}${rDate ? ` (${formatDateToDDMMYYYY(rDate)})` : ''}`);
+          }
+        }
+      });
+
+      const years = Object.keys(byYear).sort((a, b) => b.localeCompare(a));
+      if (years.length === 0) {
+        container.innerHTML = '<div>Sin anillamientos registrados en este nido todavía.</div>';
+        return;
+      }
+
+      container.innerHTML = years.map(y => `
+        <div class="bg-white border border-sky-200/80 rounded-xl px-3.5 py-2 flex flex-wrap items-center gap-2">
+          <span class="px-2 py-0.5 rounded-md bg-sky-700 text-white font-mono font-bold text-xs">${y}</span>
+          <span class="text-stone-700 font-medium">${byYear[y].join(' · ')}</span>
+        </div>
+      `).join('');
+    }
 
     function toggleCameraActivity() {
       const hasCamera = document.getElementById('hasCamera').value === 'Sí';
@@ -338,6 +549,7 @@
       const showDetails = (status === 'Activo' && visitation !== 'Sin puesta') || visitation === 'Pollos en nido' || visitation === 'Polos volados' || visitation === 'Fracaso';
       document.getElementById('active-pair-section').classList.toggle('hidden', !showDetails && status !== 'Activo');
       document.getElementById('active-chicks-section').classList.toggle('hidden', !showDetails && status !== 'Activo');
+      renderVisitYearsRelation();
     }
 
     function parseCoords(raw) {
@@ -428,32 +640,42 @@
       } else {
         pvcEl.disabled = false;
       }
+      renderRingsYearsRelation();
     }
 
     function addChickRow(data = {}) {
       const container = document.getElementById('chicks-container');
+      const selectedRingYear = document.getElementById('ringYear').value || String(new Date().getFullYear());
+      const defaultDate = data.ringDate || document.getElementById('layDate').value || `${selectedRingYear}-05-15`;
       const row = document.createElement('div');
       row.className = 'chick-row grid grid-cols-1 sm:grid-cols-4 gap-2.5 bg-white p-3 rounded-xl border border-stone-200 items-center';
       row.innerHTML = `
-        <input type="text" value="${data.metalRing || ''}" placeholder="Anilla Metálica" class="chick-metal px-3 py-1.5 border rounded-lg text-xs font-mono uppercase bg-stone-50">
-        <input type="text" value="${data.pvcCode || ''}" placeholder="Código PVC" class="chick-pvc px-3 py-1.5 border rounded-lg text-xs font-mono uppercase bg-stone-50">
-        <input type="date" value="${data.ringDate || document.getElementById('layDate').value || ''}" class="chick-date px-3 py-1.5 border rounded-lg text-xs bg-stone-50">
-        <button type="button" onclick="this.parentElement.remove()" class="text-rose-600 hover:text-rose-800 text-xs font-bold justify-self-end px-2 py-1">Quitar</button>
+        <input type="text" value="${data.metalRing || ''}" oninput="renderRingsYearsRelation()" placeholder="Anilla Metálica" class="chick-metal px-3 py-1.5 border rounded-lg text-xs font-mono uppercase bg-stone-50">
+        <input type="text" value="${data.pvcCode || ''}" oninput="renderRingsYearsRelation()" placeholder="Código PVC" class="chick-pvc px-3 py-1.5 border rounded-lg text-xs font-mono uppercase bg-stone-50">
+        <input type="date" value="${defaultDate}" onchange="renderRingsYearsRelation()" class="chick-date px-3 py-1.5 border rounded-lg text-xs bg-stone-50">
+        <button type="button" onclick="this.parentElement.remove(); renderRingsYearsRelation();" class="text-rose-600 hover:text-rose-800 text-xs font-bold justify-self-end px-2 py-1">Quitar</button>
       `;
       container.appendChild(row);
+      renderRingsYearsRelation();
     }
 
     function resetForm() {
       currentEditingNestId = null;
+      currentNestData = null;
+      visitHistoryByYear = {};
       document.getElementById('nestForm').reset();
       document.getElementById('chicks-container').innerHTML = '';
       document.getElementById('form-title').textContent = 'Nuevo Registro de Caja Nido';
       document.getElementById('save-nest-btn-text').textContent = 'Guardar Registro de Nido';
       document.getElementById('delete-nest-btn').classList.add('hidden');
       document.getElementById('nestId').removeAttribute('readonly');
-      document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('layDate').value = today;
+      populateYearSelects([extractYearFromDate(today)]);
       toggleCameraActivity();
       toggleActiveFields();
+      renderVisitYearsRelation();
+      renderRingsYearsRelation();
       initMap();
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
@@ -464,11 +686,36 @@
         const d = snap.val();
         if (!d) return;
         currentEditingNestId = safeKey;
+        currentNestData = d;
+        visitHistoryByYear = { ...(d.visitHistoryByYear || {}) };
+
+        const layYear = extractYearFromDate(d.layDate);
+        if (layYear && !visitHistoryByYear[layYear]) {
+          visitHistoryByYear[layYear] = {
+            year: layYear,
+            status: d.status || 'Activo',
+            visitationState: d.visitationState || 'Sin puesta',
+            layDate: d.layDate || '',
+            fledgedChicks: d.fledgedChicks ?? 0
+          };
+        }
+
+        const ringYears = [
+          extractYearFromDate(d.maleRingDate),
+          extractYearFromDate(d.femaleRingDate),
+          ...(Array.isArray(d.chicks) ? d.chicks.map(c => extractYearFromDate(c.ringDate)) : [])
+        ];
+        populateYearSelects([...Object.keys(visitHistoryByYear), layYear, ...ringYears]);
+
         document.getElementById('form-title').textContent = `Editando Nido: ${d.nestId}`;
         document.getElementById('save-nest-btn-text').textContent = 'Actualizar Nido';
         document.getElementById('delete-nest-btn').classList.remove('hidden');
         document.getElementById('nestId').value = d.nestId || nestId;
         document.getElementById('nestId').setAttribute('readonly', true);
+        if (layYear) document.getElementById('visitYear').value = layYear;
+        const firstRingYear = ringYears.find(Boolean) || layYear;
+        if (firstRingYear) document.getElementById('ringYear').value = firstRingYear;
+
         document.getElementById('status').value = d.status || 'Activo';
         document.getElementById('visitationState').value = d.visitationState || 'Sin puesta';
         document.getElementById('layDate').value = d.layDate || '';
@@ -495,6 +742,8 @@
 
         toggleCameraActivity();
         toggleActiveFields();
+        renderVisitYearsRelation();
+        renderRingsYearsRelation();
         if (d.lat && d.lng) initMap(parseFloat(d.lat), parseFloat(d.lng));
         if (typeof lucide !== 'undefined') lucide.createIcons();
       });
@@ -515,6 +764,23 @@
       const parsedCoords = parseCoords(document.getElementById('coordsInput').value);
       const hasCamera = document.getElementById('hasCamera').value;
       const cameraActivity = hasCamera === 'Sí' ? document.getElementById('cameraActivity').value : '';
+      const status = document.getElementById('status').value;
+      const visitationState = document.getElementById('visitationState').value;
+      const layDate = document.getElementById('layDate').value;
+      const fledgedChicks = parseInt(document.getElementById('fledgedChicks').value, 10) || 0;
+      const selectedVisitYear = document.getElementById('visitYear').value;
+      const yearKey = extractYearFromDate(layDate) || selectedVisitYear || String(new Date().getFullYear());
+
+      const updatedVisitHistory = {
+        ...(visitHistoryByYear || {}),
+        [yearKey]: {
+          year: yearKey,
+          status,
+          visitationState,
+          layDate,
+          fledgedChicks
+        }
+      };
 
       const chicks = [];
       document.querySelectorAll('#chicks-container .chick-row').forEach(row => {
@@ -528,10 +794,11 @@
 
       const payload = {
         nestId,
-        status: document.getElementById('status').value,
-        visitationState: document.getElementById('visitationState').value,
-        layDate: document.getElementById('layDate').value,
-        fledgedChicks: parseInt(document.getElementById('fledgedChicks').value, 10) || 0,
+        status,
+        visitationState,
+        layDate,
+        fledgedChicks,
+        visitHistoryByYear: updatedVisitHistory,
         lat: parsedCoords ? parsedCoords.lat : null,
         lng: parsedCoords ? parsedCoords.lng : null,
         locationName: document.getElementById('locationName').value.trim(),
@@ -558,10 +825,19 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('layDate').value = today;
+      populateYearSelects([extractYearFromDate(today)]);
       toggleCameraActivity();
       toggleActiveFields();
+      renderVisitYearsRelation();
+      renderRingsYearsRelation();
       initMap();
+
+      db.ref('anillados').on('value', snap => {
+        nestRingsArchive = snap.val() || {};
+        renderRingsYearsRelation();
+      });
 
       const params = new URLSearchParams(window.location.search);
       const editId = params.get('edit');
