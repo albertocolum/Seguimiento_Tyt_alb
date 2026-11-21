@@ -106,7 +106,7 @@
       <div class="border-b pb-4 flex justify-between items-center">
         <div>
           <h1 id="form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Registro de Anillamiento Científico</h1>
-          <p class="text-xs text-stone-500 mt-0.5">Registra ejemplares anillados o recapturados. Si indicas un ID de nido, se anotará automáticamente en sus observaciones de campo.</p>
+          <p class="text-xs text-stone-500 mt-0.5">Selecciona el nido asociado para que el anillamiento quede registrado automáticamente en sus observaciones de campo.</p>
         </div>
         <button type="button" id="cancel-edit-btn" onclick="resetForm()" class="hidden text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-3 py-1.5 rounded-xl transition-all">Cancelar Edición</button>
       </div>
@@ -115,9 +115,15 @@
         
         <div class="space-y-3">
           <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
-            <i data-lucide="tag" class="w-4 h-4 text-sky-600"></i> 1. Identificación y Anillas
+            <i data-lucide="tag" class="w-4 h-4 text-sky-600"></i> 1. Nido Asociado, Identificación y Anillas
           </h3>
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-stone-600 mb-1">Nido Asociado</label>
+              <select id="nestId" onchange="autoFillLocationFromNest()" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white text-brand-dark">
+                <option value="">-- Sin nido asociado (Captura externa) --</option>
+              </select>
+            </div>
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica *</label>
               <input type="text" id="metalRing" required placeholder="Ej. G-14874" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
@@ -129,11 +135,6 @@
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Anillamiento *</label>
               <input type="date" id="ringDate" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido (Opcional)</label>
-              <input type="text" id="nestId" list="nests-datalist" onchange="autoFillLocationFromNest()" placeholder="Ej. NIDO-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold uppercase bg-white">
-              <datalist id="nests-datalist"></datalist>
             </div>
           </div>
         </div>
@@ -179,7 +180,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Paraje / Localidad</label>
-            <input type="text" id="locationName" placeholder="Ej. Castelló de la Plana" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+            <input type="text" id="locationName" placeholder="Se rellena automáticamente al elegir nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
           </div>
           <div>
             <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones del Ejemplar</label>
@@ -253,19 +254,38 @@
       return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
     }
 
+    function populateNestsDropdown(selectedNestId = '') {
+      const select = document.getElementById('nestId');
+      const currentVal = selectedNestId || select.value;
+
+      select.innerHTML = '<option value="">-- Sin nido asociado (Captura externa) --</option>';
+
+      Object.keys(allNestsCache).sort().forEach(id => {
+        const nest = allNestsCache[id];
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = nest.locationName ? `${id} — ${nest.locationName}` : id;
+        select.appendChild(opt);
+      });
+
+      // Si el registro editado tenía un ID de nido que ya no está en la lista, conservarlo como opción
+      if (currentVal && !allNestsCache[currentVal]) {
+        const extraOpt = document.createElement('option');
+        extraOpt.value = currentVal;
+        extraOpt.textContent = currentVal;
+        select.appendChild(extraOpt);
+      }
+
+      select.value = currentVal;
+    }
+
     function loadInitialData() {
       document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
 
-      // Cargar lista de nidos para autocompletado
+      // Cargar lista de nidos en el selector desplegable
       db.ref('nidos').on('value', snapshot => {
         allNestsCache = snapshot.val() || {};
-        const datalist = document.getElementById('nests-datalist');
-        datalist.innerHTML = '';
-        Object.keys(allNestsCache).sort().forEach(id => {
-          const opt = document.createElement('option');
-          opt.value = id;
-          datalist.appendChild(opt);
-        });
+        populateNestsDropdown();
       });
 
       // Cargar anillados en tiempo real
@@ -279,10 +299,7 @@
     function autoFillLocationFromNest() {
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       if (nestId && allNestsCache[nestId] && allNestsCache[nestId].locationName) {
-        const locInput = document.getElementById('locationName');
-        if (!locInput.value.trim()) {
-          locInput.value = allNestsCache[nestId].locationName;
-        }
+        document.getElementById('locationName').value = allNestsCache[nestId].locationName;
       }
     }
 
@@ -393,10 +410,10 @@
       document.getElementById('save-btn-text').textContent = 'Actualizar Anillamiento';
       document.getElementById('cancel-edit-btn').classList.remove('hidden');
 
+      populateNestsDropdown((r.nestId || '').toUpperCase());
       document.getElementById('metalRing').value = r.metalRing || '';
       document.getElementById('pvcRing').value = r.pvcRing || '';
       document.getElementById('ringDate').value = r.ringDate || '';
-      document.getElementById('nestId').value = r.nestId || '';
       document.getElementById('birdAge').value = r.birdAge || 'Pollo';
       document.getElementById('sex').value = r.sex || 'Desconocido';
       document.getElementById('weight').value = r.weight || '';
@@ -411,6 +428,7 @@
     function resetForm() {
       editingKey = null;
       document.getElementById('ringForm').reset();
+      populateNestsDropdown('');
       document.getElementById('ringDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('form-title').textContent = 'Registro de Anillamiento Científico';
       document.getElementById('save-btn-text').textContent = 'Guardar Anillamiento';
@@ -455,7 +473,6 @@
       try {
         await db.ref('anillados/' + recordKey).set(ringData);
 
-        // Si hay un nido asociado, registrar automáticamente el anillamiento en sus Observaciones de Campo
         if (nestId) {
           const nidoRef = db.ref('nidos/' + nestId);
           const snap = await nidoRef.once('value');
@@ -470,12 +487,10 @@
             const notasActuales = nido.notes || '';
             const nestUpdates = {};
 
-            // Evitar duplicar si esa anilla ya fue anotada previamente en el nido
             if (!notasActuales.toUpperCase().includes(metalRing)) {
               nestUpdates.notes = notasActuales ? `${notasActuales}\n${nuevaLinea}` : nuevaLinea;
             }
 
-            // Si es un adulto vivo con sexo definido, vincularlo también a la pareja reproductora del nido
             if (birdAge === 'Adulto' && status === 'Vivo') {
               if (sex === 'Macho') {
                 nestUpdates.maleRing = metalRing;
