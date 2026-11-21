@@ -142,6 +142,33 @@
       </div>
     </div>
 
+    <!-- LISTADO DE ESTACIONES DE MUESTREO -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
+      <div class="flex flex-wrap justify-between items-center gap-3 border-b pb-3">
+        <div>
+          <h2 class="text-lg font-extrabold text-stone-900 tracking-tight">Estaciones de Muestreo</h2>
+          <p class="text-xs text-stone-500">Haz clic en cualquier estación para gestionarla o ver sus controles.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <input type="text" id="stationSearch" oninput="renderStationsList()" placeholder="Buscar estación, nombre o localidad..." class="px-3 py-1.5 border rounded-xl text-xs bg-white w-56">
+          <select id="stationTypeFilter" onchange="renderStationsList()" class="px-3 py-1.5 border rounded-xl text-xs bg-white font-bold text-brand-dark">
+            <option value="ALL">Todos los tipos</option>
+            <option value="Anillamiento">Anillamiento</option>
+            <option value="Fototrampeo">Fototrampeo</option>
+            <option value="Censo / Escucha">Censo / Escucha</option>
+            <option value="Mixto">Mixto</option>
+          </select>
+          <a href="estaciones.html" class="bg-brand-dark hover:bg-brand-hover text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow inline-flex items-center gap-1.5">
+            <i data-lucide="radar" class="w-4 h-4"></i><span>Gestionar Estaciones</span>
+          </a>
+        </div>
+      </div>
+
+      <div id="stations-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="text-xs text-stone-400 p-4 col-span-full text-center">Cargando estaciones desde Firebase...</div>
+      </div>
+    </div>
+
   </main>
 
   <footer class="bg-white/90 backdrop-blur-md border-t py-4 mt-auto text-center text-xs text-stone-500 font-medium">Tyto Alba Monitoreo — Firebase Cloud Mode</footer>
@@ -174,6 +201,7 @@
     let stationsLayer = null;
     let nestsData = {};
     let stationsData = {};
+    let controlsData = {};
     let hasFittedInitialBounds = false;
 
     function formatDateToDDMMYYYY(dateStr) {
@@ -181,6 +209,26 @@
       if (dateStr.includes('/')) return dateStr;
       const parts = dateStr.split('-');
       return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+    }
+
+    function normalizeCode(val) {
+      return String(val || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    }
+
+    function countControlsForStation(stationKey, st) {
+      const stId = String((st && st.stationId) || stationKey || '').trim().toUpperCase();
+      const normStId = normalizeCode(stId);
+      const normKey = normalizeCode(stationKey);
+
+      return Object.values(controlsData || {}).filter(rec => {
+        if (!rec || typeof rec !== 'object') return false;
+        if (rec.stationKey && rec.stationKey === stationKey) return true;
+        const ref = String(rec.stationId || rec.estacionId || rec.station || rec.estacion || rec.nestId || '').trim().toUpperCase();
+        if (!ref) return false;
+        if (ref === stId || ref === String(stationKey).toUpperCase()) return true;
+        const normRef = normalizeCode(ref);
+        return normRef && (normRef === normStId || normRef === normKey);
+      }).length;
     }
 
     function getPairRings(nest) {
@@ -349,6 +397,59 @@
       container.innerHTML = html;
     }
 
+    function renderStationsList() {
+      const container = document.getElementById('stations-list');
+      const query = document.getElementById('stationSearch').value.trim().toUpperCase();
+      const typeFilter = document.getElementById('stationTypeFilter').value;
+
+      const entries = Object.entries(stationsData || {}).filter(([key, st]) => {
+        const stId = String(st.stationId || key || '').toUpperCase();
+        const stName = String(st.stationName || '').toUpperCase();
+        const stLoc = String(st.stationLocation || '').toUpperCase();
+        const stType = String(st.stationType || 'Anillamiento');
+
+        const matchesType = (typeFilter === 'ALL' || stType === typeFilter);
+        const matchesQuery = !query ||
+          stId.includes(query) ||
+          stName.includes(query) ||
+          stLoc.includes(query) ||
+          stType.toUpperCase().includes(query);
+        return matchesType && matchesQuery;
+      });
+
+      if (entries.length === 0) {
+        container.innerHTML = '<div class="text-xs text-stone-400 p-6 col-span-full text-center">No hay estaciones de muestreo que coincidan con el filtro.</div>';
+        return;
+      }
+
+      let html = '';
+      entries.forEach(([key, st]) => {
+        const stId = st.stationId || key;
+        const stType = st.stationType || 'Anillamiento';
+        const controlsCount = countControlsForStation(key, st);
+        const hasCoords = !isNaN(parseFloat(st.lat)) && !isNaN(parseFloat(st.lng));
+
+        html += `
+          <a href="estaciones.html" class="block bg-stone-50/90 hover:bg-white border border-stone-200 hover:border-sky-400 rounded-xl p-4 transition-all shadow-sm space-y-2.5">
+            <div class="flex justify-between items-start gap-2">
+              <div>
+                <div class="text-sm font-extrabold text-brand-dark">${stId}</div>
+                <div class="text-xs font-semibold text-stone-700">${st.stationName || 'Sin denominación'}</div>
+                <div class="text-xs text-stone-500">${st.stationLocation || 'Sin localidad'}</div>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-sky-100 text-sky-800">${stType}</span>
+            </div>
+            <div class="text-xs text-stone-600 flex flex-wrap justify-between gap-2 pt-1.5 border-t border-stone-200/70">
+              <span>Controles: <strong>${controlsCount}</strong></span>
+              <span>${hasCoords ? `GPS: <strong>${Number(st.lat).toFixed(4)}, ${Number(st.lng).toFixed(4)}</strong>` : '<span class="text-stone-400">Sin coordenadas</span>'}</span>
+            </div>
+          </a>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       initMap();
       db.ref('nidos').on('value', snapshot => {
@@ -359,6 +460,11 @@
         stationsData = snapshot.val() || {};
         renderStationsOnMap();
         renderNests();
+        renderStationsList();
+      });
+      db.ref('controles_estaciones').on('value', snapshot => {
+        controlsData = snapshot.val() || {};
+        renderStationsList();
       });
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
