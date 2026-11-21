@@ -146,7 +146,7 @@
           <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
             <i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> 2. Edad EURING, Sexo y Biometría
           </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-bold text-stone-600 mb-1">Edad EURING *</label>
               <select id="euringAge" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
@@ -166,13 +166,6 @@
                 <option value="Desconocido">Desconocido</option>
                 <option value="Macho">Macho</option>
                 <option value="Hembra">Hembra</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Estado Actual</label>
-              <select id="status" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Vivo">Vivo / Activo</option>
-                <option value="Muerto">Muerto / Recuperado</option>
               </select>
             </div>
           </div>
@@ -474,7 +467,6 @@
       document.getElementById('weight').value = r.weight || '';
       document.getElementById('p10Length').value = r.p10Length || '';
       document.getElementById('p8SecondaryLength').value = r.p8SecondaryLength || '';
-      document.getElementById('status').value = r.status || 'Vivo';
       document.getElementById('locationName').value = r.locationName || '';
       document.getElementById('lastObservation').value = r.lastObservation || '';
 
@@ -512,11 +504,12 @@
       const weight = parseFloat(document.getElementById('weight').value) || null;
       const p10Length = parseFloat(document.getElementById('p10Length').value) || null;
       const p8SecondaryLength = parseFloat(document.getElementById('p8SecondaryLength').value) || null;
-      const status = document.getElementById('status').value;
       const locationName = document.getElementById('locationName').value.trim();
       const lastObservation = document.getElementById('lastObservation').value.trim();
 
       const recordKey = editingKey || metalRing.replace(/[\/\.#$\[\]]/g, '_');
+      const existingRecord = allRingsCache[recordKey] || allRingsCache[metalRing.replace(/[\/\.#$\[\]]/g, '_')] || {};
+      const status = existingRecord.status || 'Vivo';
 
       const ringData = {
         metalRing,
@@ -562,10 +555,14 @@
             if (birdAge === 'Adulto' && status === 'Vivo') {
               if (sex === 'Macho') {
                 nestUpdates.maleRing = metalRing;
+                nestUpdates.maleRingCode = metalRing;
                 nestUpdates.malePvcCode = pvcRing;
+                nestUpdates.malePvc = pvcRing;
               } else if (sex === 'Hembra') {
                 nestUpdates.femaleRing = metalRing;
+                nestUpdates.femaleRingCode = metalRing;
                 nestUpdates.femalePvcCode = pvcRing;
+                nestUpdates.femalePvc = pvcRing;
               }
             }
 
