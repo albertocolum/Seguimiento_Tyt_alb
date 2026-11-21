@@ -266,7 +266,8 @@
 
         <div class="space-y-2 pt-2">
           <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo</label>
-          <textarea id="notes" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white fixed-textarea"></textarea>
+          <textarea id="notes" oninput="renderNotesByYear()" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white fixed-textarea"></textarea>
+          <div id="notes-by-year-container" class="space-y-2.5 pt-2"></div>
         </div>
 
         <div class="space-y-3 pt-4 border-t">
@@ -335,6 +336,69 @@
       if (!dateStr) return '';
       const parts = dateStr.split('-');
       return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+    }
+
+    function extractYearFromDate(dateStr) {
+      if (!dateStr) return '';
+      const str = String(dateStr).trim();
+      const dmyMatch = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if (dmyMatch) return dmyMatch[3];
+      const ymdMatch = str.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (ymdMatch) return ymdMatch[1];
+      return '';
+    }
+
+    function parseDateValue(dateStr) {
+      if (!dateStr) return 0;
+      const str = String(dateStr).trim();
+      const dmyMatch = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if (dmyMatch) return new Date(`${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}`).getTime() || 0;
+      const t = new Date(str).getTime();
+      return isNaN(t) ? 0 : t;
+    }
+
+    function renderNotesByYear() {
+      const container = document.getElementById('notes-by-year-container');
+      const rawNotes = document.getElementById('notes').value || '';
+      const fallbackYear = extractYearFromDate(document.getElementById('layDate').value) || String(new Date().getFullYear());
+
+      const lines = rawNotes
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean);
+
+      if (lines.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const grouped = {};
+      let lastYear = fallbackYear;
+
+      lines.forEach(line => {
+        const y = extractYearFromDate(line) || lastYear || 'Sin año';
+        if (extractYearFromDate(line)) lastYear = y;
+        if (!grouped[y]) grouped[y] = [];
+        grouped[y].push(line);
+      });
+
+      const sortedYears = Object.keys(grouped).sort((a, b) => {
+        if (a === 'Sin año') return 1;
+        if (b === 'Sin año') return -1;
+        return b.localeCompare(a);
+      });
+
+      container.innerHTML = sortedYears.map(year => `
+        <div class="bg-stone-50/90 border border-stone-200 rounded-xl p-3 space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-md text-xs font-mono font-extrabold bg-brand-dark text-white">${year}</span>
+            <span class="text-[11px] font-bold text-stone-500 uppercase tracking-wide">Observaciones de campo</span>
+          </div>
+          <div class="space-y-1 text-xs text-stone-700 pl-1">
+            ${grouped[year].map(item => `<div class="leading-relaxed">${item}</div>`).join('')}
+          </div>
+        </div>
+      `).join('');
     }
 
     function reverseGeocode(lat, lng) {
@@ -512,26 +576,44 @@
           return;
         }
 
-        activeAdults.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
+        activeAdults.sort((a, b) => parseDateValue(b.ringDate) - parseDateValue(a.ringDate));
+
+        const byYear = {};
+        activeAdults.forEach(r => {
+          const y = extractYearFromDate(r.ringDate) || 'Sin año';
+          if (!byYear[y]) byYear[y] = [];
+          byYear[y].push(r);
+        });
+
+        const sortedYears = Object.keys(byYear).sort((a, b) => {
+          if (a === 'Sin año') return 1;
+          if (b === 'Sin año') return -1;
+          return b.localeCompare(a);
+        });
 
         let html = '';
-        activeAdults.forEach(r => {
-          const isAdult = r.birdAge === 'Adulto';
-          let badgeHTML = isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
-          
-          const metalBadge = `<span class="metal-ring-badge text-sm">${r.metalRing}</span>`;
-          const pvcBadge = r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : '';
+        sortedYears.forEach(year => {
+          html += `<div class="bg-stone-50/90 border border-stone-200 rounded-xl p-3 space-y-2">`;
+          html += `<div class="flex items-center gap-2"><span class="px-2.5 py-0.5 rounded-md text-xs font-mono font-extrabold bg-brand-accent text-white">${year}</span><span class="text-[11px] font-bold text-stone-500 uppercase tracking-wide">Anillamientos y adultos (${byYear[year].length})</span></div>`;
+          byYear[year].forEach(r => {
+            const isAdult = r.birdAge === 'Adulto';
+            let badgeHTML = isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
+            
+            const metalBadge = `<span class="metal-ring-badge text-sm">${r.metalRing}</span>`;
+            const pvcBadge = r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : '';
 
-          html += `
-            <div class="bg-white border border-stone-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2">
-              <div class="flex items-center gap-3">
-                ${badgeHTML}
-                ${metalBadge}
-                ${pvcBadge}
+            html += `
+              <div class="bg-white border border-stone-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2">
+                <div class="flex items-center gap-3">
+                  ${badgeHTML}
+                  ${metalBadge}
+                  ${pvcBadge}
+                </div>
+                <div class="text-stone-500 text-xs font-medium">Fecha: <strong class="text-stone-800">${r.ringDate ? formatDateToDDMMYYYY(r.ringDate) : '-'}</strong> | Sexo: <strong class="text-stone-800">${r.sex || 'Desconocido'}</strong> | Peso: <strong class="text-stone-800">${r.weight ? r.weight + 'g' : '-'}</strong></div>
               </div>
-              <div class="text-stone-500 text-xs font-medium">Fecha: <strong class="text-stone-800">${r.ringDate ? formatDateToDDMMYYYY(r.ringDate) : '-'}</strong> | Sexo: <strong class="text-stone-800">${r.sex || 'Desconocido'}</strong> | Peso: <strong class="text-stone-800">${r.weight ? r.weight + 'g' : '-'}</strong></div>
-            </div>
-          `;
+            `;
+          });
+          html += `</div>`;
         });
         container.innerHTML = html;
       });
@@ -572,6 +654,7 @@
             document.getElementById('femalePvcCode').value = nest.femalePvcCode || '';
             document.getElementById('notes').value = nest.notes || '';
 
+            renderNotesByYear();
             autoLoadAdultsForNest();
             loadChicksDropdown(nest.chickDeathRing || 'Sin baja');
             updateNestHistoryPreview();
@@ -590,6 +673,7 @@
         document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('adultDeath').value = 'Ninguno';
         toggleCameraActivity();
+        renderNotesByYear();
         loadChicksDropdown('Sin baja');
         updateNestHistoryPreview();
       }
@@ -717,7 +801,10 @@
       document.getElementById('femaleRing').addEventListener('input', updateNestHistoryPreview);
       document.getElementById('malePvcCode').addEventListener('input', updateNestHistoryPreview);
       document.getElementById('femalePvcCode').addEventListener('input', updateNestHistoryPreview);
-      document.getElementById('layDate').addEventListener('change', updateNestHistoryPreview);
+      document.getElementById('layDate').addEventListener('change', () => {
+        updateNestHistoryPreview();
+        renderNotesByYear();
+      });
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
   </script>
