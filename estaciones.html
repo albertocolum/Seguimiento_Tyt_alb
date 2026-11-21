@@ -100,10 +100,14 @@
       <div class="border-b pb-4 flex flex-wrap justify-between items-center gap-3">
         <div>
           <h1 id="form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Estaciones de Muestreo</h1>
-          <p class="text-xs text-stone-500 mt-0.5">Crea, edita o elimina estaciones de muestreo. Al introducir las coordenadas (o usar tu ubicación) se obtiene automáticamente la localidad.</p>
+          <p class="text-xs text-stone-500 mt-0.5">Crea, edita o elimina estaciones de muestreo y registra capturas/anillamientos propios de cada estación.</p>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="toggle-ring-form-btn" onclick="openNewStationRingForm()" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow inline-flex items-center gap-1.5 text-xs">
+            <i data-lucide="feather" class="w-4 h-4"></i>
+            <span>Anillar en estación</span>
+          </button>
           <button type="button" id="toggle-form-btn" onclick="openNewStationForm()" class="bg-brand-dark hover:bg-brand-hover text-white font-semibold px-4 py-2.5 rounded-xl transition-all shadow inline-flex items-center gap-1.5 text-xs">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
             <span>Dar de alta estación</span>
@@ -115,7 +119,7 @@
         </div>
       </div>
 
-      <!-- FORMULARIO PLEGABLE (INICIA MINIMIZADO) -->
+      <!-- FORMULARIO PLEGABLE DE ESTACIÓN (INICIA MINIMIZADO) -->
       <form id="stationForm" onsubmit="saveStation(event)" class="hidden space-y-5 bg-stone-50/70 p-5 rounded-2xl border border-stone-200">
         
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -169,6 +173,125 @@
         </div>
       </form>
 
+      <!-- FICHA PLEGABLE DE ANILLAMIENTO EN ESTACIÓN DE MUESTREO -->
+      <form id="stationRingForm" onsubmit="saveStationRing(event)" class="hidden space-y-5 bg-amber-50/60 p-5 rounded-2xl border border-amber-200">
+        <div class="flex justify-between items-center border-b border-amber-200/80 pb-3">
+          <div>
+            <h2 id="ring-form-title" class="text-sm font-extrabold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
+              <i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Anillamiento de Muestreo en Estación
+            </h2>
+            <p class="text-[11px] text-stone-600 mt-0.5">Registro independiente de los anillamientos de nido, vinculado a la estación de muestreo seleccionada.</p>
+          </div>
+          <button type="button" onclick="collapseStationRingForm(true)" class="bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 font-semibold px-3 py-1.5 rounded-xl transition-all text-xs inline-flex items-center gap-1">
+            <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i> Cerrar ficha
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Estación de Muestreo *</label>
+            <select id="ringStationSelect" required onchange="onRingStationChange()" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white text-brand-dark">
+              <!-- Se rellena dinámicamente -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica *</label>
+            <input type="text" id="ringMetalInput" required placeholder="Ej. G-14880" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Anilla PVC</label>
+            <input type="text" id="ringPvcInput" placeholder="Ej. 059" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de Captura *</label>
+            <input type="date" id="ringDateInput" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Hora Captura</label>
+            <input type="time" id="ringTimeInput" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Edad EURING *</label>
+            <select id="ringEuringInput" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <option value="EURING 3">EURING 3 (Nacido este año calendario)</option>
+              <option value="EURING 4">EURING 4 (Nacido antes de este año, año exacto desconocido)</option>
+              <option value="EURING 5">EURING 5 (Nacido el año calendario anterior)</option>
+              <option value="EURING 6">EURING 6 (Nacido antes del año anterior)</option>
+              <option value="EURING 7">EURING 7 (Nacido al menos hace 2 años calendarios)</option>
+              <option value="EURING 8">EURING 8 (Nacido al menos hace 3 años calendarios)</option>
+              <option value="EURING 0">EURING 0 (Edad desconocida)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Sexo</label>
+            <select id="ringSexInput" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+              <option value="Desconocido">Desconocido</option>
+              <option value="Macho">Macho</option>
+              <option value="Hembra">Hembra</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Tipo / Método de Muestreo</label>
+            <input type="text" id="ringMethodInput" placeholder="Ej. Trampa / Red / Control nocturno" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 bg-white p-4 rounded-xl border border-stone-200">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Ala Máx. (mm)</label>
+            <input type="number" step="0.1" id="ringWingInput" placeholder="Ej. 285.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-stone-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">P8 (mm)</label>
+            <input type="number" step="0.1" id="ringP8Input" placeholder="Ej. 195.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-stone-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Cola (mm)</label>
+            <input type="number" step="0.1" id="ringTailInput" placeholder="Ej. 125.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-stone-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Tarso (mm)</label>
+            <input type="number" step="0.1" id="ringTarsusInput" placeholder="Ej. 78.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-stone-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Peso (g)</label>
+            <input type="number" step="0.1" id="ringWeightInput" placeholder="Ej. 320.5" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-stone-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">P10 (mm)</label>
+            <input type="number" step="0.1" id="ringP10Input" placeholder="Ej. 205.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-stone-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">P8 (2) (mm)</label>
+            <input type="number" step="0.1" id="ringP8SecInput" placeholder="Ej. 195.0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-stone-50">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Paraje / Localidad</label>
+            <input type="text" id="ringLocationInput" placeholder="Se rellena automáticamente con la estación..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo</label>
+            <input type="text" id="ringNotesInput" placeholder="Muda, grasa, condición física, incidencias..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+          </div>
+        </div>
+
+        <div class="flex justify-end items-center gap-2 pt-1">
+          <button type="button" onclick="collapseStationRingForm(true)" class="bg-white hover:bg-stone-100 text-stone-600 border border-stone-300 font-semibold px-4 py-2.5 rounded-xl transition-all text-xs">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center gap-1.5 text-xs">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span id="save-ring-btn-text">Guardar Anillamiento en Estación</span>
+          </button>
+        </div>
+      </form>
+
       <!-- LISTADO DE ESTACIONES REGISTRADAS CON SUS ANILLAMIENTOS Y BOTÓN ELIMINAR -->
       <div id="stations-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
         <div class="text-xs text-stone-400 p-4 col-span-full text-center">Cargando estaciones desde Firebase...</div>
@@ -181,7 +304,7 @@
       <div class="flex flex-wrap justify-between items-center gap-3 border-b pb-4">
         <div>
           <h2 class="text-lg font-extrabold text-stone-900 tracking-tight">Anillamientos Realizados en Estaciones</h2>
-          <p class="text-xs text-stone-500">Consulta los ejemplares anillados vinculados a cada estación de muestreo.</p>
+          <p class="text-xs text-stone-500">Consulta, filtra o edita las fichas de anillamiento de muestreo realizadas en cada estación.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <select id="stationRingFilter" onchange="renderStationRings()" class="px-3 py-1.5 border rounded-xl text-xs bg-white font-bold text-brand-dark">
@@ -226,8 +349,9 @@
     }
 
     let stationsCache = {};
-    let ringsCache = {};
+    let stationRingsCache = {};
     let editingStationKey = null;
+    let editingRingKey = null;
     let geocodeTimer = null;
 
     function formatDateToDDMMYYYY(dateStr) {
@@ -237,45 +361,8 @@
       return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
     }
 
-    function normalizeCode(val) {
-      return (val || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    }
-
-    function matchRingToStation(ring, stationKey, stationObj) {
-      const rawRef = (ring.nestId || ring.stationId || '').trim().toUpperCase();
-      if (!rawRef) return false;
-
-      const stId = (stationObj.stationId || stationKey || '').trim().toUpperCase();
-      const normRef = normalizeCode(rawRef);
-      const normStId = normalizeCode(stId);
-      const normKey = normalizeCode(stationKey);
-
-      if (rawRef === stId || rawRef === stationKey.toUpperCase()) return true;
-      if (normRef && (normRef === normStId || normRef === normKey)) return true;
-
-      if (normRef.startsWith('EST_') && normStId.startsWith('EST_')) {
-        const suffixRef = normRef.replace(/^EST_/, '');
-        const suffixSt = normStId.replace(/^EST_/, '');
-        if (suffixRef && suffixRef === suffixSt) return true;
-      }
-
-      if (normRef && (normStId.includes(normRef) || normRef.includes(normStId))) {
-        const cleanSt = normStId.replace(/^EST_/, '');
-        const cleanRef = normRef.replace(/^EST_/, '');
-        if (cleanSt && cleanRef && (cleanSt.includes(cleanRef) || cleanRef.includes(cleanSt))) return true;
-      }
-
-      return false;
-    }
-
-    function getRingsForStation(stationKey, stationObj) {
-      return Object.entries(ringsCache || {})
-        .map(([key, val]) => ({ key, ...val }))
-        .filter(r => matchRingToStation(r, stationKey, stationObj))
-        .sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
-    }
-
     function expandStationForm() {
+      collapseStationRingForm(false);
       document.getElementById('stationForm').classList.remove('hidden');
       document.getElementById('minimize-form-btn').classList.remove('hidden');
       document.getElementById('toggle-form-btn').classList.add('hidden');
@@ -304,6 +391,188 @@
       document.getElementById('save-btn-text').textContent = 'Guardar Estación';
       expandStationForm();
       document.getElementById('stationId').focus();
+    }
+
+    function populateRingStationDropdown(selectedKey = '') {
+      const select = document.getElementById('ringStationSelect');
+      const currentVal = selectedKey || select.value;
+      select.innerHTML = '';
+
+      const entries = Object.entries(stationsCache || {});
+      if (entries.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Crea primero una estación';
+        select.appendChild(opt);
+        return;
+      }
+
+      entries.forEach(([key, st]) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = st.stationName ? `${st.stationId || key} — ${st.stationName}` : (st.stationId || key);
+        select.appendChild(opt);
+      });
+
+      if (currentVal && stationsCache[currentVal]) {
+        select.value = currentVal;
+      } else {
+        select.selectedIndex = 0;
+      }
+      onRingStationChange();
+    }
+
+    function onRingStationChange() {
+      const stKey = document.getElementById('ringStationSelect').value;
+      const st = stationsCache[stKey];
+      const locInput = document.getElementById('ringLocationInput');
+      if (st && st.stationLocation && !locInput.value.trim()) {
+        locInput.value = st.stationLocation;
+      }
+    }
+
+    function expandStationRingForm() {
+      collapseStationForm(false);
+      populateRingStationDropdown();
+      document.getElementById('stationRingForm').classList.remove('hidden');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function collapseStationRingForm(resetFields = false) {
+      document.getElementById('stationRingForm').classList.add('hidden');
+      if (resetFields) {
+        editingRingKey = null;
+        document.getElementById('stationRingForm').reset();
+        document.getElementById('ringDateInput').value = new Date().toISOString().split('T')[0];
+        document.getElementById('ring-form-title').innerHTML = '<i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Anillamiento de Muestreo en Estación';
+        document.getElementById('save-ring-btn-text').textContent = 'Guardar Anillamiento en Estación';
+        populateRingStationDropdown();
+      }
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function openNewStationRingForm(preselectedStationKey = '') {
+      if (Object.keys(stationsCache || {}).length === 0) {
+        alert('Primero debes dar de alta al menos una estación de muestreo.');
+        openNewStationForm();
+        return;
+      }
+      editingRingKey = null;
+      document.getElementById('stationRingForm').reset();
+      document.getElementById('ringDateInput').value = new Date().toISOString().split('T')[0];
+      document.getElementById('ring-form-title').innerHTML = '<i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Anillamiento de Muestreo en Estación';
+      document.getElementById('save-ring-btn-text').textContent = 'Guardar Anillamiento en Estación';
+      expandStationRingForm();
+      if (preselectedStationKey && stationsCache[preselectedStationKey]) {
+        document.getElementById('ringStationSelect').value = preselectedStationKey;
+        document.getElementById('ringLocationInput').value = stationsCache[preselectedStationKey].stationLocation || '';
+      }
+      document.getElementById('ringMetalInput').focus();
+      document.getElementById('stationRingForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function editStationRing(key) {
+      const r = stationRingsCache[key];
+      if (!r) return;
+      editingRingKey = key;
+      expandStationRingForm();
+
+      const matchedKey = stationsCache[r.stationKey]
+        ? r.stationKey
+        : Object.keys(stationsCache).find(k => (stationsCache[k].stationId || k) === r.stationId) || '';
+
+      populateRingStationDropdown(matchedKey);
+      document.getElementById('ringMetalInput').value = r.metalRing || '';
+      document.getElementById('ringPvcInput').value = r.pvcRing || '';
+      document.getElementById('ringDateInput').value = r.ringDate || '';
+      document.getElementById('ringTimeInput').value = r.captureTime || '';
+      document.getElementById('ringEuringInput').value = r.euringAge || 'EURING 3';
+      document.getElementById('ringSexInput').value = r.sex || 'Desconocido';
+      document.getElementById('ringMethodInput').value = r.captureMethod || '';
+      document.getElementById('ringWingInput').value = r.wingLength ?? '';
+      document.getElementById('ringP8Input').value = r.p8Length ?? '';
+      document.getElementById('ringTailInput').value = r.tailLength ?? '';
+      document.getElementById('ringTarsusInput').value = r.tarsusLength ?? '';
+      document.getElementById('ringWeightInput').value = r.weight ?? '';
+      document.getElementById('ringP10Input').value = r.p10Length ?? '';
+      document.getElementById('ringP8SecInput').value = r.p8SecondaryLength ?? '';
+      document.getElementById('ringLocationInput').value = r.locationName || '';
+      document.getElementById('ringNotesInput').value = r.notes || '';
+      document.getElementById('ring-form-title').innerHTML = `<i data-lucide="pencil" class="w-4 h-4 text-brand-accent"></i> Editando Anilla en Estación: ${r.metalRing}`;
+      document.getElementById('save-ring-btn-text').textContent = 'Actualizar Anillamiento en Estación';
+      document.getElementById('stationRingForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function deleteStationRing(key, metalRing) {
+      if (!confirm(`¿Seguro que deseas eliminar la ficha de anillamiento en estación de la anilla ${metalRing}?`)) return;
+      if (editingRingKey === key) collapseStationRingForm(true);
+      db.ref('anillamientos_estacion/' + key).remove().catch(err => {
+        alert('Error al eliminar anillamiento: ' + err.message);
+      });
+    }
+
+    function saveStationRing(e) {
+      e.preventDefault();
+      const stKey = document.getElementById('ringStationSelect').value;
+      const st = stationsCache[stKey];
+      if (!st) {
+        alert('Selecciona una estación de muestreo válida.');
+        return;
+      }
+
+      const metalRing = document.getElementById('ringMetalInput').value.trim().toUpperCase();
+      const pvcRing = document.getElementById('ringPvcInput').value.trim().toUpperCase();
+      const ringDate = document.getElementById('ringDateInput').value;
+      const captureTime = document.getElementById('ringTimeInput').value;
+      const euringAge = document.getElementById('ringEuringInput').value;
+      const sex = document.getElementById('ringSexInput').value;
+      const captureMethod = document.getElementById('ringMethodInput').value.trim();
+      const wingLength = parseFloat(document.getElementById('ringWingInput').value) || null;
+      const p8Length = parseFloat(document.getElementById('ringP8Input').value) || null;
+      const tailLength = parseFloat(document.getElementById('ringTailInput').value) || null;
+      const tarsusLength = parseFloat(document.getElementById('ringTarsusInput').value) || null;
+      const weight = parseFloat(document.getElementById('ringWeightInput').value) || null;
+      const p10Length = parseFloat(document.getElementById('ringP10Input').value) || null;
+      const p8SecondaryLength = parseFloat(document.getElementById('ringP8SecInput').value) || null;
+      const locationName = document.getElementById('ringLocationInput').value.trim() || st.stationLocation || '';
+      const notes = document.getElementById('ringNotesInput').value.trim();
+
+      const stationId = (st.stationId || stKey).toUpperCase();
+      const safeRing = metalRing.replace(/[\/\.#$\[\]]/g, '_');
+      const safeDate = (ringDate || '').replace(/[\/\.#$\[\]]/g, '_');
+      const recordKey = editingRingKey || `${stKey}_${safeRing}_${safeDate}_${Date.now().toString().slice(-4)}`;
+
+      const payload = {
+        recordType: 'estacion',
+        stationKey: stKey,
+        stationId,
+        stationName: st.stationName || '',
+        metalRing,
+        pvcRing,
+        ringDate,
+        captureTime,
+        euringAge,
+        birdAge: 'Adulto',
+        sex,
+        captureMethod,
+        wingLength,
+        p8Length,
+        tailLength,
+        tarsusLength,
+        weight,
+        p10Length,
+        p8SecondaryLength,
+        locationName,
+        notes,
+        updatedAt: new Date().toISOString().split('T')[0]
+      };
+
+      db.ref('anillamientos_estacion/' + recordKey).set(payload).then(() => {
+        collapseStationRingForm(true);
+      }).catch(err => {
+        alert('Error al guardar anillamiento de estación: ' + err.message);
+      });
     }
 
     function parseCoords(raw) {
@@ -422,6 +691,18 @@
       });
     }
 
+    function getRingsForStation(stationKey, stationObj) {
+      const stId = (stationObj.stationId || stationKey || '').trim().toUpperCase();
+      return Object.entries(stationRingsCache || {})
+        .map(([key, val]) => ({ key, ...val }))
+        .filter(r => {
+          if (r.stationKey && r.stationKey === stationKey) return true;
+          const rStId = (r.stationId || '').trim().toUpperCase();
+          return rStId && (rStId === stId || rStId === stationKey.toUpperCase());
+        })
+        .sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
+    }
+
     function renderStationsList() {
       const container = document.getElementById('stations-list');
       const entries = Object.entries(stationsCache || {});
@@ -440,7 +721,7 @@
         const ringsPreviewHtml = stRings.length > 0
           ? `<div class="mt-2.5 pt-2.5 border-t border-stone-100 space-y-1.5">
                <div class="flex justify-between items-center text-[11px] font-bold text-stone-600">
-                 <span>Anillamientos (${stRings.length})</span>
+                 <span>Anillamientos de estación (${stRings.length})</span>
                  <button type="button" onclick="filterRingsByStation('${key}')" class="text-brand-dark hover:text-brand-accent underline">Ver detalle</button>
                </div>
                <div class="flex flex-wrap gap-1.5">
@@ -450,7 +731,10 @@
                  ${stRings.length > 6 ? `<span class="text-[11px] text-stone-400 font-semibold">+${stRings.length - 6} más</span>` : ''}
                </div>
              </div>`
-          : `<div class="mt-2.5 pt-2 border-t border-stone-100 text-[11px] text-stone-400">Sin anillamientos vinculados aún.</div>`;
+          : `<div class="mt-2.5 pt-2 border-t border-stone-100 flex justify-between items-center text-[11px] text-stone-400">
+               <span>Sin anillamientos de muestreo aún.</span>
+               <button type="button" onclick="openNewStationRingForm('${key}')" class="text-brand-dark hover:text-brand-accent font-bold underline">+ Anillar</button>
+             </div>`;
 
         html += `
           <div class="bg-white border border-stone-200 rounded-xl p-4 flex flex-col justify-between shadow-xs hover:border-brand-accent transition-all">
@@ -462,8 +746,11 @@
                     <span class="text-xs font-semibold text-stone-800">${st.stationName || ''}</span>
                   </div>
                   ${st.stationLocation ? `<div class="text-[11px] text-stone-500 mt-0.5">${st.stationLocation}</div>` : ''}
-                  <div class="mt-1.5">
+                  <div class="mt-1.5 flex items-center gap-1.5 flex-wrap">
                     <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">${st.stationType || 'Anillamiento'}</span>
+                    <button type="button" onclick="openNewStationRingForm('${key}')" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 hover:bg-amber-200 transition-all">
+                      + Ficha captura
+                    </button>
                   </div>
                 </div>
                 <div class="flex items-center gap-1 shrink-0">
@@ -504,7 +791,7 @@
       const prevYear = yearSelect.value;
       const yearsSet = new Set();
 
-      Object.values(ringsCache || {}).forEach(r => {
+      Object.values(stationRingsCache || {}).forEach(r => {
         if (r.ringDate) {
           const y = r.ringDate.includes('-') ? r.ringDate.split('-')[0] : r.ringDate.split('/')[2];
           if (y) yearsSet.add(y);
@@ -529,53 +816,65 @@
       const selectedStationKey = document.getElementById('stationRingFilter').value;
       const selectedYear = document.getElementById('stationYearFilter').value;
 
-      const stationEntries = Object.entries(stationsCache || {});
-      if (stationEntries.length === 0) {
-        container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-5 text-xs text-stone-400 text-center">No hay estaciones registradas para mostrar anillamientos.</div>';
-        return;
-      }
+      const entries = Object.entries(stationRingsCache || {}).map(([key, val]) => ({ key, ...val }));
 
-      const rows = [];
-      stationEntries.forEach(([key, st]) => {
-        if (selectedStationKey !== 'ALL' && selectedStationKey !== key) return;
-        const stLabel = st.stationName ? `${st.stationId || key} — ${st.stationName}` : (st.stationId || key);
-        const stRings = getRingsForStation(key, st);
-
-        stRings.forEach(r => {
-          const y = r.ringDate ? (r.ringDate.includes('-') ? r.ringDate.split('-')[0] : r.ringDate.split('/')[2]) : '';
-          if (selectedYear !== 'ALL' && y !== selectedYear) return;
-          rows.push({ ...r, stationLabel: stLabel });
-        });
+      const filtered = entries.filter(r => {
+        let matchesStation = (selectedStationKey === 'ALL');
+        if (!matchesStation) {
+          const st = stationsCache[selectedStationKey];
+          const stId = st ? (st.stationId || selectedStationKey).toUpperCase() : selectedStationKey.toUpperCase();
+          matchesStation = (r.stationKey === selectedStationKey) || ((r.stationId || '').toUpperCase() === stId);
+        }
+        const y = r.ringDate ? (r.ringDate.includes('-') ? r.ringDate.split('-')[0] : r.ringDate.split('/')[2]) : '';
+        const matchesYear = (selectedYear === 'ALL' || y === selectedYear);
+        return matchesStation && matchesYear;
       });
 
-      if (rows.length === 0) {
-        container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-5 text-xs text-stone-400 text-center">No hay anillamientos asociados a las estaciones con el filtro actual.</div>';
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-5 text-xs text-stone-400 text-center">No hay fichas de anillamiento en estaciones con el filtro actual.</div>';
         return;
       }
 
-      rows.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
+      filtered.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
 
       let html = '';
-      rows.forEach(r => {
-        const euringLabel = r.euringAge || (r.birdAge === 'Pollo' ? 'EURING 1' : 'EURING 4');
-        const isChick = euringLabel === 'EURING 1' || r.birdAge === 'Pollo';
-        const ageBadge = !isChick
-          ? `<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">${euringLabel}</span>`
-          : `<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">${euringLabel}</span>`;
+      filtered.forEach(r => {
+        const st = stationsCache[r.stationKey] || Object.values(stationsCache).find(s => (s.stationId || '').toUpperCase() === (r.stationId || '').toUpperCase());
+        const stLabel = st
+          ? (st.stationName ? `${st.stationId || r.stationKey} — ${st.stationName}` : (st.stationId || r.stationKey))
+          : (r.stationName ? `${r.stationId || ''} — ${r.stationName}` : (r.stationId || 'Estación'));
+
+        const biometrics = [
+          r.wingLength ? `Ala Máx.: <strong>${r.wingLength}mm</strong>` : '',
+          r.p8Length ? `P8: <strong>${r.p8Length}mm</strong>` : '',
+          r.tailLength ? `Cola: <strong>${r.tailLength}mm</strong>` : '',
+          r.tarsusLength ? `Tarso: <strong>${r.tarsusLength}mm</strong>` : '',
+          r.weight ? `Peso: <strong>${r.weight}g</strong>` : '',
+          r.p10Length ? `P10: <strong>${r.p10Length}mm</strong>` : '',
+          r.p8SecondaryLength ? `P8(2): <strong>${r.p8SecondaryLength}mm</strong>` : ''
+        ].filter(Boolean).join(' | ');
 
         html += `
           <div class="bg-white border border-stone-200 rounded-xl p-3.5 flex flex-wrap justify-between items-center gap-3 hover:shadow-xs transition-all">
             <div class="flex items-center gap-2.5 flex-wrap">
-              <span class="px-2 py-0.5 rounded bg-brand-dark/10 text-brand-dark font-bold text-[11px]">${r.stationLabel}</span>
-              ${ageBadge}
+              <span class="px-2 py-0.5 rounded bg-brand-dark/10 text-brand-dark font-bold text-[11px]">${stLabel}</span>
+              <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">${r.euringAge || 'EURING 3'}</span>
               <span class="metal-ring-badge text-sm">${r.metalRing}</span>
               ${r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : ''}
             </div>
             <div class="flex items-center gap-3 flex-wrap text-xs text-stone-600">
-              <span>Fecha: <strong>${formatDateToDDMMYYYY(r.ringDate)}</strong></span>
+              <span>Fecha: <strong>${formatDateToDDMMYYYY(r.ringDate)}</strong>${r.captureTime ? ` (${r.captureTime})` : ''}</span>
               <span>Sexo: <strong>${r.sex || 'Desconocido'}</strong></span>
-              ${r.weight ? `<span>Peso: <strong>${r.weight}g</strong></span>` : ''}
-              ${r.wingLength ? `<span>Ala Máx.: <strong>${r.wingLength}mm</strong></span>` : ''}
+              ${r.captureMethod ? `<span>Método: <strong>${r.captureMethod}</strong></span>` : ''}
+              ${biometrics ? `<span>${biometrics}</span>` : ''}
+              <div class="flex items-center gap-1 ml-1">
+                <button type="button" onclick="editStationRing('${r.key}')" class="p-1.5 text-stone-500 hover:text-brand-dark hover:bg-stone-100 rounded-lg transition-all" title="Editar ficha">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                </button>
+                <button type="button" onclick="deleteStationRing('${r.key}', '${r.metalRing}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all" title="Eliminar ficha">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -586,15 +885,18 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('ringDateInput').value = new Date().toISOString().split('T')[0];
+
       db.ref('estaciones').on('value', snapshot => {
         stationsCache = snapshot.val() || {};
+        populateRingStationDropdown();
         renderStationsList();
         populateStationRingFilters();
         renderStationRings();
       });
 
-      db.ref('anillados').on('value', snapshot => {
-        ringsCache = snapshot.val() || {};
+      db.ref('anillamientos_estacion').on('value', snapshot => {
+        stationRingsCache = snapshot.val() || {};
         renderStationsList();
         populateStationRingFilters();
         renderStationRings();
