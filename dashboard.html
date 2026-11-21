@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Panel General de Seguimiento</title>
+  <title>Tyto Alba | Panel de Seguimiento de Nidos</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   
-  <!-- LIBRERÍAS DE LEAFLET (MAPA) -->
+  <!-- LIBRERÍAS DE LEAFLET -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -36,6 +36,7 @@
       background-repeat: no-repeat;
       background-size: cover;
     }
+    #dashboard-map { height: 420px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
     .metal-ring-badge {
       background-color: #e5e7eb;
       color: #1f2937;
@@ -54,7 +55,6 @@
       font-family: monospace;
       display: inline-block;
     }
-    #dashboard-map { height: 400px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
@@ -76,7 +76,7 @@
       </div>
 
       <nav class="flex items-center space-x-1.5 sm:space-x-2">
-        <a href="dashboard.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-brand-accent text-white shadow-sm">
+        <a href="dashboard.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-brand-accent text-white shadow-sm flex items-center space-x-1.5">
           <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Panel</span>
         </a>
         <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
@@ -84,6 +84,9 @@
         </a>
         <a href="anillados.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
+        </a>
+        <a href="estaciones.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+          <i data-lucide="radar" class="w-4 h-4 text-emerald-400"></i><span>Estaciones</span>
         </a>
         <button onclick="cerrarSesion()" class="bg-rose-700/80 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2.5 rounded-xl transition-all shadow flex items-center gap-1.5 ml-2">
           <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">Salir</span>
@@ -94,153 +97,48 @@
   </header>
 
   <!-- CONTENIDO PRINCIPAL -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-6">
     
-    <!-- TARJETAS DE ESTADÍSTICAS SUPERIORES -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-      
-      <!-- 1. Nidos Activos -->
-      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-brand-border shadow-sm flex flex-col justify-between h-32 relative overflow-hidden">
-        <div class="flex justify-between items-start">
-          <span class="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">Nidos Activos</span>
-          <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <i data-lucide="home" class="w-4 h-4"></i>
-          </div>
-        </div>
+    <!-- MAPA GENERAL -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
+      <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
         <div>
-          <span id="stat-active-nests" class="text-3xl font-extrabold text-stone-900 tracking-tight">0</span>
-          <p class="text-[11px] font-medium text-stone-500 mt-0.5">Ocupación en caja</p>
+          <h1 class="text-xl font-extrabold text-stone-900 tracking-tight">Mapa General de Seguimiento</h1>
+          <p class="text-xs text-stone-500">Visualización espacial de cajas nido, nidos naturales y registros.</p>
+        </div>
+        <div class="flex items-center space-x-3 text-xs font-semibold">
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span> Activo</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Inactivo / Sin puesta</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-rose-600 inline-block"></span> Fracaso / Baja</span>
         </div>
       </div>
-
-      <!-- 2. Nidos Inactivos -->
-      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-brand-border shadow-sm flex flex-col justify-between h-32 relative overflow-hidden">
-        <div class="flex justify-between items-start">
-          <span class="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">Nidos Inactivos</span>
-          <div class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-            <i data-lucide="x-circle" class="w-4 h-4"></i>
-          </div>
-        </div>
-        <div>
-          <span id="stat-inactive-nests" class="text-3xl font-extrabold text-stone-900 tracking-tight">0</span>
-          <p class="text-[11px] font-medium text-rose-600 mt-0.5">Inactivos / Abandonados</p>
-        </div>
-      </div>
-
-      <!-- 3. Parejas -->
-      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-brand-border shadow-sm flex flex-col justify-between h-32 relative overflow-hidden">
-        <div class="flex justify-between items-start">
-          <span class="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">Parejas</span>
-          <div class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <i data-lucide="heart" class="w-4 h-4"></i>
-          </div>
-        </div>
-        <div>
-          <span id="stat-pairs" class="text-3xl font-extrabold text-stone-900 tracking-tight">0</span>
-          <p class="text-[11px] font-medium text-amber-700 mt-0.5">Identificadas</p>
-        </div>
-      </div>
-
-      <!-- 4. Crías -->
-      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-brand-border shadow-sm flex flex-col justify-between h-32 relative overflow-hidden">
-        <div class="flex justify-between items-start">
-          <span class="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">Crías</span>
-          <div class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-            <i data-lucide="smile" class="w-4 h-4"></i>
-          </div>
-        </div>
-        <div>
-          <span id="stat-chicks" class="text-3xl font-extrabold text-stone-900 tracking-tight">0</span>
-          <p class="text-[11px] font-medium text-teal-700 mt-0.5">Eclosionadas / Pollos</p>
-        </div>
-      </div>
-
-      <!-- 5. Anillados -->
-      <div class="bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-brand-border shadow-sm flex flex-col justify-between h-32 relative overflow-hidden">
-        <div class="flex justify-between items-start">
-          <span class="text-[11px] font-extrabold text-stone-400 uppercase tracking-wider">Anillados</span>
-          <div class="w-8 h-8 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
-            <i data-lucide="tag" class="w-4 h-4"></i>
-          </div>
-        </div>
-        <div>
-          <span id="stat-rings" class="text-3xl font-extrabold text-stone-900 tracking-tight">0</span>
-          <a href="anillados.html" class="text-[11px] font-bold text-sky-600 hover:text-sky-800 transition-all block mt-0.5">Ver Biometría →</a>
-        </div>
-      </div>
-
+      <div id="dashboard-map"></div>
     </div>
 
-    <!-- SECCIÓN DE GESTIÓN Y LISTADO DE NIDOS CON PAGINACIÓN -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-6">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-3">
+    <!-- LISTADO DE NIDOS -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
+      <div class="flex flex-wrap justify-between items-center gap-3 border-b pb-3">
         <div>
-          <h2 class="text-xl font-extrabold text-stone-900 tracking-tight">Gestión de Cajas Nido</h2>
-          <p class="text-xs text-stone-500 mt-0.5">Listado general de nidos registrados, estado actual y parejas reproductoras.</p>
+          <h2 class="text-lg font-extrabold text-stone-900 tracking-tight">Nidos Registrados</h2>
+          <p class="text-xs text-stone-500">Haz clic en cualquier nido para editarlo o ver su detalle.</p>
         </div>
-        <div class="flex items-center gap-3 w-full sm:w-auto">
-          <input 
-            type="text" 
-            id="searchNestInput" 
-            oninput="currentPage = 1; renderDashboardNests();" 
-            placeholder="Buscar por ID, paraje o anilla..." 
-            class="w-full sm:w-64 px-4 py-2 border border-stone-300 rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-brand-accent/50 bg-stone-50/50"
-          />
-          <a href="control.html" class="bg-brand-dark hover:bg-brand-hover text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 shrink-0">
-            <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Nido
+        <div class="flex flex-wrap items-center gap-2">
+          <input type="text" id="nestSearch" oninput="renderNests()" placeholder="Buscar nido, paraje o anilla..." class="px-3 py-1.5 border rounded-xl text-xs bg-white w-56">
+          <select id="nestStatusFilter" onchange="renderNests()" class="px-3 py-1.5 border rounded-xl text-xs bg-white font-bold text-brand-dark">
+            <option value="ALL">Todos los estados</option>
+            <option value="Activo">Activos</option>
+            <option value="Inactivo">Inactivos</option>
+            <option value="Restos">Restos</option>
+          </select>
+          <a href="control.html" class="bg-brand-dark hover:bg-brand-hover text-white text-xs font-semibold px-4 py-2 rounded-xl transition-all shadow inline-flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-4 h-4"></i><span>Nuevo Nido</span>
           </a>
         </div>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-stone-700">
-          <thead class="bg-stone-50/80 text-stone-500 border-b border-stone-200 uppercase font-bold text-[10px] tracking-wider">
-            <tr>
-              <th class="p-3">ID Nido / Tipo</th>
-              <th class="p-3">Paraje / Ubicación</th>
-              <th class="p-3">Estado</th>
-              <th class="p-3">Pareja (Macho / Hembra)</th>
-              <th class="p-3 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="dashboard-nests-tbody" class="divide-y divide-stone-100">
-            <tr>
-              <td colspan="5" class="p-4 text-center text-stone-400">Cargando nidos desde Firebase...</td>
-            </tr>
-          </tbody>
-        </table>
+      <div id="nests-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="text-xs text-stone-400 p-4 col-span-full text-center">Cargando nidos desde Firebase...</div>
       </div>
-
-      <!-- CONTROLES DE PAGINACIÓN (ANTERIOR / SIGUIENTE) -->
-      <div id="pagination-controls" class="flex justify-between items-center pt-4 border-t border-stone-200 text-xs">
-        <span id="pagination-info" class="font-semibold text-stone-500">Mostrando 0 - 0 de 0 nidos</span>
-        <div class="flex items-center gap-2">
-          <button id="prev-page-btn" onclick="changePage(-1)" class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-            ← Anterior
-          </button>
-          <span id="page-indicator" class="font-bold px-2 text-stone-700">Página 1 de 1</span>
-          <button id="next-page-btn" onclick="changePage(1)" class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-            Siguiente →
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MAPA GENERAL CON TODOS LOS NIDOS Y LEYENDA -->
-    <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 space-y-4">
-      <div class="border-b pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div>
-          <h2 class="text-lg font-extrabold text-stone-900 tracking-tight">Mapa General de Ubicación de Nidos</h2>
-          <p class="text-xs text-stone-500">Visualización geográfica de todas las cajas nido registradas en campo.</p>
-        </div>
-        <!-- Leyenda del Mapa -->
-        <div class="flex items-center gap-4 text-xs font-semibold text-stone-700 bg-stone-50 px-3 py-1.5 rounded-xl border border-stone-200">
-          <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Activo</div>
-          <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Inactivo</div>
-          <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-stone-400 inline-block"></span> Restos</div>
-        </div>
-      </div>
-      <div id="dashboard-map"></div>
     </div>
 
   </main>
@@ -270,234 +168,123 @@
       auth.signOut().then(() => window.location.href = 'index.html').catch(err => console.error(err));
     }
 
-    let allNestsData = {};
-    let allRingsData = {};
-    let dashMap = null;
+    let map = null;
     let markersLayer = null;
+    let nestsData = {};
 
-    // Variables de Paginación
-    let currentPage = 1;
-    const pageSize = 5;
+    function formatDateToDDMMYYYY(dateStr) {
+      if (!dateStr) return '-';
+      if (dateStr.includes('/')) return dateStr;
+      const parts = dateStr.split('-');
+      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+    }
 
-    function initDashboardMap() {
-      if (dashMap) return;
+    function initMap() {
+      if (map) return;
       const orthoLayer = L.layerGroup([
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
         L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: 0.8 })
       ]);
-      dashMap = L.map('dashboard-map', { center: [39.98, -0.05], zoom: 11, layers: [orthoLayer] });
-      markersLayer = L.layerGroup().addTo(dashMap);
+      map = L.map('dashboard-map', { center: [39.98, -0.05], zoom: 11, layers: [orthoLayer] });
+      markersLayer = L.layerGroup().addTo(map);
     }
 
-    function updateDashboardMapMarkers(nidos) {
-      if (!dashMap) initDashboardMap();
+    function getMarkerColor(nest) {
+      if (nest.visitationState === 'Fracaso') return '#e11d48';
+      if (nest.status === 'Activo') return '#059669';
+      return '#f59e0b';
+    }
+
+    function renderNests() {
+      initMap();
       markersLayer.clearLayers();
 
-      let validPoints = [];
+      const container = document.getElementById('nests-list');
+      const query = document.getElementById('nestSearch').value.trim().toUpperCase();
+      const statusFilter = document.getElementById('nestStatusFilter').value;
 
-      Object.entries(nidos).forEach(([id, n]) => {
-        if (n.lat && n.lng) {
-          let colorHex = '#10b981'; // Activo (Verde)
-          if (n.status === 'Inactivo') colorHex = '#f43f5e'; // Inactivo (Rojo)
-          else if (n.status === 'Restos') colorHex = '#9ca3af'; // Restos (Gris)
+      const list = Object.values(nestsData || {}).filter(nest => {
+        const matchesStatus = (statusFilter === 'ALL' || nest.status === statusFilter);
+        const matchesQuery = !query ||
+          (nest.nestId || '').toUpperCase().includes(query) ||
+          (nest.locationName || '').toUpperCase().includes(query) ||
+          (nest.maleRing || '').toUpperCase().includes(query) ||
+          (nest.femaleRing || '').toUpperCase().includes(query) ||
+          (nest.malePvcCode || '').toUpperCase().includes(query) ||
+          (nest.femalePvcCode || '').toUpperCase().includes(query);
+        return matchesStatus && matchesQuery;
+      });
 
-          const customIcon = L.divIcon({
-            className: 'custom-map-pin',
-            html: `<div style="background-color: ${colorHex}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>`,
-            iconSize: [14, 14],
-            iconAnchor: [7, 7]
-          });
-
-          const marker = L.marker([n.lat, n.lng], { icon: customIcon });
-          marker.bindPopup(`
-            <div style="font-size: 11px; font-family: sans-serif; line-height: 1.4;">
-              <strong style="font-size: 13px; color: #1e382b;">${id}</strong><br>
-              <strong>Paraje:</strong> ${n.locationName || 'Sin paraje'}<br>
-              <strong>Estado:</strong> ${n.status || 'Activo'}<br>
-              <strong>Nidada:</strong> ${n.visitationState || 'Huevos'} (Volados: ${n.fledgedChicks || 0})<br>
-              <a href="control.html?edit=${id}" style="color: #0284c7; font-weight: bold; text-decoration: underline; margin-top: 4px; display: inline-block;">Editar Nido →</a>
+      const bounds = [];
+      list.forEach(nest => {
+        if (nest.lat && nest.lng) {
+          const color = getMarkerColor(nest);
+          const circle = L.circleMarker([nest.lat, nest.lng], {
+            radius: 8,
+            fillColor: color,
+            color: '#ffffff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+          }).bindPopup(`
+            <div class="text-xs space-y-1">
+              <div class="font-extrabold text-sm">${nest.nestId}</div>
+              <div>${nest.locationName || ''}</div>
+              <div>Estado: <strong>${nest.status}</strong> (${nest.visitationState || '-'})</div>
+              <div class="pt-1"><a href="control.html?edit=${encodeURIComponent(nest.nestId)}" class="text-emerald-700 font-bold underline">Abrir ficha →</a></div>
             </div>
           `);
-          markersLayer.addLayer(marker);
-          validPoints.push([n.lat, n.lng]);
+          markersLayer.addLayer(circle);
+          bounds.push([nest.lat, nest.lng]);
         }
       });
 
-      if (validPoints.length > 0) {
-        const bounds = L.latLngBounds(validPoints);
-        dashMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
       }
-    }
 
-    function loadDashboardData() {
-      db.ref('anillados').on('value', ringSnap => {
-        allRingsData = ringSnap.val() || {};
-        const aliveRings = Object.values(allRingsData).filter(r => r.status !== 'Muerto');
-        document.getElementById('stat-rings').textContent = aliveRings.length;
-
-        db.ref('nidos').on('value', snapshot => {
-          allNestsData = snapshot.val() || {};
-          updateDashboardStats(allNestsData);
-          renderDashboardNests();
-          updateDashboardMapMarkers(allNestsData);
-        });
-      });
-    }
-
-    function updateDashboardStats(nidos) {
-      let activeCount = 0;
-      let inactiveCount = 0;
-      let pairsCount = 0;
-      let totalChicks = 0;
-
-      Object.values(nidos).forEach(n => {
-        if (n.status === 'Activo') activeCount++;
-        else inactiveCount++;
-
-        let hasMale = n.maleRing && n.maleRing !== 'Sin anillar';
-        let hasFemale = n.femaleRing && n.femaleRing !== 'Sin anillar';
-
-        Object.values(allRingsData).forEach(r => {
-          if ((r.nestId || '').toUpperCase() === (n.nestId || '').toUpperCase() && r.birdAge === 'Adulto' && r.status !== 'Muerto') {
-            if (r.sex === 'Macho') hasMale = true;
-            if (r.sex === 'Hembra') hasFemale = true;
-          }
-        });
-
-        if (hasMale || hasFemale) pairsCount++;
-
-        if (n.visitationState === 'Pollos' && n.fledgedChicks) {
-          totalChicks += parseInt(n.fledgedChicks) || 0;
-        }
-      });
-
-      document.getElementById('stat-active-nests').textContent = activeCount;
-      document.getElementById('stat-inactive-nests').textContent = inactiveCount;
-      document.getElementById('stat-pairs').textContent = pairsCount;
-      document.getElementById('stat-chicks').textContent = totalChicks;
-    }
-
-    function changePage(direction) {
-      currentPage += direction;
-      renderDashboardNests();
-    }
-
-    function renderDashboardNests() {
-      const tbody = document.getElementById('dashboard-nests-tbody');
-      tbody.innerHTML = '';
-
-      const query = (document.getElementById('searchNestInput').value || '').trim().toLowerCase();
-      const nestsArray = Object.entries(allNestsData);
-
-      const filtered = nestsArray.filter(([id, n]) => {
-        let mRingStr = n.maleRing || '';
-        let fRingStr = n.femaleRing || '';
-        Object.values(allRingsData).forEach(r => {
-          if ((r.nestId || '').toUpperCase() === id.toUpperCase() && r.birdAge === 'Adulto' && r.status !== 'Muerto') {
-            if (r.sex === 'Macho' && (!mRingStr || mRingStr === 'Sin anillar')) mRingStr = r.metalRing || '';
-            if (r.sex === 'Hembra' && (!fRingStr || fRingStr === 'Sin anillar')) fRingStr = r.metalRing || '';
-          }
-        });
-
-        const target = [
-          id,
-          n.locationName || '',
-          n.nestType || '',
-          n.status || '',
-          mRingStr,
-          fRingStr
-        ].join(' ').toLowerCase();
-
-        return !query || target.includes(query);
-      });
-
-      const totalItems = filtered.length;
-      const totalPages = Math.ceil(totalItems / pageSize) || 1;
-
-      if (currentPage > totalPages) currentPage = totalPages;
-      if (currentPage < 1) currentPage = 1;
-
-      const startIndex = (currentPage - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedItems = filtered.slice(startIndex, endIndex);
-
-      // Actualizar textos de paginación
-      const infoText = totalItems === 0 ? 'Mostrando 0 nidos' : `Mostrando ${startIndex + 1} - ${Math.min(endIndex, totalItems)} de ${totalItems} nidos`;
-      document.getElementById('pagination-info').textContent = infoText;
-      document.getElementById('page-indicator').textContent = `Página ${currentPage} de ${totalPages}`;
-
-      document.getElementById('prev-page-btn').disabled = (currentPage === 1);
-      document.getElementById('next-page-btn').disabled = (currentPage === totalPages || totalItems === 0);
-
-      if (paginatedItems.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-stone-400">No se encontraron nidos registrados.</td></tr>`;
+      if (list.length === 0) {
+        container.innerHTML = '<div class="text-xs text-stone-400 p-6 col-span-full text-center">No hay nidos que coincidan con el filtro.</div>';
         return;
       }
 
-      paginatedItems.forEach(([id, n]) => {
-        let statusBadge = '';
-        if (n.status === 'Activo') statusBadge = '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Activo</span>';
-        else if (n.status === 'Inactivo') statusBadge = '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-rose-100 text-rose-800">Inactivo</span>';
-        else statusBadge = '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-stone-100 text-stone-700">Restos</span>';
+      let html = '';
+      list.forEach(nest => {
+        const statusClass = nest.status === 'Activo'
+          ? 'bg-emerald-100 text-emerald-800'
+          : (nest.status === 'Inactivo' ? 'bg-amber-100 text-amber-800' : 'bg-stone-200 text-stone-700');
 
-        let finalMaleRing = n.maleRing;
-        let finalMalePvc = n.malePvcCode;
-        let finalFemaleRing = n.femaleRing;
-        let finalFemalePvc = n.femalePvcCode;
-
-        Object.values(allRingsData).forEach(r => {
-          if ((r.nestId || '').toUpperCase() === id.toUpperCase() && r.birdAge === 'Adulto' && r.status !== 'Muerto') {
-            if (r.sex === 'Macho' && (!finalMaleRing || finalMaleRing === 'Sin anillar')) {
-              finalMaleRing = r.metalRing;
-              finalMalePvc = r.pvcRing;
-            }
-            if (r.sex === 'Hembra' && (!finalFemaleRing || finalFemaleRing === 'Sin anillar')) {
-              finalFemaleRing = r.metalRing;
-              finalFemalePvc = r.pvcRing;
-            }
-          }
-        });
-
-        const maleInfo = finalMaleRing && finalMaleRing !== 'Sin anillar' ? 
-          `♂ <span class="metal-ring-badge">${finalMaleRing}</span> ${finalMalePvc ? `<span class="pvc-badge ml-1">${finalMalePvc}</span>` : ''}` : 
-          '<span class="text-stone-400">♂ -</span>';
-
-        const femaleInfo = finalFemaleRing && finalFemaleRing !== 'Sin anillar' ? 
-          `♀ <span class="metal-ring-badge">${finalFemaleRing}</span> ${finalFemalePvc ? `<span class="pvc-badge ml-1">${finalFemalePvc}</span>` : ''}` : 
-          '<span class="text-stone-400">♀ -</span>';
-
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-stone-50/60 transition-colors';
-        tr.innerHTML = `
-          <td class="p-3">
-            <div class="font-bold text-stone-900">${id}</div>
-            <div class="text-[10px] text-stone-500">${n.nestType || 'Artificial'}</div>
-          </td>
-          <td class="p-3 font-semibold text-stone-700">${n.locationName || 'Sin ubicación'}</td>
-          <td class="p-3">${statusBadge}</td>
-          <td class="p-3 space-x-3">${maleInfo} &nbsp; ${femaleInfo}</td>
-          <td class="p-3 text-right space-x-2">
-            <a href="control.html?edit=${id}" class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold inline-block">Editar</a>
-            <button onclick="deleteNest('${id}')" class="px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold">Borrar</button>
-          </td>
+        html += `
+          <a href="control.html?edit=${encodeURIComponent(nest.nestId)}" class="block bg-stone-50/90 hover:bg-white border border-stone-200 hover:border-brand-accent rounded-xl p-4 transition-all shadow-sm space-y-2.5">
+            <div class="flex justify-between items-start gap-2">
+              <div>
+                <div class="text-sm font-extrabold text-brand-dark">${nest.nestId}</div>
+                <div class="text-xs text-stone-500 font-medium">${nest.locationName || 'Sin paraje'}</div>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusClass}">${nest.status || '-'}</span>
+            </div>
+            <div class="text-xs text-stone-600 flex flex-wrap gap-3 pt-1 border-t border-stone-200/70">
+              <span>Nidada: <strong>${nest.visitationState || '-'}</strong></span>
+              <span>Volados: <strong>${nest.fledgedChicks ?? 0}</strong></span>
+              <span>Visita: <strong>${formatDateToDDMMYYYY(nest.layDate)}</strong></span>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1 text-xs">
+              ${nest.maleRing && nest.maleRing !== 'Sin anillar' ? `<span class="metal-ring-badge">♂ ${nest.maleRing}</span>${nest.malePvcCode ? `<span class="pvc-badge">${nest.malePvcCode}</span>` : ''}` : ''}
+              ${nest.femaleRing && nest.femaleRing !== 'Sin anillar' ? `<span class="metal-ring-badge">♀ ${nest.femaleRing}</span>${nest.femalePvcCode ? `<span class="pvc-badge">${nest.femalePvcCode}</span>` : ''}` : ''}
+            </div>
+          </a>
         `;
-        tbody.appendChild(tr);
       });
-    }
 
-    function deleteNest(nestId) {
-      if (confirm(`¿Estás seguro de eliminar el nido "${nestId}"?`)) {
-        db.ref('nidos/' + nestId).remove().then(() => {
-          alert('Nido eliminado correctamente.');
-        }).catch(err => {
-          alert('Error al eliminar: ' + err.message);
-        });
-      }
+      container.innerHTML = html;
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      initDashboardMap();
-      loadDashboardData();
+      initMap();
+      db.ref('nidos').on('value', snapshot => {
+        nestsData = snapshot.val() || {};
+        renderNests();
+      });
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
   </script>
