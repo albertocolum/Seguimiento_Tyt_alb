@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tyto Alba | Control y Gestión de Nidos</title>
+  <title>Tyto Alba | Control y Registro de Nidos</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   
-  <!-- LIBRERÍAS DE LEAFLET (MAPA) -->
+  <!-- LIBRERÍAS DE LEAFLET -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -36,8 +36,7 @@
       background-repeat: no-repeat;
       background-size: cover;
     }
-    #control-map { height: 350px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
-    
+    #map-container { height: 280px !important; width: 100% !important; border-radius: 0.75rem; z-index: 10; display: block !important; position: relative; }
     .metal-ring-badge {
       background-color: #e5e7eb;
       color: #1f2937;
@@ -47,16 +46,6 @@
       font-family: monospace;
       display: inline-block;
     }
-    .metal-ring-badge-dead {
-      background-color: #ffe4e6;
-      color: #be123c;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-      display: inline-block;
-      text-decoration: line-through;
-    }
     .pvc-badge {
       background-color: #000000;
       color: #ffffff;
@@ -65,12 +54,6 @@
       border-radius: 4px;
       font-family: monospace;
       display: inline-block;
-    }
-    textarea.fixed-textarea {
-      resize: vertical;
-      overflow-y: auto;
-      height: 130px;
-      max-height: 260px;
     }
   </style>
 </head>
@@ -114,193 +97,189 @@
   </header>
 
   <!-- CONTENIDO PRINCIPAL -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-6">
     
+    <!-- FORMULARIO DE NIDO -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-6">
       
-      <div class="border-b pb-4 flex justify-between items-center">
+      <div class="border-b pb-4 flex flex-wrap justify-between items-center gap-2">
         <div>
-          <h1 id="form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Registro de Nueva Caja / Nido</h1>
-          <p class="text-xs text-stone-500 mt-0.5">Introduce o actualiza la ubicación y datos de seguimiento de la caja nido.</p>
+          <h1 id="form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Nuevo Registro de Caja Nido</h1>
+          <p class="text-xs text-stone-500 mt-0.5">Completa los datos geográficos, estado reproductivo, anillas y observaciones de campo.</p>
         </div>
-        <a href="control.html" id="cancel-edit-btn" class="hidden text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-3 py-1.5 rounded-xl transition-all">Cancelar Edición</a>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="resetForm()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all inline-flex items-center gap-1.5">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i><span>Limpiar / Nuevo</span>
+          </button>
+          <button type="button" id="delete-nest-btn" onclick="deleteCurrentNest()" class="hidden bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition-all shadow inline-flex items-center gap-1.5">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i><span>Eliminar Nido</span>
+          </button>
+        </div>
       </div>
 
       <form id="nestForm" onsubmit="saveNest(event)" class="space-y-6">
         
-        <div class="space-y-3">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
-            <i data-lucide="info" class="w-4 h-4 text-brand-accent"></i> 1. Datos Generales y Tipo
-          </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">ID del Nido *</label>
-              <input type="text" id="nestId" oninput="autoLoadAdultsForNest(); updateNestHistoryPreview(); loadChicksDropdown();" required placeholder="Ej. NIDO-01 o ALQUERIA" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white uppercase">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Tipo de Nido *</label>
-              <select id="nestType" onchange="updateLiveNotesPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Nido Artificial">Nido Artificial</option>
-                <option value="Nido Natural">Nido Natural</option>
-                <option value="Masia con restos">Masia con restos</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Paraje / Ubicación *</label>
-              <input type="text" id="locationName" required placeholder="Obteniendo automáticamente..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Estado Actual *</label>
-              <select id="status" onchange="updateLiveNotesPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo / Abandonado</option>
-                <option value="Restos">Restos</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
-            <i data-lucide="map-pin" class="w-4 h-4 text-brand-accent"></i> 2. Ubicación Geográfica (Haz clic en el mapa)
-          </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Latitud</label>
-              <input type="number" step="0.000001" id="lat" readonly placeholder="Selecciona en el mapa" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-stone-50">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Longitud</label>
-              <input type="number" step="0.000001" id="lng" readonly placeholder="Selecciona en el mapa" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-stone-50">
-            </div>
-          </div>
-          <div id="control-map"></div>
-        </div>
-
-        <div class="space-y-3">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
-            <i data-lucide="activity" class="w-4 h-4 text-brand-accent"></i> 3. Seguimiento de la Nidada y Estado
-          </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Fecha de la Visita *</label>
-              <input type="date" id="layDate" onchange="onVisitDateChange()" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Estado de la Visita / Nidada</label>
-              <select id="visitationState" onchange="updateLiveNotesPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Huevos">Huevos</option>
-                <option value="Pollos">Pollos</option>
-                <option value="Fracaso">Fracaso</option>
-                <option value="Sin puesta">Sin puesta</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Salud General</label>
-              <select id="healthStatus" onchange="updateLiveNotesPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-                <option value="Excelente">Excelente</option>
-                <option value="Buena">Buena</option>
-                <option value="Regular">Regular</option>
-                <option value="Crítica">Crítica</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Baja de Pollo por Mortalidad (Muerto)</label>
-              <select id="chickDeathRing" onchange="updateNestHistoryPreview(); updateLiveNotesPreview();" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-stone-800">
-                <option value="Sin baja">Sin baja (Ningún pollo muerto)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Adulto Muerto / Incidencias</label>
-              <select id="adultDeath" onchange="updateNestHistoryPreview(); updateLiveNotesPreview();" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-normal text-stone-800">
-                <option value="Ninguno">Ninguno</option>
-                <option value="Macho muerto">Macho muerto</option>
-                <option value="Hembra muerta">Hembra muerta</option>
-                <option value="Ambos muertos">Ambos muertos</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-stone-600 mb-1">Pollos Volados / Exitosos</label>
-              <input type="number" id="fledgedChicks" oninput="updateLiveNotesPreview()" min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
-            </div>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
-            <i data-lucide="tag" class="w-4 h-4 text-sky-600"></i> 4. Pareja Reproductora (Se vincula automáticamente con Anillados)
-          </h3>
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-stone-50/80 p-4 rounded-xl border border-stone-200">
-            <div>
-              <label class="block text-[11px] font-bold text-stone-600 mb-1">Macho - Anilla Metálica</label>
-              <input type="text" id="maleRing" oninput="updateNestHistoryPreview(); updateLiveNotesPreview();" placeholder="Ej. G-14869" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-stone-600 mb-1">Macho - PVC</label>
-              <input type="text" id="malePvcCode" oninput="updateNestHistoryPreview(); updateLiveNotesPreview();" placeholder="Ej. 04T" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-stone-600 mb-1">Hembra - Anilla Metálica</label>
-              <input type="text" id="femaleRing" oninput="updateNestHistoryPreview(); updateLiveNotesPreview();" placeholder="Ej. G-14875" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white font-bold">
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-stone-600 mb-1">Hembra - PVC</label>
-              <input type="text" id="femalePvcCode" oninput="updateNestHistoryPreview(); updateLiveNotesPreview();" placeholder="Ej. 04W" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-white">
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- IDENTIFICACIÓN Y ESTADO -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
-            <label class="block text-xs font-bold text-stone-600 mb-1">Cámara de Fototrampeo</label>
-            <select id="hasCamera" onchange="updateLiveNotesPreview()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
-              <option value="No">No</option>
-              <option value="Sí">Sí</option>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Código Nido *</label>
+            <input type="text" id="nestId" required placeholder="EJ. N-01" class="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-stone-50 uppercase">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Estado General *</label>
+            <select id="status" required onchange="toggleActiveFields()" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50 font-semibold">
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+              <option value="Restos">Restos</option>
             </select>
           </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Estado de Nidada *</label>
+            <select id="visitationState" required onchange="toggleActiveFields()" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50 font-semibold">
+              <option value="Sin puesta">Sin puesta</option>
+              <option value="Incubación">Incubación</option>
+              <option value="Pollos en nido">Pollos en nido</option>
+              <option value="Polos volados">Polos volados</option>
+              <option value="Fracaso">Fracaso</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Fecha Visita / Puesta</label>
+            <input type="date" id="layDate" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Polos Volados</label>
+            <input type="number" min="0" id="fledgedChicks" value="0" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50 font-mono">
+          </div>
         </div>
 
-        <!-- OBSERVACIONES DE CAMPO FILTRADAS POR AÑO CON VISTA PREVIA AUTOMÁTICA -->
-        <div class="space-y-2 pt-2">
+        <!-- GEOLOCALIZACIÓN Y MAPA -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 bg-stone-50/80 p-4 rounded-2xl border border-stone-200">
+          <div class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <label class="block text-xs font-bold text-stone-600">Coordenadas (Lat, Lng)</label>
+                  <button type="button" onclick="useCurrentGps()" class="text-[11px] font-bold text-brand-dark hover:text-brand-accent inline-flex items-center gap-1">
+                    <i data-lucide="locate-fixed" class="w-3.5 h-3.5"></i> GPS
+                  </button>
+                </div>
+                <input type="text" id="coordsInput" oninput="onCoordsInput()" placeholder="Ej. 39.985600, -0.049300" class="w-full px-3 py-2 border rounded-xl text-xs font-mono bg-white">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Paraje / Localidad</label>
+                <input type="text" id="locationName" placeholder="Se obtiene automáticamente..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Cámara de Fototrampeo</label>
+                <select id="hasCamera" onchange="toggleCameraActivity()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                  <option value="No">No hay cámara</option>
+                  <option value="Sí">Sí hay cámara</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Actividad de Lechuzas en Cámara</label>
+                <select id="cameraActivity" onchange="onCameraActivityChange()" class="w-full px-3 py-2 border rounded-xl text-xs bg-white font-semibold">
+                  <option value="">Sin especificar</option>
+                  <option value="Se ven lechuzas en posadero">Se ven lechuzas en posadero</option>
+                  <option value="Entran dentro del nido">Entran dentro del nido</option>
+                  <option value="Se visita por lechuzas">Se visita por lechuzas</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div id="map-container"></div>
+          </div>
+        </div>
+
+        <!-- PAREJA REPRODUCTORA -->
+        <div id="active-pair-section" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-emerald-50/40 p-4 rounded-2xl border border-emerald-200/70">
+          <div class="space-y-3 bg-white p-4 rounded-xl border border-stone-200">
+            <div class="text-xs font-extrabold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
+              <span>♂ Macho Reproductor</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica</label>
+                <input type="text" id="maleRing" oninput="handlePairRingInput('male')" placeholder="Ej. G-14880 o Sin anillar" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-stone-50">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Código PVC</label>
+                <input type="text" id="malePvcCode" placeholder="Ej. 059" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-stone-50">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Edad / Origen</label>
+                <select id="maleAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50 font-semibold">
+                  <option value="Adulto">Adulto</option>
+                  <option value="Pollo">Pollo</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Fecha Anillamiento</label>
+                <input type="date" id="maleRingDate" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50">
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3 bg-white p-4 rounded-xl border border-stone-200">
+            <div class="text-xs font-extrabold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
+              <span>♀ Hembra Reproductora</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Anilla Metálica</label>
+                <input type="text" id="femaleRing" oninput="handlePairRingInput('female')" placeholder="Ej. G-14881 o Sin anillar" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-stone-50">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Código PVC</label>
+                <input type="text" id="femalePvcCode" placeholder="Ej. 060" class="w-full px-3 py-2 border rounded-xl text-xs font-mono uppercase bg-stone-50">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Edad / Origen</label>
+                <select id="femaleAge" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50 font-semibold">
+                  <option value="Adulto">Adulto</option>
+                  <option value="Pollo">Pollo</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Fecha Anillamiento</label>
+                <input type="date" id="femaleRingDate" class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- POLLOS ANILLADOS EN EL NIDO -->
+        <div id="active-chicks-section" class="bg-amber-50/40 p-4 rounded-2xl border border-amber-200/70 space-y-3">
           <div class="flex justify-between items-center">
-            <label class="block text-xs font-bold text-stone-600">Observaciones de Campo</label>
-            <div class="flex items-center gap-2">
-              <span class="text-[11px] font-bold text-stone-500">Temporada / Año:</span>
-              <select id="notesYearFilter" onchange="switchNotesYear()" class="px-3 py-1 border rounded-lg text-xs bg-white font-bold text-brand-dark">
-                <!-- Se rellena dinámicamente -->
-              </select>
-            </div>
+            <span class="text-xs font-extrabold text-brand-dark uppercase tracking-wide">Pollos Anillados en el Nido</span>
+            <button type="button" onclick="addChickRow()" class="bg-brand-dark hover:bg-brand-hover text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all inline-flex items-center gap-1">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i><span>Añadir Pollo</span>
+            </button>
           </div>
-          <textarea id="notes" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white fixed-textarea" oninput="onManualTextareaEdit()"></textarea>
-          <p class="text-[10px] text-stone-400 italic">Nota: Al cambiar de año en el selector superior, puedes consultar o redactar las notas específicas de esa temporada sin mezclar con los demás años.</p>
+          <div id="chicks-container" class="space-y-2.5"></div>
         </div>
 
-        <!-- HISTORIAL CRONOLÓGICO DE ANILLADOS FILTRADO POR AÑO -->
-        <div class="space-y-3 pt-4 border-t">
-          <div class="flex flex-wrap justify-between items-center gap-2">
-            <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider flex items-center gap-1.5">
-              <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> Historial Cronológico de Anillados y Adultos en este Nido
-            </h3>
-            <div class="flex items-center gap-2">
-              <span class="text-[11px] font-bold text-stone-500">Temporada / Año:</span>
-              <select id="historyYearFilter" onchange="onHistoryYearFilterChange()" class="px-3 py-1 border rounded-lg text-xs bg-white font-bold text-brand-dark">
-                <!-- Se rellena dinámicamente -->
-              </select>
-            </div>
-          </div>
-          <div id="nest-history-container" class="space-y-2.5">
-            <div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>
-          </div>
+        <!-- OBSERVACIONES Y GUARDAR -->
+        <div>
+          <label class="block text-xs font-bold text-stone-600 mb-1">Última Observación / Notas</label>
+          <textarea id="lastObservation" rows="2" placeholder="Detalles de la visita, estado de la caja, egagrópilas, incidencias..." class="w-full px-3 py-2 border rounded-xl text-xs bg-stone-50"></textarea>
         </div>
 
-        <div class="flex justify-end pt-3">
-          <button type="submit" class="bg-brand-dark hover:bg-brand-hover text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center space-x-2 text-xs">
-            <i data-lucide="save" class="w-4 h-4"></i><span id="save-btn-text">Guardar Nido</span>
+        <div class="flex justify-end">
+          <button type="submit" class="bg-brand-dark hover:bg-brand-hover text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-md inline-flex items-center gap-2 text-xs">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span id="save-nest-btn-text">Guardar Registro de Nido</span>
           </button>
         </div>
+
       </form>
     </div>
 
@@ -331,305 +310,75 @@
       auth.signOut().then(() => window.location.href = 'index.html').catch(err => console.error(err));
     }
 
-    let controlMap = null;
-    let selectedMarker = null;
-    let originalNestData = null;
-    let baseNotesStorage = {};
-    let activeNotesYear = new Date().getFullYear().toString();
-    let activeHistoryYear = new Date().getFullYear().toString();
-    let liveAutoLine = "";
-    let liveAutoYear = "";
+    let map = null;
+    let marker = null;
+    let geocodeTimer = null;
+    let currentEditingNestId = null;
 
-    function formatDateToDDMMYYYY(dateStr) {
-      if (!dateStr) return '';
-      if (dateStr.includes('/')) return dateStr;
-      const parts = dateStr.split('-');
-      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+    function toggleCameraActivity() {
+      const hasCamera = document.getElementById('hasCamera').value === 'Sí';
+      const activitySelect = document.getElementById('cameraActivity');
+      activitySelect.disabled = !hasCamera;
+      if (!hasCamera) {
+        activitySelect.value = '';
+      }
     }
 
-    function extractPairFromNest(nest) {
-      if (!nest) return { maleRing: '', malePvc: '', femaleRing: '', femalePvc: '' };
-      const rawMale = (nest.maleRing || nest.maleRingCode || '').trim();
-      const maleRing = (!rawMale || rawMale.toUpperCase() === 'SIN ANILLAR') ? '' : rawMale.toUpperCase();
-      const malePvc = (nest.malePvcCode || nest.malePvc || '').trim().toUpperCase();
-
-      const rawFemale = (nest.femaleRing || nest.femaleRingCode || '').trim();
-      const femaleRing = (!rawFemale || rawFemale.toUpperCase() === 'SIN ANILLAR') ? '' : rawFemale.toUpperCase();
-      const femalePvc = (nest.femalePvcCode || nest.femalePvc || '').trim().toUpperCase();
-
-      return { maleRing, malePvc, femaleRing, femalePvc };
+    function onCameraActivityChange() {
+      const activityVal = document.getElementById('cameraActivity').value;
+      if (activityVal) {
+        document.getElementById('hasCamera').value = 'Sí';
+        document.getElementById('cameraActivity').disabled = false;
+      }
     }
 
-    function parseNotesToStorage(rawNotes) {
-      baseNotesStorage = {};
-      if (!rawNotes) {
-        const currentYear = new Date().getFullYear().toString();
-        baseNotesStorage[currentYear] = "";
-        updateNotesYearDropdown();
+    function toggleActiveFields() {
+      const status = document.getElementById('status').value;
+      const visitation = document.getElementById('visitationState').value;
+      const showDetails = (status === 'Activo' && visitation !== 'Sin puesta') || visitation === 'Pollos en nido' || visitation === 'Polos volados' || visitation === 'Fracaso';
+      document.getElementById('active-pair-section').classList.toggle('hidden', !showDetails && status !== 'Activo');
+      document.getElementById('active-chicks-section').classList.toggle('hidden', !showDetails && status !== 'Activo');
+    }
+
+    function parseCoords(raw) {
+      if (!raw) return null;
+      const parts = raw.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+      if (parts.length < 2) return null;
+      const lat = parseFloat(parts[0]);
+      const lng = parseFloat(parts[1]);
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+      return { lat, lng };
+    }
+
+    function initMap(lat = 39.9856, lng = -0.0493) {
+      if (map) {
+        map.setView([lat, lng], 14);
+        if (marker) marker.setLatLng([lat, lng]);
         return;
       }
-
-      const lines = rawNotes.split('\n');
-      let currentYearKey = new Date().getFullYear().toString();
-      
-      lines.forEach(line => {
-        const match = line.match(/\[(\d{2}\/\d{2}\/(\d{4})|(\d{4})-\d{2}-\d{2})/);
-        if (match) {
-          currentYearKey = match[2] || match[3] || currentYearKey;
-        }
-        if (!baseNotesStorage[currentYearKey]) baseNotesStorage[currentYearKey] = "";
-        baseNotesStorage[currentYearKey] += (baseNotesStorage[currentYearKey] ? '\n' : '') + line;
+      const orthoLayer = L.layerGroup([
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
+        L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: 0.8 })
+      ]);
+      map = L.map('map-container', { center: [lat, lng], zoom: 14, layers: [orthoLayer] });
+      marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        document.getElementById('coordsInput').value = `${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
+        reverseGeocode(pos.lat, pos.lng);
       });
-
-      const visitDateVal = document.getElementById('layDate').value;
-      if (visitDateVal) {
-        const visitYear = visitDateVal.split('-')[0];
-        if (!baseNotesStorage[visitYear]) baseNotesStorage[visitYear] = "";
-        activeNotesYear = visitYear;
-      } else {
-        const keys = Object.keys(baseNotesStorage);
-        if (keys.length > 0) activeNotesYear = keys[keys.length - 1];
-      }
-
-      updateNotesYearDropdown();
-    }
-
-    function syncRingingRecordsToNotes(nestId) {
-      if (!nestId) return;
-      db.ref('anillados').once('value', snapshot => {
-        const ringsData = snapshot.val() || {};
-        const nestRings = Object.values(ringsData).filter(r => (r.nestId || '').toUpperCase() === nestId);
-        if (nestRings.length === 0) return;
-
-        nestRings.sort((a, b) => new Date(a.ringDate || 0) - new Date(b.ringDate || 0));
-
-        let addedAny = false;
-        const allExistingText = Object.values(baseNotesStorage).join('\n');
-
-        nestRings.forEach(r => {
-          const ringCode = (r.metalRing || '').trim().toUpperCase();
-          if (!ringCode || ringCode === 'SIN ANILLAR') return;
-
-          if (!allExistingText.toUpperCase().includes(ringCode)) {
-            let year = new Date().getFullYear().toString();
-            if (r.ringDate) {
-              if (r.ringDate.includes('-')) year = r.ringDate.split('-')[0];
-              else if (r.ringDate.includes('/')) year = r.ringDate.split('/')[2];
-            }
-            const dateFmt = formatDateToDDMMYYYY(r.ringDate) || formatDateToDDMMYYYY(new Date().toISOString().split('T')[0]);
-            const ageLabel = r.birdAge || 'Ejemplar';
-            const sexLabel = r.sex && r.sex !== 'Desconocido' ? ` ${r.sex}` : '';
-            const pvcPart = r.pvcRing ? ` - PVC: ${r.pvcRing.toUpperCase()}` : '';
-            const line = `[${dateFmt}] Anillado ${ageLabel}${sexLabel} [${ringCode}${pvcPart}].`;
-
-            if (!baseNotesStorage[year]) baseNotesStorage[year] = "";
-            baseNotesStorage[year] = baseNotesStorage[year] ? baseNotesStorage[year] + '\n' + line : line;
-            addedAny = true;
-          }
-        });
-
-        if (addedAny) {
-          updateNotesYearDropdown();
-          const consolidated = getRawBaseNotesString();
-          db.ref('nidos/' + nestId + '/notes').set(consolidated);
-        }
+      map.on('click', e => {
+        marker.setLatLng(e.latlng);
+        document.getElementById('coordsInput').value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
       });
-    }
-
-    function getRawBaseNotesString() {
-      let combined = "";
-      Object.keys(baseNotesStorage).sort().forEach(y => {
-        if (baseNotesStorage[y] && baseNotesStorage[y].trim() !== "") {
-          combined += (combined ? '\n' : '') + baseNotesStorage[y].trim();
-        }
-      });
-      return combined;
-    }
-
-    function updateNotesYearDropdown() {
-      const select = document.getElementById('notesYearFilter');
-      const yearsSet = new Set(Object.keys(baseNotesStorage));
-      
-      const visitDateVal = document.getElementById('layDate').value;
-      if (visitDateVal) {
-        yearsSet.add(visitDateVal.split('-')[0]);
-      }
-      if (liveAutoYear) yearsSet.add(liveAutoYear);
-      if (yearsSet.size === 0) yearsSet.add(new Date().getFullYear().toString());
-
-      const years = Array.from(yearsSet).sort().reverse();
-
-      select.innerHTML = '';
-      years.forEach(y => {
-        const opt = document.createElement('option');
-        opt.value = y;
-        opt.textContent = `Año ${y}`;
-        select.appendChild(opt);
-      });
-
-      if (years.includes(activeNotesYear)) {
-        select.value = activeNotesYear;
-      } else {
-        activeNotesYear = years[0];
-        select.value = activeNotesYear;
-      }
-
-      renderTextareaForActiveYear();
-    }
-
-    function renderTextareaForActiveYear() {
-      let text = baseNotesStorage[activeNotesYear] || "";
-      if (liveAutoLine && liveAutoYear === activeNotesYear) {
-        text = text ? text + '\n' + liveAutoLine : liveAutoLine;
-      }
-      document.getElementById('notes').value = text;
-    }
-
-    function switchNotesYear() {
-      const select = document.getElementById('notesYearFilter');
-      activeNotesYear = select.value;
-      renderTextareaForActiveYear();
-    }
-
-    function onManualTextareaEdit() {
-      let currentVal = document.getElementById('notes').value;
-      if (liveAutoLine && liveAutoYear === activeNotesYear && currentVal.endsWith(liveAutoLine)) {
-        currentVal = currentVal.slice(0, -liveAutoLine.length).replace(/\n$/, '');
-      }
-      baseNotesStorage[activeNotesYear] = currentVal;
-    }
-
-    function normalizeRing(val) {
-      const clean = (val || '').trim().toUpperCase();
-      return (clean === '' || clean === 'SIN ANILLAR') ? '' : clean;
-    }
-
-    function buildAutoLogLine() {
-      const rawVisitDate = document.getElementById('layDate').value;
-      const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
-      const adultDeathStatus = document.getElementById('adultDeath').value;
-      const chickDeathVal = document.getElementById('chickDeathRing').value;
-
-      const maleRing = normalizeRing(document.getElementById('maleRing').value);
-      const malePvc = (document.getElementById('malePvcCode').value || '').trim().toUpperCase();
-      const femaleRing = normalizeRing(document.getElementById('femaleRing').value);
-      const femalePvc = (document.getElementById('femalePvcCode').value || '').trim().toUpperCase();
-
-      let changesDescription = [];
-      const newVisitationState = document.getElementById('visitationState').value;
-      const newCameraState = document.getElementById('hasCamera').value;
-      const newHealth = document.getElementById('healthStatus').value;
-      const newFledged = document.getElementById('fledgedChicks').value;
-      const newStatus = document.getElementById('status').value;
-
-      if (!originalNestData) {
-        changesDescription.push(`Nido registrado (Estado: ${newVisitationState}, Cámara: ${newCameraState})`);
-      } else {
-        if ((originalNestData.visitationState || '') !== newVisitationState) {
-          changesDescription.push(`Estado nidada cambiado a "${newVisitationState}"`);
-        }
-        if ((originalNestData.hasCamera || 'No') !== newCameraState) {
-          changesDescription.push(newCameraState === 'Sí' ? `Cámara activada` : `Cámara desactivada`);
-        }
-        if ((originalNestData.healthStatus || '') !== newHealth) {
-          changesDescription.push(`Salud modificada a "${newHealth}"`);
-        }
-        if (parseInt(originalNestData.fledgedChicks || 0) !== parseInt(newFledged || 0)) {
-          changesDescription.push(`Pollos volados actualizados a: ${newFledged}`);
-        }
-        if ((originalNestData.status || '') !== newStatus) {
-          changesDescription.push(`Estado del nido cambiado a "${newStatus}"`);
-        }
-        
-        const origPair = extractPairFromNest(originalNestData);
-        if (maleRing !== origPair.maleRing) {
-          changesDescription.push(maleRing ? `Macho asignado [${maleRing}${malePvc ? ' - PVC: ' + malePvc : ''}]` : `Macho retirado`);
-        }
-        if (femaleRing !== origPair.femaleRing) {
-          changesDescription.push(femaleRing ? `Hembra asignada [${femaleRing}${femalePvc ? ' - PVC: ' + femalePvc : ''}]` : `Hembra retirada`);
-        }
-
-        if (changesDescription.length === 0 && (originalNestData.layDate || '') !== rawVisitDate && adultDeathStatus === 'Ninguno') {
-          changesDescription.push(`Revisión de campo (Estado: ${newVisitationState}, Salud: ${newHealth}, Cámara: ${newCameraState})`);
-        }
-      }
-
-      let lines = [];
-      if (changesDescription.length > 0) {
-        lines.push(`[${visitDateFormatted}] ${changesDescription.join(' | ')}.`);
-      }
-
-      if (adultDeathStatus !== 'Ninguno') {
-        let adultInfoText = `Baja de adulto: ${adultDeathStatus}`;
-        if (adultDeathStatus.includes('Macho') && maleRing) adultInfoText += ` (${maleRing})`;
-        else if (adultDeathStatus.includes('Hembra') && femaleRing) adultInfoText += ` (${femaleRing})`;
-        lines.push(`[${visitDateFormatted}] ⚠️ ${adultInfoText}.`);
-      }
-
-      if (chickDeathVal && chickDeathVal !== 'Sin baja' && chickDeathVal !== 'Sin baja (Ningún pollo muerto)') {
-        lines.push(`[${visitDateFormatted}] ⚠️ Baja de pollo muerto (${chickDeathVal}).`);
-      }
-
-      return lines.join('\n');
-    }
-
-    function updateLiveNotesPreview() {
-      const rawVisitDate = document.getElementById('layDate').value;
-      const visitYear = rawVisitDate ? rawVisitDate.split('-')[0] : new Date().getFullYear().toString();
-      
-      liveAutoLine = buildAutoLogLine();
-      liveAutoYear = visitYear;
-
-      if (liveAutoLine) {
-        activeNotesYear = visitYear;
-      }
-      updateNotesYearDropdown();
-    }
-
-    function onVisitDateChange() {
-      const visitDateVal = document.getElementById('layDate').value;
-      if (visitDateVal) {
-        const vYear = visitDateVal.split('-')[0];
-        activeNotesYear = vYear;
-        activeHistoryYear = vYear;
-      }
-      updateLiveNotesPreview();
-      updateNestHistoryPreview();
-    }
-
-    function onHistoryYearFilterChange() {
-      const select = document.getElementById('historyYearFilter');
-      activeHistoryYear = select.value;
-      updateNestHistoryPreview();
-    }
-
-    function getCombinedNotesString() {
-      const rawVisitDate = document.getElementById('layDate').value;
-      const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
-      const visitYear = rawVisitDate ? rawVisitDate.split('-')[0] : new Date().getFullYear().toString();
-
-      let finalLog = buildAutoLogLine();
-      if (!finalLog) {
-        finalLog = `[${visitDateFormatted}] Visita registrada / nido actualizado.`;
-      }
-
-      const finalStorage = { ...baseNotesStorage };
-      finalStorage[visitYear] = finalStorage[visitYear] ? finalStorage[visitYear] + '\n' + finalLog : finalLog;
-
-      let combined = "";
-      Object.keys(finalStorage).sort().forEach(y => {
-        if (finalStorage[y] && finalStorage[y].trim() !== "") {
-          combined += (combined ? '\n' : '') + finalStorage[y].trim();
-        }
-      });
-      return combined;
     }
 
     function reverseGeocode(lat, lng) {
       const locInput = document.getElementById('locationName');
-      locInput.placeholder = "Buscando ubicación...";
+      locInput.placeholder = "Obteniendo localidad...";
       fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
           if (data && data.address) {
             const addr = data.address;
@@ -641,454 +390,185 @@
             if (name) locInput.value = name;
           }
         })
-        .catch(err => console.error("Error en geocodificación inversa:", err));
+        .catch(err => console.error("Error obteniendo localidad:", err));
     }
 
-    function initControlMap(lat = 39.98, lng = -0.05) {
-      if (controlMap) {
-        controlMap.setView([lat, lng], 13);
+    function onCoordsInput() {
+      clearTimeout(geocodeTimer);
+      const parsed = parseCoords(document.getElementById('coordsInput').value);
+      if (!parsed) return;
+      initMap(parsed.lat, parsed.lng);
+      geocodeTimer = setTimeout(() => {
+        reverseGeocode(parsed.lat, parsed.lng);
+      }, 500);
+    }
+
+    function useCurrentGps() {
+      if (!navigator.geolocation) {
+        alert('Tu navegador no soporta geolocalización.');
         return;
       }
-      const orthoLayer = L.layerGroup([
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }),
-        L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: 0.8 })
-      ]);
-      controlMap = L.map('control-map', { center: [lat, lng], zoom: 12, layers: [orthoLayer] });
-
-      controlMap.on('click', function(e) {
-        const clickedLat = e.latlng.lat.toFixed(6);
-        const clickedLng = e.latlng.lng.toFixed(6);
-        document.getElementById('lat').value = clickedLat;
-        document.getElementById('lng').value = clickedLng;
-        reverseGeocode(clickedLat, clickedLng);
-
-        if (selectedMarker) {
-          selectedMarker.setLatLng(e.latlng);
-        } else {
-          selectedMarker = L.marker(e.latlng, { draggable: true }).addTo(controlMap);
-          selectedMarker.on('dragend', function(event) {
-            const pos = event.target.getLatLng();
-            const dragLat = pos.lat.toFixed(6);
-            const dragLng = pos.lng.toFixed(6);
-            document.getElementById('lat').value = dragLat;
-            document.getElementById('lng').value = dragLng;
-            reverseGeocode(dragLat, dragLng);
-          });
-        }
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude.toFixed(6);
+        const lng = pos.coords.longitude.toFixed(6);
+        document.getElementById('coordsInput').value = `${lat}, ${lng}`;
+        initMap(parseFloat(lat), parseFloat(lng));
+        reverseGeocode(lat, lng);
+      }, err => {
+        alert('No se pudo obtener GPS: ' + err.message);
       });
     }
 
-    function autoLoadAdultsForNest(syncOriginal = false) {
-      const nestId = document.getElementById('nestId').value.trim().toUpperCase();
-      if (!nestId) return;
-
-      db.ref('anillados').once('value', snapshot => {
-        const ringsData = snapshot.val() || {};
-        let foundMale = false;
-        let foundFemale = false;
-
-        Object.values(ringsData).forEach(r => {
-          const isThisNest = (r.nestId || '').toUpperCase() === nestId;
-          const isAdult = r.birdAge === 'Adulto' || (r.euringAge && r.euringAge !== 'EURING 1');
-          const isAlive = r.status !== 'Muerto';
-
-          if (isThisNest && isAdult && isAlive) {
-            if (r.sex === 'Macho' && !foundMale) {
-              if (r.metalRing) document.getElementById('maleRing').value = r.metalRing;
-              if (r.pvcRing) document.getElementById('malePvcCode').value = r.pvcRing;
-              foundMale = true;
-            } else if (r.sex === 'Hembra' && !foundFemale) {
-              if (r.metalRing) document.getElementById('femaleRing').value = r.metalRing;
-              if (r.pvcRing) document.getElementById('femalePvcCode').value = r.pvcRing;
-              foundFemale = true;
-            }
-          }
-        });
-
-        if (syncOriginal && originalNestData) {
-          originalNestData.maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
-          originalNestData.malePvcCode = document.getElementById('malePvcCode').value.trim().toUpperCase() || '';
-          originalNestData.femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
-          originalNestData.femalePvcCode = document.getElementById('femalePvcCode').value.trim().toUpperCase() || '';
-        }
-
-        updateNestHistoryPreview();
-      });
-    }
-
-    function loadChicksDropdown(selectedVal = 'Sin baja') {
-      const currentNest = document.getElementById('nestId').value.trim().toUpperCase();
-      const select = document.getElementById('chickDeathRing');
-
-      db.ref('nidos/' + currentNest).once('value', nestSnap => {
-        const nestData = nestSnap.val() || {};
-        const alreadyDeadRing = nestData.chickDeathRing || 'Sin baja';
-
-        db.ref('anillados').once('value', snapshot => {
-          const data = snapshot.val() || {};
-          select.innerHTML = '<option value="Sin baja">Sin baja (Ningún pollo muerto)</option>';
-
-          Object.values(data).forEach(r => {
-            const isThisNest = currentNest && (r.nestId || '').toUpperCase() === currentNest;
-            const isChick = r.birdAge === 'Pollo' || r.euringAge === 'EURING 1';
-            const isAlive = r.status !== 'Muerto';
-
-            if (isChick && isThisNest && isAlive) {
-              const label = `MUERTO: Pollo Anilla [ ${r.metalRing} ] ${r.pvcRing ? '- PVC: ' + r.pvcRing : ''}`;
-              const opt = document.createElement('option');
-              opt.value = r.metalRing;
-              opt.textContent = label;
-              select.appendChild(opt);
-            }
-          });
-          select.value = (selectedVal && selectedVal !== '') ? selectedVal : alreadyDeadRing;
-        });
-      });
-    }
-
-    function updateNestHistoryPreview() {
-      const nestId = document.getElementById('nestId').value.trim().toUpperCase();
-      const container = document.getElementById('nest-history-container');
-      const yearFilterSelect = document.getElementById('historyYearFilter');
-      const deadChickRing = document.getElementById('chickDeathRing').value;
-      const adultDeathStatus = document.getElementById('adultDeath').value;
-      const rawVisitDate = document.getElementById('layDate').value || new Date().toISOString().split('T')[0];
-
-      if (!nestId) {
-        yearFilterSelect.innerHTML = `<option value="${activeHistoryYear}">Año ${activeHistoryYear}</option>`;
-        container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>';
-        return;
+    function handlePairRingInput(role) {
+      const ringEl = document.getElementById(role === 'male' ? 'maleRing' : 'femaleRing');
+      const pvcEl = document.getElementById(role === 'male' ? 'malePvcCode' : 'femalePvcCode');
+      if (ringEl.value.trim().toLowerCase() === 'sin anillar') {
+        pvcEl.value = '';
+        pvcEl.disabled = true;
+      } else {
+        pvcEl.disabled = false;
       }
+    }
 
-      db.ref('anillados').once('value', snapshot => {
-        const ringsData = snapshot.val() || {};
-        
-        const matched = Object.values(ringsData).filter(r => {
-          return (r.nestId || '').toUpperCase() === nestId;
-        }).map(r => {
-          const copy = { ...r };
-          const isSelectedChickDead = (copy.metalRing === deadChickRing && deadChickRing !== 'Sin baja');
-          const isAdultDead = (adultDeathStatus.includes('Macho') && copy.sex === 'Macho' && copy.birdAge === 'Adulto' && copy.status !== 'Muerto') ||
-                              (adultDeathStatus.includes('Hembra') && copy.sex === 'Hembra' && copy.birdAge === 'Adulto' && copy.status !== 'Muerto') ||
-                              (adultDeathStatus === 'Ambos muertos' && copy.birdAge === 'Adulto' && copy.status !== 'Muerto');
-          if (isSelectedChickDead || isAdultDead) {
-            copy.status = 'Muerto';
-          }
-          return copy;
-        });
+    function addChickRow(data = {}) {
+      const container = document.getElementById('chicks-container');
+      const row = document.createElement('div');
+      row.className = 'chick-row grid grid-cols-1 sm:grid-cols-4 gap-2.5 bg-white p-3 rounded-xl border border-stone-200 items-center';
+      row.innerHTML = `
+        <input type="text" value="${data.metalRing || ''}" placeholder="Anilla Metálica" class="chick-metal px-3 py-1.5 border rounded-lg text-xs font-mono uppercase bg-stone-50">
+        <input type="text" value="${data.pvcCode || ''}" placeholder="Código PVC" class="chick-pvc px-3 py-1.5 border rounded-lg text-xs font-mono uppercase bg-stone-50">
+        <input type="date" value="${data.ringDate || document.getElementById('layDate').value || ''}" class="chick-date px-3 py-1.5 border rounded-lg text-xs bg-stone-50">
+        <button type="button" onclick="this.parentElement.remove()" class="text-rose-600 hover:text-rose-800 text-xs font-bold justify-self-end px-2 py-1">Quitar</button>
+      `;
+      container.appendChild(row);
+    }
 
-        const mRing = document.getElementById('maleRing').value.trim().toUpperCase();
-        const mPvc = document.getElementById('malePvcCode').value.trim().toUpperCase();
-        const fRing = document.getElementById('femaleRing').value.trim().toUpperCase();
-        const fPvc = document.getElementById('femalePvcCode').value.trim().toUpperCase();
+    function resetForm() {
+      currentEditingNestId = null;
+      document.getElementById('nestForm').reset();
+      document.getElementById('chicks-container').innerHTML = '';
+      document.getElementById('form-title').textContent = 'Nuevo Registro de Caja Nido';
+      document.getElementById('save-nest-btn-text').textContent = 'Guardar Registro de Nido';
+      document.getElementById('delete-nest-btn').classList.add('hidden');
+      document.getElementById('nestId').removeAttribute('readonly');
+      document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
+      toggleCameraActivity();
+      toggleActiveFields();
+      initMap();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
 
-        let allBirds = [...matched];
+    function loadNestForEdit(nestId) {
+      const safeKey = nestId.replace(/[\/\.#$\[\]]/g, '_');
+      db.ref('nidos/' + safeKey).once('value').then(snap => {
+        const d = snap.val();
+        if (!d) return;
+        currentEditingNestId = safeKey;
+        document.getElementById('form-title').textContent = `Editando Nido: ${d.nestId}`;
+        document.getElementById('save-nest-btn-text').textContent = 'Actualizar Nido';
+        document.getElementById('delete-nest-btn').classList.remove('hidden');
+        document.getElementById('nestId').value = d.nestId || nestId;
+        document.getElementById('nestId').setAttribute('readonly', true);
+        document.getElementById('status').value = d.status || 'Activo';
+        document.getElementById('visitationState').value = d.visitationState || 'Sin puesta';
+        document.getElementById('layDate').value = d.layDate || '';
+        document.getElementById('fledgedChicks').value = d.fledgedChicks ?? 0;
+        document.getElementById('coordsInput').value = (d.lat && d.lng) ? `${d.lat}, ${d.lng}` : '';
+        document.getElementById('locationName').value = d.locationName || '';
+        document.getElementById('hasCamera').value = d.hasCamera || 'No';
+        document.getElementById('cameraActivity').value = d.cameraActivity || '';
+        document.getElementById('maleRing').value = d.maleRing || '';
+        document.getElementById('malePvcCode').value = d.malePvcCode || '';
+        document.getElementById('maleAge').value = d.maleAge || 'Adulto';
+        document.getElementById('maleRingDate').value = d.maleRingDate || '';
+        document.getElementById('femaleRing').value = d.femaleRing || '';
+        document.getElementById('femalePvcCode').value = d.femalePvcCode || '';
+        document.getElementById('femaleAge').value = d.femaleAge || 'Adulto';
+        document.getElementById('femaleRingDate').value = d.femaleRingDate || '';
+        document.getElementById('lastObservation').value = d.lastObservation || '';
 
-        if (mRing && mRing !== 'SIN ANILLAR') {
-          const isMaleMarkedDead = adultDeathStatus.includes('Macho') || adultDeathStatus === 'Ambos muertos';
-          const existingMaleIndex = allBirds.findIndex(r => r.metalRing === mRing && r.birdAge === 'Adulto');
-          if (existingMaleIndex >= 0) {
-            if (mPvc) allBirds[existingMaleIndex].pvcRing = mPvc;
-            if (isMaleMarkedDead) allBirds[existingMaleIndex].status = 'Muerto';
-          } else {
-            allBirds.push({
-              metalRing: mRing,
-              pvcRing: mPvc,
-              birdAge: 'Adulto',
-              sex: 'Macho',
-              ringDate: rawVisitDate,
-              status: isMaleMarkedDead ? 'Muerto' : 'Vivo'
-            });
-          }
+        const chicksContainer = document.getElementById('chicks-container');
+        chicksContainer.innerHTML = '';
+        if (Array.isArray(d.chicks)) {
+          d.chicks.forEach(c => addChickRow(c));
         }
 
-        if (fRing && fRing !== 'SIN ANILLAR') {
-          const isFemaleMarkedDead = adultDeathStatus.includes('Hembra') || adultDeathStatus === 'Ambos muertos';
-          const existingFemaleIndex = allBirds.findIndex(r => r.metalRing === fRing && r.birdAge === 'Adulto');
-          if (existingFemaleIndex >= 0) {
-            if (fPvc) allBirds[existingFemaleIndex].pvcRing = fPvc;
-            if (isFemaleMarkedDead) allBirds[existingFemaleIndex].status = 'Muerto';
-          } else {
-            allBirds.push({
-              metalRing: fRing,
-              pvcRing: fPvc,
-              birdAge: 'Adulto',
-              sex: 'Hembra',
-              ringDate: rawVisitDate,
-              status: isFemaleMarkedDead ? 'Muerto' : 'Vivo'
-            });
-          }
-        }
-
-        allBirds.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
-
-        const groupedByYear = {};
-        const yearsSet = new Set();
-        const currentVisitYear = rawVisitDate ? rawVisitDate.split('-')[0] : new Date().getFullYear().toString();
-        yearsSet.add(currentVisitYear);
-
-        allBirds.forEach(r => {
-          let year = 'Sin año';
-          if (r.ringDate) {
-            const parts = r.ringDate.split('-');
-            if (parts.length === 3) year = parts[0];
-            else if (r.ringDate.includes('/')) {
-              const p = r.ringDate.split('/');
-              if (p.length === 3) year = p[2];
-            }
-          }
-          yearsSet.add(year);
-          if (!groupedByYear[year]) groupedByYear[year] = [];
-          groupedByYear[year].push(r);
-        });
-
-        const sortedAvailableYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
-        yearFilterSelect.innerHTML = '<option value="ALL">Todos los años</option>';
-        sortedAvailableYears.forEach(y => {
-          const opt = document.createElement('option');
-          opt.value = y;
-          opt.textContent = y === 'Sin año' ? 'Sin año' : `Año ${y}`;
-          yearFilterSelect.appendChild(opt);
-        });
-
-        if (activeHistoryYear === 'ALL' || sortedAvailableYears.includes(activeHistoryYear)) {
-          yearFilterSelect.value = activeHistoryYear;
-        } else {
-          activeHistoryYear = sortedAvailableYears[0];
-          yearFilterSelect.value = activeHistoryYear;
-        }
-
-        if (allBirds.length === 0) {
-          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento asociados al nido "${nestId}".</div>`;
-          return;
-        }
-
-        const yearsToRender = activeHistoryYear === 'ALL'
-          ? Object.keys(groupedByYear).sort((a, b) => b.localeCompare(a))
-          : (groupedByYear[activeHistoryYear] ? [activeHistoryYear] : []);
-
-        if (yearsToRender.length === 0) {
-          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento para el año ${activeHistoryYear} en este nido.</div>`;
-          return;
-        }
-
-        let html = '';
-        yearsToRender.forEach(year => {
-          html += `
-            <div class="space-y-2 mb-4">
-              <div class="bg-brand-dark/10 text-brand-dark px-3 py-1 rounded-lg font-extrabold text-xs uppercase tracking-wide flex items-center gap-1.5">
-                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-accent"></i> Temporada / Año: ${year} (${groupedByYear[year].length})
-              </div>
-          `;
-
-          groupedByYear[year].forEach(r => {
-            const isAdult = r.birdAge === 'Adulto';
-            const isDead = r.status === 'Muerto';
-            let badgeHTML = isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
-            const statusBadgeHTML = isDead ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-200 uppercase">Muerto</span>' : '';
-            
-            const metalBadge = isDead
-              ? `<span class="metal-ring-badge-dead text-sm">${r.metalRing}</span>`
-              : `<span class="metal-ring-badge text-sm">${r.metalRing}</span>`;
-            const pvcBadge = r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : '';
-            const rowClasses = isDead
-              ? 'bg-rose-50/60 border border-rose-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 ml-2'
-              : 'bg-white border border-stone-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2 ml-2';
-
-            html += `
-              <div class="${rowClasses}">
-                <div class="flex items-center gap-2.5 flex-wrap">
-                  ${badgeHTML}
-                  ${statusBadgeHTML}
-                  ${metalBadge}
-                  ${pvcBadge}
-                </div>
-                <div class="text-stone-500 text-xs font-medium">Fecha: <strong class="text-stone-800">${r.ringDate ? formatDateToDDMMYYYY(r.ringDate) : '-'}</strong> | Sexo: <strong class="text-stone-800">${r.sex || 'Desconocido'}</strong> | Peso: <strong class="text-stone-800">${r.weight ? r.weight + 'g' : '-'}</strong></div>
-              </div>
-            `;
-          });
-
-          html += `</div>`;
-        });
-
-        container.innerHTML = html;
+        toggleCameraActivity();
+        toggleActiveFields();
+        if (d.lat && d.lng) initMap(parseFloat(d.lat), parseFloat(d.lng));
         if (typeof lucide !== 'undefined') lucide.createIcons();
       });
     }
 
-    function checkEditMode() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const editId = urlParams.get('edit');
-
-      if (editId) {
-        document.getElementById('form-title').textContent = `Editando Nido: ${editId}`;
-        document.getElementById('save-btn-text').textContent = 'Actualizar Nido';
-        document.getElementById('cancel-edit-btn').classList.remove('hidden');
-        document.getElementById('nestId').setAttribute('readonly', true);
-        document.getElementById('nestId').classList.add('bg-stone-100');
-
-        db.ref('nidos/' + editId).once('value', snapshot => {
-          const nest = snapshot.val();
-          if (nest) {
-            originalNestData = JSON.parse(JSON.stringify(nest));
-            const pair = extractPairFromNest(nest);
-
-            document.getElementById('nestId').value = nest.nestId || editId;
-            document.getElementById('nestType').value = nest.nestType || 'Nido Artificial';
-            document.getElementById('locationName').value = nest.locationName || '';
-            document.getElementById('status').value = nest.status || 'Activo';
-            document.getElementById('lat').value = nest.lat || '';
-            document.getElementById('lng').value = nest.lng || '';
-            const initialDate = nest.layDate || new Date().toISOString().split('T')[0];
-            document.getElementById('layDate').value = initialDate;
-            activeHistoryYear = initialDate.split('-')[0];
-
-            document.getElementById('visitationState').value = nest.visitationState || 'Huevos';
-            document.getElementById('healthStatus').value = nest.healthStatus || 'Excelente';
-            document.getElementById('adultDeath').value = 'Ninguno';
-            document.getElementById('fledgedChicks').value = nest.fledgedChicks || 0;
-            document.getElementById('hasCamera').value = nest.hasCamera || 'No';
-            document.getElementById('maleRing').value = pair.maleRing;
-            document.getElementById('malePvcCode').value = pair.malePvc;
-            document.getElementById('femaleRing').value = pair.femaleRing;
-            document.getElementById('femalePvcCode').value = pair.femalePvc;
-            
-            liveAutoLine = "";
-            parseNotesToStorage(nest.notes || '');
-            syncRingingRecordsToNotes(editId.toUpperCase());
-
-            autoLoadAdultsForNest(true);
-            loadChicksDropdown('Sin baja');
-            updateNestHistoryPreview();
-
-            if (nest.lat && nest.lng) {
-              initControlMap(nest.lat, nest.lng);
-              selectedMarker = L.marker([nest.lat, nest.lng], { draggable: true }).addTo(controlMap);
-            } else {
-              initControlMap();
-            }
-          }
-        });
-      } else {
-        originalNestData = null;
-        initControlMap();
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('layDate').value = today;
-        activeHistoryYear = today.split('-')[0];
-        document.getElementById('adultDeath').value = 'Ninguno';
-        parseNotesToStorage('');
-        updateLiveNotesPreview();
-        loadChicksDropdown('Sin baja');
-        updateNestHistoryPreview();
-      }
+    function deleteCurrentNest() {
+      if (!currentEditingNestId) return;
+      if (!confirm('¿Seguro que deseas eliminar este nido?')) return;
+      db.ref('nidos/' + currentEditingNestId).remove().then(() => {
+        window.location.href = 'dashboard.html';
+      });
     }
 
     function saveNest(e) {
       e.preventDefault();
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
-      const rawVisitDate = document.getElementById('layDate').value;
-      const adultDeathStatus = document.getElementById('adultDeath').value;
-      const chickDeathVal = document.getElementById('chickDeathRing').value;
+      const safeKey = currentEditingNestId || nestId.replace(/[\/\.#$\[\]]/g, '_');
+      const parsedCoords = parseCoords(document.getElementById('coordsInput').value);
+      const hasCamera = document.getElementById('hasCamera').value;
+      const cameraActivity = hasCamera === 'Sí' ? document.getElementById('cameraActivity').value : '';
 
-      let maleRing = document.getElementById('maleRing').value.trim().toUpperCase() || 'Sin anillar';
-      let malePvc = document.getElementById('malePvcCode').value.trim().toUpperCase() || '';
-      let femaleRing = document.getElementById('femaleRing').value.trim().toUpperCase() || 'Sin anillar';
-      let femalePvc = document.getElementById('femalePvcCode').value.trim().toUpperCase() || '';
+      const chicks = [];
+      document.querySelectorAll('#chicks-container .chick-row').forEach(row => {
+        const mRing = row.querySelector('.chick-metal').value.trim().toUpperCase();
+        const pvc = row.querySelector('.chick-pvc').value.trim().toUpperCase();
+        const rDate = row.querySelector('.chick-date').value;
+        if (mRing || pvc) {
+          chicks.push({ metalRing: mRing, pvcCode: pvc, ringDate: rDate });
+        }
+      });
 
-      const combinedNotes = getCombinedNotesString();
-      finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, combinedNotes, adultDeathStatus, chickDeathVal, rawVisitDate);
-    }
-
-    function finishSavingNest(nestId, maleRing, malePvc, femaleRing, femalePvc, combinedNotes, adultDeathStatus, chickDeathVal, rawVisitDate) {
-      const locationNameVal = document.getElementById('locationName').value.trim();
-
-      const isMaleDead = (adultDeathStatus === 'Macho muerto' || adultDeathStatus === 'Ambos muertos');
-      const isFemaleDead = (adultDeathStatus === 'Hembra muerta' || adultDeathStatus === 'Ambos muertos');
-
-      const finalMaleRing = isMaleDead ? 'Sin anillar' : maleRing;
-      const finalMalePvc = isMaleDead ? '' : malePvc;
-      const finalFemaleRing = isFemaleDead ? 'Sin anillar' : femaleRing;
-      const finalFemalePvc = isFemaleDead ? '' : femalePvc;
-
-      const nestData = {
-        nestId: nestId,
-        nestType: document.getElementById('nestType').value,
-        locationName: locationNameVal,
+      const payload = {
+        nestId,
         status: document.getElementById('status').value,
-        lat: parseFloat(document.getElementById('lat').value) || null,
-        lng: parseFloat(document.getElementById('lng').value) || null,
-        layDate: rawVisitDate,
         visitationState: document.getElementById('visitationState').value,
-        healthStatus: document.getElementById('healthStatus').value,
-        chickDeathRing: (chickDeathVal === 'Sin baja' || chickDeathVal === 'Sin baja (Ningún pollo muerto)') ? 'Sin baja' : chickDeathVal,
-        adultDeath: 'Ninguno',
-        fledgedChicks: parseInt(document.getElementById('fledgedChicks').value) || 0,
-        hasCamera: document.getElementById('hasCamera').value,
-        maleRing: finalMaleRing,
-        maleRingCode: finalMaleRing,
-        malePvcCode: finalMalePvc,
-        malePvc: finalMalePvc,
-        femaleRing: finalFemaleRing,
-        femaleRingCode: finalFemaleRing,
-        femalePvcCode: finalFemalePvc,
-        femalePvc: finalFemalePvc,
-        notes: combinedNotes,
-        lastReview: new Date().toISOString().split('T')[0]
+        layDate: document.getElementById('layDate').value,
+        fledgedChicks: parseInt(document.getElementById('fledgedChicks').value, 10) || 0,
+        lat: parsedCoords ? parsedCoords.lat : null,
+        lng: parsedCoords ? parsedCoords.lng : null,
+        locationName: document.getElementById('locationName').value.trim(),
+        hasCamera,
+        cameraActivity,
+        maleRing: document.getElementById('maleRing').value.trim().toUpperCase(),
+        malePvcCode: document.getElementById('malePvcCode').value.trim().toUpperCase(),
+        maleAge: document.getElementById('maleAge').value,
+        maleRingDate: document.getElementById('maleRingDate').value,
+        femaleRing: document.getElementById('femaleRing').value.trim().toUpperCase(),
+        femalePvcCode: document.getElementById('femalePvcCode').value.trim().toUpperCase(),
+        femaleAge: document.getElementById('femaleAge').value,
+        femaleRingDate: document.getElementById('femaleRingDate').value,
+        chicks,
+        lastObservation: document.getElementById('lastObservation').value.trim(),
+        updatedAt: new Date().toISOString().split('T')[0]
       };
 
-      let updatesSync = {};
-      updatesSync['nidos/' + nestId] = nestData;
-
-      if (finalMaleRing && finalMaleRing !== 'Sin anillar' && finalMaleRing !== 'SIN ANILLAR') {
-        const maleKey = finalMaleRing.replace(/[\/\.#$\[\]]/g, '_');
-        updatesSync['anillados/' + maleKey] = {
-          metalRing: finalMaleRing,
-          pvcRing: finalMalePvc,
-          birdAge: 'Adulto',
-          sex: 'Macho',
-          nestId: nestId,
-          locationName: locationNameVal,
-          ringDate: rawVisitDate,
-          lastObservation: isMaleDead
-            ? `Fallecido en nido ${nestId} con fecha ${formatDateToDDMMYYYY(rawVisitDate)}`
-            : combinedNotes,
-          status: isMaleDead ? 'Muerto' : 'Vivo'
-        };
-      }
-
-      if (finalFemaleRing && finalFemaleRing !== 'Sin anillar' && finalFemaleRing !== 'SIN ANILLAR') {
-        const femaleKey = finalFemaleRing.replace(/[\/\.#$\[\]]/g, '_');
-        updatesSync['anillados/' + femaleKey] = {
-          metalRing: finalFemaleRing,
-          pvcRing: finalFemalePvc,
-          birdAge: 'Adulto',
-          sex: 'Hembra',
-          nestId: nestId,
-          locationName: locationNameVal,
-          ringDate: rawVisitDate,
-          lastObservation: isFemaleDead
-            ? `Fallecida en nido ${nestId} con fecha ${formatDateToDDMMYYYY(rawVisitDate)}`
-            : combinedNotes,
-          status: isFemaleDead ? 'Muerto' : 'Vivo'
-        };
-      }
-
-      if (chickDeathVal && chickDeathVal !== 'Sin baja' && chickDeathVal !== 'Sin baja (Ningún pollo muerto)') {
-        const chickKey = chickDeathVal.replace(/[\/\.#$\[\]]/g, '_');
-        updatesSync['anillados/' + chickKey + '/status'] = 'Muerto';
-        updatesSync['anillados/' + chickKey + '/lastObservation'] = `Fallecido en nido ${nestId} con fecha ${formatDateToDDMMYYYY(rawVisitDate)}`;
-      }
-
-      db.ref().update(updatesSync).then(() => {
-        alert('¡Se guardaron los cambios y las observaciones con éxito!');
+      db.ref('nidos/' + safeKey).set(payload).then(() => {
         window.location.href = 'dashboard.html';
       }).catch(err => {
-        alert('Error al guardar en Firebase: ' + err.message);
+        alert('Error al guardar el nido: ' + err.message);
       });
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      checkEditMode();
+      document.getElementById('layDate').value = new Date().toISOString().split('T')[0];
+      toggleCameraActivity();
+      toggleActiveFields();
+      initMap();
+
+      const params = new URLSearchParams(window.location.search);
+      const editId = params.get('edit');
+      if (editId) {
+        loadNestForEdit(editId);
+      }
+
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
   </script>
