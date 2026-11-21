@@ -96,11 +96,14 @@
         <a href="dashboard.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="layout-grid" class="w-4 h-4"></i><span>Panel</span>
         </a>
-        <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-brand-accent text-white shadow-sm">
+        <a href="control.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-brand-accent text-white shadow-sm flex items-center space-x-1.5">
           <i data-lucide="notebook-pen" class="w-4 h-4"></i><span>Nidos</span>
         </a>
         <a href="anillados.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
           <i data-lucide="tag" class="w-4 h-4 text-sky-400"></i><span>Anillados</span>
+        </a>
+        <a href="estaciones.html" class="px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center space-x-1.5 text-white/80 hover:bg-white/10">
+          <i data-lucide="radar" class="w-4 h-4 text-emerald-400"></i><span>Estaciones</span>
         </a>
         <button onclick="cerrarSesion()" class="bg-rose-700/80 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2.5 rounded-xl transition-all shadow flex items-center gap-1.5 ml-2">
           <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">Salir</span>
@@ -378,7 +381,6 @@
       updateNotesYearDropdown();
     }
 
-    // Sincroniza en Observaciones de Campo las lechuzas anilladas en este nido si aún no aparecen en las notas
     function syncRingingRecordsToNotes(nestId) {
       if (!nestId) return;
       db.ref('anillados').once('value', snapshot => {
@@ -395,7 +397,6 @@
           const ringCode = (r.metalRing || '').trim().toUpperCase();
           if (!ringCode || ringCode === 'SIN ANILLAR') return;
 
-          // Comprobar si esta anilla ya está mencionada en las observaciones del nido
           if (!allExistingText.toUpperCase().includes(ringCode)) {
             let year = new Date().getFullYear().toString();
             if (r.ringDate) {
@@ -416,7 +417,6 @@
 
         if (addedAny) {
           updateNotesYearDropdown();
-          // Guardamos también en Firebase para que quede consolidado en el nido
           const consolidated = getRawBaseNotesString();
           db.ref('nidos/' + nestId + '/notes').set(consolidated);
         }
