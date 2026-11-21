@@ -339,6 +339,7 @@
 
     function formatDateToDDMMYYYY(dateStr) {
       if (!dateStr) return '';
+      if (dateStr.includes('/')) return dateStr;
       const parts = dateStr.split('-');
       return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
     }
@@ -375,6 +376,61 @@
       }
 
       updateNotesYearDropdown();
+    }
+
+    // Sincroniza en Observaciones de Campo las lechuzas anilladas en este nido si aún no aparecen en las notas
+    function syncRingingRecordsToNotes(nestId) {
+      if (!nestId) return;
+      db.ref('anillados').once('value', snapshot => {
+        const ringsData = snapshot.val() || {};
+        const nestRings = Object.values(ringsData).filter(r => (r.nestId || '').toUpperCase() === nestId);
+        if (nestRings.length === 0) return;
+
+        nestRings.sort((a, b) => new Date(a.ringDate || 0) - new Date(b.ringDate || 0));
+
+        let addedAny = false;
+        const allExistingText = Object.values(baseNotesStorage).join('\n');
+
+        nestRings.forEach(r => {
+          const ringCode = (r.metalRing || '').trim().toUpperCase();
+          if (!ringCode || ringCode === 'SIN ANILLAR') return;
+
+          // Comprobar si esta anilla ya está mencionada en las observaciones del nido
+          if (!allExistingText.toUpperCase().includes(ringCode)) {
+            let year = new Date().getFullYear().toString();
+            if (r.ringDate) {
+              if (r.ringDate.includes('-')) year = r.ringDate.split('-')[0];
+              else if (r.ringDate.includes('/')) year = r.ringDate.split('/')[2];
+            }
+            const dateFmt = formatDateToDDMMYYYY(r.ringDate) || formatDateToDDMMYYYY(new Date().toISOString().split('T')[0]);
+            const ageLabel = r.birdAge || 'Ejemplar';
+            const sexLabel = r.sex && r.sex !== 'Desconocido' ? ` ${r.sex}` : '';
+            const pvcPart = r.pvcRing ? ` - PVC: ${r.pvcRing.toUpperCase()}` : '';
+            const line = `[${dateFmt}] Anillado ${ageLabel}${sexLabel} [${ringCode}${pvcPart}].`;
+
+            if (!baseNotesStorage[year]) baseNotesStorage[year] = "";
+            baseNotesStorage[year] = baseNotesStorage[year] ? baseNotesStorage[year] + '\n' + line : line;
+            addedAny = true;
+          }
+        });
+
+        if (addedAny) {
+          updateNotesYearDropdown();
+          // Guardamos también en Firebase para que quede consolidado en el nido
+          const consolidated = getRawBaseNotesString();
+          db.ref('nidos/' + nestId + '/notes').set(consolidated);
+        }
+      });
+    }
+
+    function getRawBaseNotesString() {
+      let combined = "";
+      Object.keys(baseNotesStorage).sort().forEach(y => {
+        if (baseNotesStorage[y] && baseNotesStorage[y].trim() !== "") {
+          combined += (combined ? '\n' : '') + baseNotesStorage[y].trim();
+        }
+      });
+      return combined;
     }
 
     function updateNotesYearDropdown() {
@@ -876,10 +932,7 @@
 
             document.getElementById('visitationState').value = nest.visitationState || 'Huevos';
             document.getElementById('healthStatus').value = nest.healthStatus || 'Excelente';
-            
-            // Siempre inicia en 'Ninguno' al abrir para poder registrar un nuevo evento si ocurre
             document.getElementById('adultDeath').value = 'Ninguno';
-            
             document.getElementById('fledgedChicks').value = nest.fledgedChicks || 0;
             document.getElementById('hasCamera').value = nest.hasCamera || 'No';
             document.getElementById('maleRing').value = nest.maleRing && nest.maleRing !== 'Sin anillar' ? nest.maleRing : '';
@@ -889,6 +942,7 @@
             
             liveAutoLine = "";
             parseNotesToStorage(nest.notes || '');
+            syncRingingRecordsToNotes(editId.toUpperCase());
 
             autoLoadAdultsForNest(true);
             loadChicksDropdown('Sin baja');
