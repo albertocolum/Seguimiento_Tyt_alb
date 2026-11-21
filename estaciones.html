@@ -100,7 +100,7 @@
       <div class="border-b pb-4 flex flex-wrap justify-between items-center gap-3">
         <div>
           <h1 id="form-title" class="text-xl font-extrabold text-stone-900 tracking-tight">Estaciones de Muestreo</h1>
-          <p class="text-xs text-stone-500 mt-0.5">Crea, edita o elimina estaciones de muestreo y consulta o registra capturas/anillamientos de cada estación.</p>
+          <p class="text-xs text-stone-500 mt-0.5">Crea, edita o elimina estaciones de muestreo y registra o consulta los controles de estación.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -173,14 +173,14 @@
         </div>
       </form>
 
-      <!-- FICHA PLEGABLE DE ANILLAMIENTO EN ESTACIÓN DE MUESTREO -->
+      <!-- FICHA PLEGABLE DE ANILLAMIENTO / CONTROL EN ESTACIÓN -->
       <form id="stationRingForm" onsubmit="saveStationRing(event)" class="hidden space-y-5 bg-amber-50/60 p-5 rounded-2xl border border-amber-200">
         <div class="flex justify-between items-center border-b border-amber-200/80 pb-3">
           <div>
             <h2 id="ring-form-title" class="text-sm font-extrabold text-brand-dark uppercase tracking-wide flex items-center gap-1.5">
-              <i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Anillamiento de Muestreo en Estación
+              <i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Control / Anillamiento en Estación
             </h2>
-            <p class="text-[11px] text-stone-600 mt-0.5">Registra o edita una captura de muestreo vinculada a la estación seleccionada.</p>
+            <p class="text-[11px] text-stone-600 mt-0.5">Guarda y edita los registros en <strong>controles_estaciones</strong> vinculados a la estación seleccionada.</p>
           </div>
           <button type="button" onclick="collapseStationRingForm(true)" class="bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 font-semibold px-3 py-1.5 rounded-xl transition-all text-xs inline-flex items-center gap-1">
             <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i> Cerrar ficha
@@ -288,26 +288,27 @@
           </button>
           <button type="submit" class="bg-brand-accent hover:bg-brand-accentHover text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center gap-1.5 text-xs">
             <i data-lucide="save" class="w-4 h-4"></i>
-            <span id="save-ring-btn-text">Guardar Anillamiento en Estación</span>
+            <span id="save-ring-btn-text">Guardar en controles_estaciones</span>
           </button>
         </div>
       </form>
 
-      <!-- LISTADO DE ESTACIONES REGISTRADAS CON SUS ANILLAMIENTOS Y BOTÓN ELIMINAR -->
+      <!-- LISTADO DE ESTACIONES REGISTRADAS CON SUS CONTROLES Y BOTÓN ELIMINAR -->
       <div id="stations-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
         <div class="text-xs text-stone-400 p-4 col-span-full text-center">Cargando estaciones desde Firebase...</div>
       </div>
 
     </div>
 
-    <!-- ANILLAMIENTOS REALIZADOS EN LAS ESTACIONES -->
+    <!-- CONTROLES / ANILLAMIENTOS REALIZADOS EN LAS ESTACIONES (controles_estaciones) -->
     <div class="bg-white/95 backdrop-blur-sm rounded-2xl border border-brand-border shadow-md p-6 sm:p-8 space-y-5">
       <div class="flex flex-wrap justify-between items-center gap-3 border-b pb-4">
         <div>
-          <h2 class="text-lg font-extrabold text-stone-900 tracking-tight">Anillamientos Realizados en Estaciones</h2>
-          <p class="text-xs text-stone-500">Muestra los registros guardados en estaciones y los ya existentes en la base de datos vinculados a estaciones.</p>
+          <h2 class="text-lg font-extrabold text-stone-900 tracking-tight">Controles y Anillamientos en Estaciones</h2>
+          <p class="text-xs text-stone-500">Registros procedentes de <span class="font-mono font-bold">controles_estaciones</span> (sin incluir los anillamientos de nidos).</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+          <input type="text" id="stationSearchInput" oninput="renderStationRings()" placeholder="Buscar anilla, PVC o estación..." class="px-3 py-1.5 border rounded-xl text-xs bg-white w-52">
           <select id="stationRingFilter" onchange="renderStationRings()" class="px-3 py-1.5 border rounded-xl text-xs bg-white font-bold text-brand-dark">
             <option value="ALL">Todas las estaciones</option>
           </select>
@@ -318,7 +319,7 @@
       </div>
 
       <div id="station-rings-container" class="space-y-2.5">
-        <div class="text-xs text-stone-400 p-4 text-center">Cargando anillamientos de estaciones...</div>
+        <div class="text-xs text-stone-400 p-4 text-center">Cargando controles_estaciones...</div>
       </div>
     </div>
 
@@ -350,47 +351,73 @@
     }
 
     let stationsCache = {};
-    let stationRingsDirectCache = {};
-    let legacyStationRingsCache = {};
-    let allStationRingsMap = {};
+    let controlsCache = {};
     let editingStationKey = null;
-    let editingRingMeta = null; // { sourcePath: 'anillamientos_estacion' | 'anillados', key }
+    let editingControlKey = null;
     let geocodeTimer = null;
+
+    function pickFirst(obj, keys, fallback = '') {
+      if (!obj || typeof obj !== 'object') return fallback;
+      for (const k of keys) {
+        if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
+          return obj[k];
+        }
+      }
+      return fallback;
+    }
 
     function formatDateToDDMMYYYY(dateStr) {
       if (!dateStr) return '-';
-      if (dateStr.includes('/')) return dateStr;
-      const parts = dateStr.split('-');
-      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+      const str = String(dateStr).trim();
+      if (str.includes('/')) return str;
+      const parts = str.split('-');
+      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : str;
+    }
+
+    function extractYear(dateStr) {
+      if (!dateStr) return '';
+      const str = String(dateStr).trim();
+      if (str.includes('-')) return str.split('-')[0];
+      if (str.includes('/')) {
+        const parts = str.split('/');
+        return parts[2] || '';
+      }
+      return '';
     }
 
     function normalizeCode(val) {
-      return (val || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+      return String(val || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     }
 
-    function findMatchingStationKey(record) {
-      const entries = Object.entries(stationsCache || {});
-      if (record.stationKey && stationsCache[record.stationKey]) {
-        return record.stationKey;
-      }
+    function getControlStationRef(rec) {
+      return String(pickFirst(rec, ['stationKey', 'stationId', 'estacionId', 'station', 'estacion', 'nestId', 'controlId'], '')).trim();
+    }
 
-      const rawRef = (record.stationId || record.nestId || '').trim().toUpperCase();
+    function findMatchingStationKey(rec) {
+      const entries = Object.entries(stationsCache || {});
+      const rawRef = getControlStationRef(rec).toUpperCase();
       if (!rawRef) return null;
+
+      if (stationsCache[rawRef]) return rawRef;
 
       const normRef = normalizeCode(rawRef);
 
       for (const [stKey, stObj] of entries) {
-        const stId = (stObj.stationId || stKey || '').trim().toUpperCase();
+        const stId = String(stObj.stationId || stKey || '').trim().toUpperCase();
+        const stName = String(stObj.stationName || '').trim().toUpperCase();
         const normStId = normalizeCode(stId);
         const normKey = normalizeCode(stKey);
+        const normName = normalizeCode(stName);
 
-        if (rawRef === stId || rawRef === stKey.toUpperCase()) return stKey;
-        if (normRef && (normRef === normStId || normRef === normKey)) return stKey;
-
+        if (rawRef === stKey.toUpperCase() || rawRef === stId || (stName && rawRef === stName)) {
+          return stKey;
+        }
+        if (normRef && (normRef === normKey || normRef === normStId || (normName && normRef === normName))) {
+          return stKey;
+        }
         if (normRef.startsWith('EST_') && normStId.startsWith('EST_')) {
           if (normRef.replace(/^EST_/, '') === normStId.replace(/^EST_/, '')) return stKey;
         }
-
         const cleanSt = normStId.replace(/^EST_/, '');
         const cleanRef = normRef.replace(/^EST_/, '');
         if (cleanSt && cleanRef && (cleanSt.includes(cleanRef) || cleanRef.includes(cleanSt))) {
@@ -401,42 +428,15 @@
       return null;
     }
 
-    function rebuildCombinedStationRings() {
-      const combined = {};
-
-      Object.entries(legacyStationRingsCache || {}).forEach(([key, val]) => {
-        const matchedKey = findMatchingStationKey(val);
-        if (matchedKey || val.recordType === 'estacion') {
-          const uniqueId = `legacy_${key}`;
-          combined[uniqueId] = {
-            ...val,
-            _uid: uniqueId,
-            _sourcePath: 'anillados',
-            _dbKey: key,
-            stationKey: matchedKey || val.stationKey || ''
-          };
-        }
-      });
-
-      Object.entries(stationRingsDirectCache || {}).forEach(([key, val]) => {
-        const matchedKey = findMatchingStationKey(val);
-        const uniqueId = `station_${key}`;
-        combined[uniqueId] = {
-          ...val,
-          _uid: uniqueId,
-          _sourcePath: 'anillamientos_estacion',
-          _dbKey: key,
-          stationKey: matchedKey || val.stationKey || ''
-        };
-      });
-
-      allStationRingsMap = combined;
-    }
-
-    function getRingsForStation(stationKey, stationObj) {
-      return Object.values(allStationRingsMap || {})
-        .filter(r => r.stationKey === stationKey || findMatchingStationKey(r) === stationKey)
-        .sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
+    function getControlsForStation(stationKey) {
+      return Object.entries(controlsCache || {})
+        .map(([key, val]) => ({ key, ...val, _matchedStationKey: findMatchingStationKey(val) }))
+        .filter(rec => rec._matchedStationKey === stationKey)
+        .sort((a, b) => {
+          const dA = pickFirst(a, ['ringDate', 'fecha', 'date', 'createdAt'], '');
+          const dB = pickFirst(b, ['ringDate', 'fecha', 'date', 'createdAt'], '');
+          return String(dB).localeCompare(String(dA));
+        });
     }
 
     function expandStationForm() {
@@ -519,11 +519,11 @@
     function collapseStationRingForm(resetFields = false) {
       document.getElementById('stationRingForm').classList.add('hidden');
       if (resetFields) {
-        editingRingMeta = null;
+        editingControlKey = null;
         document.getElementById('stationRingForm').reset();
         document.getElementById('ringDateInput').value = new Date().toISOString().split('T')[0];
-        document.getElementById('ring-form-title').innerHTML = '<i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Anillamiento de Muestreo en Estación';
-        document.getElementById('save-ring-btn-text').textContent = 'Guardar Anillamiento en Estación';
+        document.getElementById('ring-form-title').innerHTML = '<i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Control / Anillamiento en Estación';
+        document.getElementById('save-ring-btn-text').textContent = 'Guardar en controles_estaciones';
         populateRingStationDropdown();
       }
       if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -535,11 +535,11 @@
         openNewStationForm();
         return;
       }
-      editingRingMeta = null;
+      editingControlKey = null;
       document.getElementById('stationRingForm').reset();
       document.getElementById('ringDateInput').value = new Date().toISOString().split('T')[0];
-      document.getElementById('ring-form-title').innerHTML = '<i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Anillamiento de Muestreo en Estación';
-      document.getElementById('save-ring-btn-text').textContent = 'Guardar Anillamiento en Estación';
+      document.getElementById('ring-form-title').innerHTML = '<i data-lucide="feather" class="w-4 h-4 text-brand-accent"></i> Ficha de Control / Anillamiento en Estación';
+      document.getElementById('save-ring-btn-text').textContent = 'Guardar en controles_estaciones';
       expandStationRingForm();
       if (preselectedStationKey && stationsCache[preselectedStationKey]) {
         document.getElementById('ringStationSelect').value = preselectedStationKey;
@@ -549,45 +549,59 @@
       document.getElementById('stationRingForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    function editStationRing(uid) {
-      const r = allStationRingsMap[uid];
+    function editControlRecord(key) {
+      const r = controlsCache[key];
       if (!r) return;
-      editingRingMeta = { sourcePath: r._sourcePath, key: r._dbKey };
+      editingControlKey = key;
       expandStationRingForm();
 
-      const matchedKey = r.stationKey && stationsCache[r.stationKey] ? r.stationKey : '';
+      const matchedKey = findMatchingStationKey(r) || '';
       populateRingStationDropdown(matchedKey);
-      document.getElementById('ringMetalInput').value = r.metalRing || '';
-      document.getElementById('ringPvcInput').value = r.pvcRing || '';
-      document.getElementById('ringDateInput').value = r.ringDate || '';
-      document.getElementById('ringTimeInput').value = r.captureTime || '';
-      document.getElementById('ringEuringInput').value = r.euringAge || (r.birdAge === 'Pollo' ? 'EURING 1' : 'EURING 3');
-      document.getElementById('ringSexInput').value = r.sex || 'Desconocido';
-      document.getElementById('ringMethodInput').value = r.captureMethod || '';
-      document.getElementById('ringWingInput').value = r.wingLength ?? '';
-      document.getElementById('ringP8Input').value = r.p8Length ?? '';
-      document.getElementById('ringTailInput').value = r.tailLength ?? '';
-      document.getElementById('ringTarsusInput').value = r.tarsusLength ?? '';
-      document.getElementById('ringWeightInput').value = r.weight ?? '';
-      document.getElementById('ringP10Input').value = r.p10Length ?? '';
-      document.getElementById('ringP8SecInput').value = r.p8SecondaryLength ?? '';
-      document.getElementById('ringLocationInput').value = r.locationName || '';
-      document.getElementById('ringNotesInput').value = r.notes || r.lastObservation || '';
-      document.getElementById('ring-form-title').innerHTML = `<i data-lucide="pencil" class="w-4 h-4 text-brand-accent"></i> Editando Anilla en Estación: ${r.metalRing}`;
-      document.getElementById('save-ring-btn-text').textContent = 'Actualizar Anillamiento en Estación';
+
+      const metal = pickFirst(r, ['metalRing', 'anilla', 'anillaMetalica', 'ringCode'], '');
+      const pvc = pickFirst(r, ['pvcRing', 'pvc', 'anillaPvc', 'pvcCode'], '');
+      const dateVal = pickFirst(r, ['ringDate', 'fecha', 'date'], '');
+      const timeVal = pickFirst(r, ['captureTime', 'hora', 'time'], '');
+      const euringVal = pickFirst(r, ['euringAge', 'euring', 'edadEuring'], 'EURING 3');
+      const sexVal = pickFirst(r, ['sex', 'sexo'], 'Desconocido');
+      const methodVal = pickFirst(r, ['captureMethod', 'metodo', 'tipoMuestreo', 'stationType'], '');
+      const wingVal = pickFirst(r, ['wingLength', 'ala', 'alaMax'], '');
+      const p8Val = pickFirst(r, ['p8Length', 'p8'], '');
+      const tailVal = pickFirst(r, ['tailLength', 'cola'], '');
+      const tarsusVal = pickFirst(r, ['tarsusLength', 'tarso'], '');
+      const weightVal = pickFirst(r, ['weight', 'peso'], '');
+      const p10Val = pickFirst(r, ['p10Length', 'p10'], '');
+      const p8SecVal = pickFirst(r, ['p8SecondaryLength', 'p8_2'], '');
+      const locVal = pickFirst(r, ['locationName', 'localidad', 'paraje', 'stationLocation'], '');
+      const notesVal = pickFirst(r, ['notes', 'observaciones', 'notas', 'lastObservation'], '');
+
+      document.getElementById('ringMetalInput').value = metal;
+      document.getElementById('ringPvcInput').value = pvc;
+      document.getElementById('ringDateInput').value = dateVal;
+      document.getElementById('ringTimeInput').value = timeVal;
+      document.getElementById('ringEuringInput').value = euringVal || 'EURING 3';
+      document.getElementById('ringSexInput').value = sexVal || 'Desconocido';
+      document.getElementById('ringMethodInput').value = methodVal;
+      document.getElementById('ringWingInput').value = wingVal;
+      document.getElementById('ringP8Input').value = p8Val;
+      document.getElementById('ringTailInput').value = tailVal;
+      document.getElementById('ringTarsusInput').value = tarsusVal;
+      document.getElementById('ringWeightInput').value = weightVal;
+      document.getElementById('ringP10Input').value = p10Val;
+      document.getElementById('ringP8SecInput').value = p8SecVal;
+      document.getElementById('ringLocationInput').value = locVal;
+      document.getElementById('ringNotesInput').value = notesVal;
+      document.getElementById('ring-form-title').innerHTML = `<i data-lucide="pencil" class="w-4 h-4 text-brand-accent"></i> Editando Registro: ${metal || key}`;
+      document.getElementById('save-ring-btn-text').textContent = 'Actualizar en controles_estaciones';
       document.getElementById('stationRingForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    function deleteStationRing(uid, metalRing) {
-      const r = allStationRingsMap[uid];
-      if (!r) return;
-      if (!confirm(`¿Seguro que deseas eliminar la ficha de anillamiento de la anilla ${metalRing}?`)) return;
-      if (editingRingMeta && editingRingMeta.sourcePath === r._sourcePath && editingRingMeta.key === r._dbKey) {
-        collapseStationRingForm(true);
-      }
-      db.ref(`${r._sourcePath}/${r._dbKey}`).remove().catch(err => {
-        alert('Error al eliminar anillamiento: ' + err.message);
+    function deleteControlRecord(key, label) {
+      if (!confirm(`¿Seguro que deseas eliminar el registro "${label}" de controles_estaciones?`)) return;
+      if (editingControlKey === key) collapseStationRingForm(true);
+      db.ref('controles_estaciones/' + key).remove().catch(err => {
+        alert('Error al eliminar registro: ' + err.message);
       });
     }
 
@@ -605,7 +619,6 @@
       const ringDate = document.getElementById('ringDateInput').value;
       const captureTime = document.getElementById('ringTimeInput').value;
       const euringAge = document.getElementById('ringEuringInput').value;
-      const birdAge = euringAge === 'EURING 1' ? 'Pollo' : 'Adulto';
       const sex = document.getElementById('ringSexInput').value;
       const captureMethod = document.getElementById('ringMethodInput').value.trim();
       const wingLength = parseFloat(document.getElementById('ringWingInput').value) || null;
@@ -619,26 +632,18 @@
       const notes = document.getElementById('ringNotesInput').value.trim();
 
       const stationId = (st.stationId || stKey).toUpperCase();
-      const safeRing = metalRing.replace(/[\/\.#$\[\]]/g, '_');
-      const safeDate = (ringDate || '').replace(/[\/\.#$\[\]]/g, '_');
-
-      const targetPath = editingRingMeta ? editingRingMeta.sourcePath : 'anillamientos_estacion';
-      const recordKey = editingRingMeta
-        ? editingRingMeta.key
-        : `${stKey}_${safeRing}_${safeDate}_${Date.now().toString().slice(-4)}`;
+      const existing = editingControlKey ? (controlsCache[editingControlKey] || {}) : {};
 
       const payload = {
-        recordType: 'estacion',
+        ...existing,
         stationKey: stKey,
         stationId,
-        nestId: targetPath === 'anillados' ? stationId : (editingRingMeta ? (allStationRingsMap[`legacy_${recordKey}`]?.nestId || '') : ''),
         stationName: st.stationName || '',
         metalRing,
         pvcRing,
         ringDate,
         captureTime,
         euringAge,
-        birdAge,
         sex,
         captureMethod,
         wingLength,
@@ -650,14 +655,17 @@
         p8SecondaryLength,
         locationName,
         notes,
-        lastObservation: notes,
         updatedAt: new Date().toISOString().split('T')[0]
       };
 
-      db.ref(`${targetPath}/${recordKey}`).set(payload).then(() => {
+      const ref = editingControlKey
+        ? db.ref('controles_estaciones/' + editingControlKey)
+        : db.ref('controles_estaciones').push();
+
+      ref.set(payload).then(() => {
         collapseStationRingForm(true);
       }).catch(err => {
-        alert('Error al guardar anillamiento de estación: ' + err.message);
+        alert('Error al guardar en controles_estaciones: ' + err.message);
       });
     }
 
@@ -790,23 +798,26 @@
       entries.forEach(([key, st]) => {
         const idLabel = st.stationId || key;
         const safeLabel = (st.stationName ? `${idLabel} — ${st.stationName}` : idLabel).replace(/'/g, "\\'");
-        const stRings = getRingsForStation(key, st);
+        const stControls = getControlsForStation(key);
 
-        const ringsPreviewHtml = stRings.length > 0
+        const ringsPreviewHtml = stControls.length > 0
           ? `<div class="mt-2.5 pt-2.5 border-t border-stone-100 space-y-1.5">
                <div class="flex justify-between items-center text-[11px] font-bold text-stone-600">
-                 <span>Anillamientos de estación (${stRings.length})</span>
+                 <span>Controles (${stControls.length})</span>
                  <button type="button" onclick="filterRingsByStation('${key}')" class="text-brand-dark hover:text-brand-accent underline">Ver detalle</button>
                </div>
                <div class="flex flex-wrap gap-1.5">
-                 ${stRings.slice(0, 6).map(r => `
-                   <span class="metal-ring-badge text-[11px]">${r.metalRing}</span>${r.pvcRing ? `<span class="pvc-badge text-[10px]">${r.pvcRing}</span>` : ''}
-                 `).join('')}
-                 ${stRings.length > 6 ? `<span class="text-[11px] text-stone-400 font-semibold">+${stRings.length - 6} más</span>` : ''}
+                 ${stControls.slice(0, 6).map(r => {
+                   const mRing = pickFirst(r, ['metalRing', 'anilla', 'anillaMetalica', 'ringCode'], '');
+                   const pRing = pickFirst(r, ['pvcRing', 'pvc', 'anillaPvc', 'pvcCode'], '');
+                   const labelChip = mRing || pRing || r.key;
+                   return `<span class="metal-ring-badge text-[11px]">${labelChip}</span>${(mRing && pRing) ? `<span class="pvc-badge text-[10px]">${pRing}</span>` : ''}`;
+                 }).join('')}
+                 ${stControls.length > 6 ? `<span class="text-[11px] text-stone-400 font-semibold">+${stControls.length - 6} más</span>` : ''}
                </div>
              </div>`
           : `<div class="mt-2.5 pt-2 border-t border-stone-100 flex justify-between items-center text-[11px] text-stone-400">
-               <span>Sin anillamientos de muestreo aún.</span>
+               <span>Sin controles registrados aún.</span>
                <button type="button" onclick="openNewStationRingForm('${key}')" class="text-brand-dark hover:text-brand-accent font-bold underline">+ Anillar</button>
              </div>`;
 
@@ -865,11 +876,10 @@
       const prevYear = yearSelect.value;
       const yearsSet = new Set();
 
-      Object.values(allStationRingsMap || {}).forEach(r => {
-        if (r.ringDate) {
-          const y = r.ringDate.includes('-') ? r.ringDate.split('-')[0] : r.ringDate.split('/')[2];
-          if (y) yearsSet.add(y);
-        }
+      Object.values(controlsCache || {}).forEach(r => {
+        const dateVal = pickFirst(r, ['ringDate', 'fecha', 'date', 'createdAt'], '');
+        const y = extractYear(dateVal);
+        if (y) yearsSet.add(y);
       });
 
       const sortedYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
@@ -889,58 +899,96 @@
       const container = document.getElementById('station-rings-container');
       const selectedStationKey = document.getElementById('stationRingFilter').value;
       const selectedYear = document.getElementById('stationYearFilter').value;
+      const searchQuery = document.getElementById('stationSearchInput').value.trim().toUpperCase();
 
-      const entries = Object.values(allStationRingsMap || {});
+      const entries = Object.entries(controlsCache || {}).map(([key, val]) => ({
+        key,
+        ...val,
+        _matchedStationKey: findMatchingStationKey(val)
+      }));
 
       const filtered = entries.filter(r => {
-        const matchesStation = (selectedStationKey === 'ALL') || (r.stationKey === selectedStationKey);
-        const y = r.ringDate ? (r.ringDate.includes('-') ? r.ringDate.split('-')[0] : r.ringDate.split('/')[2]) : '';
+        const matchesStation = (selectedStationKey === 'ALL') || (r._matchedStationKey === selectedStationKey);
+        const dateVal = pickFirst(r, ['ringDate', 'fecha', 'date', 'createdAt'], '');
+        const y = extractYear(dateVal);
         const matchesYear = (selectedYear === 'ALL' || y === selectedYear);
-        return matchesStation && matchesYear;
+
+        const metal = String(pickFirst(r, ['metalRing', 'anilla', 'anillaMetalica', 'ringCode'], '')).toUpperCase();
+        const pvc = String(pickFirst(r, ['pvcRing', 'pvc', 'anillaPvc', 'pvcCode'], '')).toUpperCase();
+        const stRef = String(getControlStationRef(r)).toUpperCase();
+        const notes = String(pickFirst(r, ['notes', 'observaciones', 'notas', 'lastObservation'], '')).toUpperCase();
+
+        const matchesQuery = !searchQuery ||
+          metal.includes(searchQuery) ||
+          pvc.includes(searchQuery) ||
+          stRef.includes(searchQuery) ||
+          notes.includes(searchQuery) ||
+          r.key.toUpperCase().includes(searchQuery);
+
+        return matchesStation && matchesYear && matchesQuery;
       });
 
       if (filtered.length === 0) {
-        container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-5 text-xs text-stone-400 text-center">No hay fichas de anillamiento en estaciones con el filtro actual.</div>';
+        container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-5 text-xs text-stone-400 text-center">No hay registros en controles_estaciones con los filtros actuales.</div>';
         return;
       }
 
-      filtered.sort((a, b) => new Date(b.ringDate || 0) - new Date(a.ringDate || 0));
+      filtered.sort((a, b) => {
+        const dA = pickFirst(a, ['ringDate', 'fecha', 'date', 'createdAt'], '');
+        const dB = pickFirst(b, ['ringDate', 'fecha', 'date', 'createdAt'], '');
+        return String(dB).localeCompare(String(dA));
+      });
 
       let html = '';
       filtered.forEach(r => {
-        const st = stationsCache[r.stationKey] || Object.values(stationsCache).find(s => (s.stationId || '').toUpperCase() === (r.stationId || '').toUpperCase());
+        const st = r._matchedStationKey ? stationsCache[r._matchedStationKey] : null;
         const stLabel = st
-          ? (st.stationName ? `${st.stationId || r.stationKey} — ${st.stationName}` : (st.stationId || r.stationKey))
-          : (r.stationName ? `${r.stationId || r.nestId || ''} — ${r.stationName}` : (r.stationId || r.nestId || 'Estación'));
+          ? (st.stationName ? `${st.stationId || r._matchedStationKey} — ${st.stationName}` : (st.stationId || r._matchedStationKey))
+          : (getControlStationRef(r) || r.key);
+
+        const metal = pickFirst(r, ['metalRing', 'anilla', 'anillaMetalica', 'ringCode'], '');
+        const pvc = pickFirst(r, ['pvcRing', 'pvc', 'anillaPvc', 'pvcCode'], '');
+        const dateVal = pickFirst(r, ['ringDate', 'fecha', 'date'], '');
+        const timeVal = pickFirst(r, ['captureTime', 'hora', 'time'], '');
+        const euringVal = pickFirst(r, ['euringAge', 'euring', 'edadEuring'], '');
+        const sexVal = pickFirst(r, ['sex', 'sexo'], '');
+        const methodVal = pickFirst(r, ['captureMethod', 'metodo', 'tipoMuestreo'], '');
+        const wingVal = pickFirst(r, ['wingLength', 'ala', 'alaMax'], '');
+        const p8Val = pickFirst(r, ['p8Length', 'p8'], '');
+        const tailVal = pickFirst(r, ['tailLength', 'cola'], '');
+        const tarsusVal = pickFirst(r, ['tarsusLength', 'tarso'], '');
+        const weightVal = pickFirst(r, ['weight', 'peso'], '');
+        const notesVal = pickFirst(r, ['notes', 'observaciones', 'notas', 'lastObservation'], '');
 
         const biometrics = [
-          r.wingLength ? `Ala Máx.: <strong>${r.wingLength}mm</strong>` : '',
-          r.p8Length ? `P8: <strong>${r.p8Length}mm</strong>` : '',
-          r.tailLength ? `Cola: <strong>${r.tailLength}mm</strong>` : '',
-          r.tarsusLength ? `Tarso: <strong>${r.tarsusLength}mm</strong>` : '',
-          r.weight ? `Peso: <strong>${r.weight}g</strong>` : '',
-          r.p10Length ? `P10: <strong>${r.p10Length}mm</strong>` : '',
-          r.p8SecondaryLength ? `P8(2): <strong>${r.p8SecondaryLength}mm</strong>` : ''
+          wingVal ? `Ala Máx.: <strong>${wingVal}mm</strong>` : '',
+          p8Val ? `P8: <strong>${p8Val}mm</strong>` : '',
+          tailVal ? `Cola: <strong>${tailVal}mm</strong>` : '',
+          tarsusVal ? `Tarso: <strong>${tarsusVal}mm</strong>` : '',
+          weightVal ? `Peso: <strong>${weightVal}g</strong>` : ''
         ].filter(Boolean).join(' | ');
+
+        const safeDeleteLabel = (metal || pvc || r.key).replace(/'/g, "\\'");
 
         html += `
           <div class="bg-white border border-stone-200 rounded-xl p-3.5 flex flex-wrap justify-between items-center gap-3 hover:shadow-xs transition-all">
             <div class="flex items-center gap-2.5 flex-wrap">
               <span class="px-2 py-0.5 rounded bg-brand-dark/10 text-brand-dark font-bold text-[11px]">${stLabel}</span>
-              <span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">${r.euringAge || 'EURING 3'}</span>
-              <span class="metal-ring-badge text-sm">${r.metalRing}</span>
-              ${r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : ''}
+              ${euringVal ? `<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">${euringVal}</span>` : ''}
+              ${metal ? `<span class="metal-ring-badge text-sm">${metal}</span>` : `<span class="px-2 py-0.5 rounded bg-stone-100 text-stone-600 font-mono text-xs font-bold">${r.key}</span>`}
+              ${pvc ? `<span class="pvc-badge text-xs">${pvc}</span>` : ''}
             </div>
             <div class="flex items-center gap-3 flex-wrap text-xs text-stone-600">
-              <span>Fecha: <strong>${formatDateToDDMMYYYY(r.ringDate)}</strong>${r.captureTime ? ` (${r.captureTime})` : ''}</span>
-              <span>Sexo: <strong>${r.sex || 'Desconocido'}</strong></span>
-              ${r.captureMethod ? `<span>Método: <strong>${r.captureMethod}</strong></span>` : ''}
+              ${dateVal ? `<span>Fecha: <strong>${formatDateToDDMMYYYY(dateVal)}</strong>${timeVal ? ` (${timeVal})` : ''}</span>` : ''}
+              ${sexVal ? `<span>Sexo: <strong>${sexVal}</strong></span>` : ''}
+              ${methodVal ? `<span>Método: <strong>${methodVal}</strong></span>` : ''}
               ${biometrics ? `<span>${biometrics}</span>` : ''}
+              ${notesVal ? `<span class="text-stone-500 italic truncate max-w-xs" title="${notesVal.replace(/"/g, '&quot;')}">${notesVal}</span>` : ''}
               <div class="flex items-center gap-1 ml-1">
-                <button type="button" onclick="editStationRing('${r._uid}')" class="p-1.5 text-stone-500 hover:text-brand-dark hover:bg-stone-100 rounded-lg transition-all" title="Editar ficha">
+                <button type="button" onclick="editControlRecord('${r.key}')" class="p-1.5 text-stone-500 hover:text-brand-dark hover:bg-stone-100 rounded-lg transition-all" title="Editar registro">
                   <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                 </button>
-                <button type="button" onclick="deleteStationRing('${r._uid}', '${r.metalRing}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all" title="Eliminar ficha">
+                <button type="button" onclick="deleteControlRecord('${r.key}', '${safeDeleteLabel}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all" title="Eliminar registro">
                   <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
@@ -953,8 +1001,7 @@
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    function refreshAllStationViews() {
-      rebuildCombinedStationRings();
+    function refreshAllViews() {
       renderStationsList();
       populateStationRingFilters();
       renderStationRings();
@@ -966,17 +1013,12 @@
       db.ref('estaciones').on('value', snapshot => {
         stationsCache = snapshot.val() || {};
         populateRingStationDropdown();
-        refreshAllStationViews();
+        refreshAllViews();
       });
 
-      db.ref('anillamientos_estacion').on('value', snapshot => {
-        stationRingsDirectCache = snapshot.val() || {};
-        refreshAllStationViews();
-      });
-
-      db.ref('anillados').on('value', snapshot => {
-        legacyStationRingsCache = snapshot.val() || {};
-        refreshAllStationViews();
+      db.ref('controles_estaciones').on('value', snapshot => {
+        controlsCache = snapshot.val() || {};
+        refreshAllViews();
       });
 
       if (typeof lucide !== 'undefined') lucide.createIcons();
