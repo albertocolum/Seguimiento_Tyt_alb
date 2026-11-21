@@ -64,8 +64,8 @@
     textarea.fixed-textarea {
       resize: vertical;
       overflow-y: auto;
-      height: 120px;
-      max-height: 250px;
+      height: 110px;
+      max-height: 220px;
     }
   </style>
 </head>
@@ -267,15 +267,15 @@
         <div class="space-y-2 pt-2">
           <label class="block text-xs font-bold text-stone-600 mb-1">Observaciones de Campo</label>
           <textarea id="notes" oninput="renderNotesByYear()" placeholder="Detalles sobre la puesta, alimentación, estado del nido..." class="w-full px-3 py-2 border rounded-xl text-xs bg-white fixed-textarea"></textarea>
-          <div id="notes-by-year-container" class="space-y-2.5 pt-2"></div>
+          <div id="notes-by-year-container" class="pt-1"></div>
         </div>
 
         <div class="space-y-3 pt-4 border-t">
           <h3 class="text-xs font-bold text-brand-dark uppercase tracking-wider flex items-center gap-1.5">
             <i data-lucide="history" class="w-4 h-4 text-brand-accent"></i> Historial Cronológico de Anillados y Adultos en este Nido
           </h3>
-          <div id="nest-history-container" class="space-y-2.5">
-            <div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>
+          <div id="nest-history-container" class="space-y-2">
+            <div class="bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>
           </div>
         </div>
 
@@ -317,6 +317,8 @@
     let controlMap = null;
     let selectedMarker = null;
     let originalNestData = null;
+    let selectedNotesYear = null;
+    let selectedHistoryYear = null;
 
     function toggleCameraActivity() {
       const hasCam = document.getElementById('hasCamera').value === 'Sí';
@@ -357,6 +359,16 @@
       return isNaN(t) ? 0 : t;
     }
 
+    function selectNotesYearTab(year) {
+      selectedNotesYear = year;
+      renderNotesByYear();
+    }
+
+    function selectHistoryYearTab(year) {
+      selectedHistoryYear = year;
+      updateNestHistoryPreview();
+    }
+
     function renderNotesByYear() {
       const container = document.getElementById('notes-by-year-container');
       const rawNotes = document.getElementById('notes').value || '';
@@ -388,17 +400,33 @@
         return b.localeCompare(a);
       });
 
-      container.innerHTML = sortedYears.map(year => `
-        <div class="bg-stone-50/90 border border-stone-200 rounded-xl p-3 space-y-1.5">
-          <div class="flex items-center gap-2">
-            <span class="px-2.5 py-0.5 rounded-md text-xs font-mono font-extrabold bg-brand-dark text-white">${year}</span>
-            <span class="text-[11px] font-bold text-stone-500 uppercase tracking-wide">Observaciones de campo</span>
+      if (!selectedNotesYear || (selectedNotesYear !== 'ALL' && !grouped[selectedNotesYear])) {
+        selectedNotesYear = sortedYears[0];
+      }
+
+      const visibleLines = selectedNotesYear === 'ALL'
+        ? sortedYears.flatMap(y => grouped[y].map(item => ({ year: y, item })))
+        : (grouped[selectedNotesYear] || []).map(item => ({ year: selectedNotesYear, item }));
+
+      const tabsHtml = sortedYears.map(y => {
+        const active = selectedNotesYear === y;
+        return `<button type="button" onclick="selectNotesYearTab('${y}')" class="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all ${active ? 'bg-brand-dark text-white' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-100'}">${y} (${grouped[y].length})</button>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="bg-stone-50/90 border border-stone-200 rounded-xl p-2.5 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+              ${tabsHtml}
+              <button type="button" onclick="selectNotesYearTab('ALL')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${selectedNotesYear === 'ALL' ? 'bg-brand-accent text-white' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-100'}">Todos (${lines.length})</button>
+            </div>
+            <span class="text-[10px] font-bold text-stone-400 uppercase">Por año</span>
           </div>
-          <div class="space-y-1 text-xs text-stone-700 pl-1">
-            ${grouped[year].map(item => `<div class="leading-relaxed">${item}</div>`).join('')}
+          <div class="max-h-40 overflow-y-auto bg-white border border-stone-200/80 rounded-lg p-2 space-y-1 text-[11px] text-stone-700 leading-snug">
+            ${visibleLines.map(entry => `<div>${selectedNotesYear === 'ALL' ? `<span class="font-mono font-bold text-brand-dark mr-1">[${entry.year}]</span>` : ''}${entry.item}</div>`).join('')}
           </div>
         </div>
-      `).join('');
+      `;
     }
 
     function reverseGeocode(lat, lng) {
@@ -522,14 +550,13 @@
       const rawVisitDate = document.getElementById('layDate').value || new Date().toISOString().split('T')[0];
 
       if (!nestId) {
-        container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>';
+        container.innerHTML = '<div class="bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs text-stone-400">Introduzca un ID de nido para ver sus registros históricos...</div>';
         return;
       }
 
       db.ref('anillados').once('value', snapshot => {
         const ringsData = snapshot.val() || {};
         
-        // 1. Filtrar registros de la base de datos (excluyendo muertos)
         const matched = Object.values(ringsData).filter(r => {
           const isThisNest = (r.nestId || '').toUpperCase() === nestId;
           const isDeadInDb = r.status === 'Muerto';
@@ -541,7 +568,6 @@
           return isThisNest && !isDeadInDb && !isSelectedChickDead && !isAdultDead;
         });
 
-        // 2. Obtener los valores actuales escritos en los inputs del macho y la hembra
         const mRing = document.getElementById('maleRing').value.trim().toUpperCase();
         const mPvc = document.getElementById('malePvcCode').value.trim().toUpperCase();
         const fRing = document.getElementById('femaleRing').value.trim().toUpperCase();
@@ -549,7 +575,6 @@
 
         let activeAdults = [...matched];
 
-        // Asegurar que el macho escrito en la casilla aparezca en la cronología aunque no esté guardado todavía
         if (mRing && mRing !== 'SIN ANILLAR' && !adultDeathStatus.includes('Macho') && adultDeathStatus !== 'Ambos muertos') {
           const existingMaleIndex = activeAdults.findIndex(r => r.sex === 'Macho' && r.birdAge === 'Adulto');
           if (existingMaleIndex >= 0) {
@@ -560,7 +585,6 @@
           }
         }
 
-        // Asegurar que la hembra escrita en la casilla aparezca en la cronología
         if (fRing && fRing !== 'SIN ANILLAR' && !adultDeathStatus.includes('Hembra') && adultDeathStatus !== 'Ambos muertos') {
           const existingFemaleIndex = activeAdults.findIndex(r => r.sex === 'Hembra' && r.birdAge === 'Adulto');
           if (existingFemaleIndex >= 0) {
@@ -572,7 +596,7 @@
         }
 
         if (activeAdults.length === 0) {
-          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-4 text-xs text-stone-400">No hay registros de anillamiento vivos asociados al nido "${nestId}".</div>`;
+          container.innerHTML = `<div class="bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs text-stone-400">No hay registros de anillamiento vivos asociados al nido "${nestId}".</div>`;
           return;
         }
 
@@ -591,30 +615,52 @@
           return b.localeCompare(a);
         });
 
-        let html = '';
-        sortedYears.forEach(year => {
-          html += `<div class="bg-stone-50/90 border border-stone-200 rounded-xl p-3 space-y-2">`;
-          html += `<div class="flex items-center gap-2"><span class="px-2.5 py-0.5 rounded-md text-xs font-mono font-extrabold bg-brand-accent text-white">${year}</span><span class="text-[11px] font-bold text-stone-500 uppercase tracking-wide">Anillamientos y adultos (${byYear[year].length})</span></div>`;
-          byYear[year].forEach(r => {
-            const isAdult = r.birdAge === 'Adulto';
-            let badgeHTML = isAdult ? '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>' : '<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
-            
-            const metalBadge = `<span class="metal-ring-badge text-sm">${r.metalRing}</span>`;
-            const pvcBadge = r.pvcRing ? `<span class="pvc-badge text-xs">${r.pvcRing}</span>` : '';
+        if (!selectedHistoryYear || (selectedHistoryYear !== 'ALL' && !byYear[selectedHistoryYear])) {
+          selectedHistoryYear = sortedYears[0];
+        }
 
-            html += `
-              <div class="bg-white border border-stone-200 rounded-xl p-3 flex flex-wrap justify-between items-center gap-2">
-                <div class="flex items-center gap-3">
-                  ${badgeHTML}
-                  ${metalBadge}
-                  ${pvcBadge}
-                </div>
-                <div class="text-stone-500 text-xs font-medium">Fecha: <strong class="text-stone-800">${r.ringDate ? formatDateToDDMMYYYY(r.ringDate) : '-'}</strong> | Sexo: <strong class="text-stone-800">${r.sex || 'Desconocido'}</strong> | Peso: <strong class="text-stone-800">${r.weight ? r.weight + 'g' : '-'}</strong></div>
+        const visibleRecords = selectedHistoryYear === 'ALL'
+          ? activeAdults
+          : (byYear[selectedHistoryYear] || []);
+
+        const tabsHtml = sortedYears.map(y => {
+          const active = selectedHistoryYear === y;
+          return `<button type="button" onclick="selectHistoryYearTab('${y}')" class="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all ${active ? 'bg-brand-accent text-white' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-100'}">${y} (${byYear[y].length})</button>`;
+        }).join('');
+
+        let html = `
+          <div class="bg-stone-50/90 border border-stone-200 rounded-xl p-2.5 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex flex-wrap items-center gap-1.5">
+                ${tabsHtml}
+                <button type="button" onclick="selectHistoryYearTab('ALL')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${selectedHistoryYear === 'ALL' ? 'bg-brand-dark text-white' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-100'}">Todos (${activeAdults.length})</button>
               </div>
-            `;
-          });
-          html += `</div>`;
+              <span class="text-[10px] font-bold text-stone-400 uppercase">Por año</span>
+            </div>
+            <div class="max-h-44 overflow-y-auto space-y-1.5 pr-1">
+        `;
+
+        visibleRecords.forEach(r => {
+          const isAdult = r.birdAge === 'Adulto';
+          const badgeHTML = isAdult
+            ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Adulto</span>'
+            : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Pollo</span>';
+          const metalBadge = `<span class="metal-ring-badge text-xs">${r.metalRing}</span>`;
+          const pvcBadge = r.pvcRing ? `<span class="pvc-badge text-[11px]">${r.pvcRing}</span>` : '';
+
+          html += `
+            <div class="bg-white border border-stone-200 rounded-lg px-3 py-2 flex flex-wrap justify-between items-center gap-2">
+              <div class="flex items-center gap-2">
+                ${badgeHTML}
+                ${metalBadge}
+                ${pvcBadge}
+              </div>
+              <div class="text-stone-500 text-[11px] font-medium">Fecha: <strong class="text-stone-800">${r.ringDate ? formatDateToDDMMYYYY(r.ringDate) : '-'}</strong> | Sexo: <strong class="text-stone-800">${r.sex || 'Desconocido'}</strong> | Peso: <strong class="text-stone-800">${r.weight ? r.weight + 'g' : '-'}</strong></div>
+            </div>
+          `;
         });
+
+        html += `</div></div>`;
         container.innerHTML = html;
       });
     }
@@ -634,6 +680,8 @@
           const nest = snapshot.val();
           if (nest) {
             originalNestData = nest;
+            selectedNotesYear = null;
+            selectedHistoryYear = null;
             document.getElementById('nestId').value = nest.nestId || '';
             document.getElementById('nestType').value = nest.nestType || 'Nido Artificial';
             document.getElementById('locationName').value = nest.locationName || '';
