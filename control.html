@@ -81,6 +81,30 @@
   <!-- CONTENEDOR DE AVISOS FLOTANTES -->
   <div id="toast-container" class="fixed top-24 right-4 sm:right-6 z-[100] flex flex-col gap-2.5 w-80 sm:w-96 pointer-events-none"></div>
 
+  <!-- MODAL DE CONFIRMACIÓN AL GUARDAR -->
+  <div id="confirm-save-modal" class="fixed inset-0 z-[110] hidden items-center justify-center bg-stone-950/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl border border-brand-border shadow-2xl max-w-md w-full p-6 space-y-4 toast-enter">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-dark text-amber-300 flex items-center justify-center shrink-0">
+          <i data-lucide="help-circle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-extrabold text-stone-900">¿Confirmar cambios del nido?</h2>
+          <p id="confirm-save-detail" class="text-xs text-stone-600 mt-1 leading-relaxed">Revisa los datos antes de guardar en la base de datos.</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2.5 pt-2">
+        <button type="button" id="cancel-save-modal-btn" class="px-4 py-2 rounded-xl text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="confirm-save-modal-btn" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand-dark hover:bg-brand-hover text-white shadow transition-colors inline-flex items-center gap-1.5">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i>
+          <span>Aceptar y guardar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- NAVBAR -->
   <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
@@ -380,6 +404,34 @@
       if (duration > 0) {
         setTimeout(removeToast, duration);
       }
+    }
+
+    function askSaveConfirmation(detailText) {
+      return new Promise(resolve => {
+        const modal = document.getElementById('confirm-save-modal');
+        const detailEl = document.getElementById('confirm-save-detail');
+        const btnCancel = document.getElementById('cancel-save-modal-btn');
+        const btnConfirm = document.getElementById('confirm-save-modal-btn');
+
+        detailEl.textContent = detailText;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        const cleanup = result => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          btnCancel.removeEventListener('click', onCancel);
+          btnConfirm.removeEventListener('click', onConfirm);
+          resolve(result);
+        };
+
+        const onCancel = () => cleanup(false);
+        const onConfirm = () => cleanup(true);
+
+        btnCancel.addEventListener('click', onCancel);
+        btnConfirm.addEventListener('click', onConfirm);
+      });
     }
 
     let controlMap = null;
@@ -795,11 +847,21 @@
       }
     }
 
-    function saveNest(e) {
+    async function saveNest(e) {
       e.preventDefault();
       const nestId = document.getElementById('nestId').value.trim().toUpperCase();
       const rawVisitDate = document.getElementById('layDate').value;
       const visitDateFormatted = formatDateToDDMMYYYY(rawVisitDate);
+      const actionLabel = originalNestData ? 'actualizar los datos del nido' : 'registrar este nuevo nido';
+
+      const agreed = await askSaveConfirmation(
+        `Vas a ${actionLabel} "${nestId}" con fecha de visita ${visitDateFormatted || 'sin fecha'}. ¿Estás de acuerdo?`
+      );
+      if (!agreed) {
+        showToast('Guardado cancelado. No se modificaron los datos.', 'info', 2200);
+        return;
+      }
+
       const adultDeathStatus = document.getElementById('adultDeath').value;
       const chickDeathVal = document.getElementById('chickDeathRing').value;
       const notesField = document.getElementById('notes');
