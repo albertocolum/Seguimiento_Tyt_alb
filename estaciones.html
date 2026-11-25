@@ -50,9 +50,43 @@
       font-family: monospace;
       display: inline-block;
     }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .toast-enter {
+      animation: toastIn 0.22s ease-out forwards;
+    }
   </style>
 </head>
 <body class="text-stone-800 font-sans min-h-screen flex flex-col justify-between">
+
+  <!-- CONTENEDOR DE AVISOS FLOTANTES -->
+  <div id="toast-container" class="fixed top-24 right-4 sm:right-6 z-[100] flex flex-col gap-2.5 w-80 sm:w-96 pointer-events-none"></div>
+
+  <!-- MODAL DE CONFIRMACIÓN AL GUARDAR -->
+  <div id="confirm-save-modal" class="fixed inset-0 z-[110] hidden items-center justify-center bg-stone-950/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl border border-brand-border shadow-2xl max-w-md w-full p-6 space-y-4 toast-enter">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-dark text-amber-300 flex items-center justify-center shrink-0">
+          <i data-lucide="help-circle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-extrabold text-stone-900">¿Confirmar cambios?</h2>
+          <p id="confirm-save-detail" class="text-xs text-stone-600 mt-1 leading-relaxed">Revisa los datos antes de guardar en la base de datos.</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2.5 pt-2">
+        <button type="button" id="cancel-save-modal-btn" class="px-4 py-2 rounded-xl text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="confirm-save-modal-btn" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand-dark hover:bg-brand-hover text-white shadow transition-colors inline-flex items-center gap-1.5">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i>
+          <span>Aceptar y guardar</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- NAVBAR -->
   <header class="bg-brand-dark/95 backdrop-blur-md text-white sticky top-0 z-50 shadow-md">
@@ -344,6 +378,92 @@
       auth.signOut().then(() => window.location.href = 'index.html').catch(err => console.error(err));
     }
 
+    function showToast(message, type = 'success', duration = 2600) {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const styles = {
+        success: {
+          card: 'bg-brand-dark text-white border-emerald-400/50',
+          iconWrap: 'bg-emerald-500/20 text-emerald-300',
+          icon: 'check-circle-2',
+          title: 'Registro actualizado'
+        },
+        error: {
+          card: 'bg-rose-950 text-white border-rose-400/50',
+          iconWrap: 'bg-rose-500/20 text-rose-300',
+          icon: 'alert-triangle',
+          title: 'Error en la operación'
+        },
+        info: {
+          card: 'bg-stone-900 text-white border-brand-accent/60',
+          iconWrap: 'bg-brand-accent/25 text-amber-300',
+          icon: 'info',
+          title: 'Aviso'
+        }
+      };
+
+      const cfg = styles[type] || styles.info;
+      const toast = document.createElement('div');
+      toast.className = `toast-enter pointer-events-auto border rounded-2xl shadow-xl p-3.5 flex items-start gap-3 ${cfg.card}`;
+      toast.innerHTML = `
+        <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${cfg.iconWrap}">
+          <i data-lucide="${cfg.icon}" class="w-4 h-4"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">${cfg.title}</div>
+          <div class="text-xs font-semibold text-white/95 mt-0.5 leading-snug">${message}</div>
+        </div>
+        <button type="button" aria-label="Cerrar aviso" class="text-white/60 hover:text-white p-0.5 rounded transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      `;
+
+      const closeBtn = toast.querySelector('button');
+      const removeToast = () => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-6px)';
+        toast.style.transition = 'all 0.18s ease';
+        setTimeout(() => toast.remove(), 180);
+      };
+      closeBtn.addEventListener('click', removeToast);
+
+      container.appendChild(toast);
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+
+      if (duration > 0) {
+        setTimeout(removeToast, duration);
+      }
+    }
+
+    function askSaveConfirmation(detailText) {
+      return new Promise(resolve => {
+        const modal = document.getElementById('confirm-save-modal');
+        const detailEl = document.getElementById('confirm-save-detail');
+        const btnCancel = document.getElementById('cancel-save-modal-btn');
+        const btnConfirm = document.getElementById('confirm-save-modal-btn');
+
+        detailEl.textContent = detailText;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        const cleanup = result => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          btnCancel.removeEventListener('click', onCancel);
+          btnConfirm.removeEventListener('click', onConfirm);
+          resolve(result);
+        };
+
+        const onCancel = () => cleanup(false);
+        const onConfirm = () => cleanup(true);
+
+        btnCancel.addEventListener('click', onCancel);
+        btnConfirm.addEventListener('click', onConfirm);
+      });
+    }
+
     let stationsCache = {};
     let controlsCache = {};
     let editingStationKey = null;
@@ -515,7 +635,7 @@
 
     function openNewStationRingForm(preselectedStationKey = '') {
       if (Object.keys(stationsCache || {}).length === 0) {
-        alert('Primero debes dar de alta al menos una estación de muestreo.');
+        showToast('Primero debes dar de alta al menos una estación de muestreo.', 'info', 2600);
         openNewStationForm();
         return;
       }
@@ -582,16 +702,16 @@
       if (!confirm(`¿Seguro que deseas eliminar el registro "${label}" de controles_estaciones?`)) return;
       if (editingControlKey === key) collapseStationRingForm(true);
       db.ref('controles_estaciones/' + key).remove().catch(err => {
-        alert('Error al eliminar registro: ' + err.message);
+        showToast('Error al eliminar registro: ' + err.message, 'error', 4500);
       });
     }
 
-    function saveStationRing(e) {
+    async function saveStationRing(e) {
       e.preventDefault();
       const stKey = document.getElementById('ringStationSelect').value;
       const st = stationsCache[stKey];
       if (!st) {
-        alert('Selecciona una estación de muestreo válida.');
+        showToast('Selecciona una estación de muestreo válida.', 'error', 3000);
         return;
       }
 
@@ -612,6 +732,15 @@
       const notes = document.getElementById('ringNotesInput').value.trim();
 
       const stationId = (st.stationId || stKey).toUpperCase();
+      const actionLabel = editingControlKey ? 'actualizar el control en estación' : 'guardar el control en estación';
+      const agreed = await askSaveConfirmation(
+        `Vas a ${actionLabel} para [${metalRing}] en la estación "${stationId}". ¿Estás de acuerdo?`
+      );
+      if (!agreed) {
+        showToast('Guardado cancelado. No se modificaron los datos.', 'info', 2200);
+        return;
+      }
+
       const existing = editingControlKey ? (controlsCache[editingControlKey] || {}) : {};
       const locationName = st.stationLocation || pickFirst(existing, ['locationName', 'localidad', 'paraje', 'stationLocation'], '');
 
@@ -644,9 +773,10 @@
         : db.ref('controles_estaciones').push();
 
       ref.set(payload).then(() => {
+        showToast('Control guardado en controles_estaciones.', 'success', 2400);
         collapseStationRingForm(true);
       }).catch(err => {
-        alert('Error al guardar en controles_estaciones: ' + err.message);
+        showToast('Error al guardar en controles_estaciones: ' + err.message, 'error', 4500);
       });
     }
 
@@ -690,7 +820,7 @@
 
     function useCurrentGps() {
       if (!navigator.geolocation) {
-        alert('Tu navegador no soporta geolocalización.');
+        showToast('Tu navegador no soporta geolocalización.', 'error', 3000);
         return;
       }
       navigator.geolocation.getCurrentPosition(pos => {
@@ -699,7 +829,7 @@
         document.getElementById('coordsInput').value = `${lat}, ${lng}`;
         reverseGeocode(lat, lng);
       }, err => {
-        alert('No se pudo obtener la ubicación GPS: ' + err.message);
+        showToast('No se pudo obtener la ubicación GPS: ' + err.message, 'error', 3500);
       });
     }
 
@@ -726,7 +856,7 @@
         collapseStationForm(true);
       }
       db.ref('estaciones/' + key).remove().catch(err => {
-        alert('Error al eliminar estación: ' + err.message);
+        showToast('Error al eliminar estación: ' + err.message, 'error', 4500);
       });
     }
 
@@ -737,7 +867,7 @@
       document.getElementById('station-rings-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    function saveStation(e) {
+    async function saveStation(e) {
       e.preventDefault();
       const stationId = document.getElementById('stationId').value.trim().toUpperCase();
       const stationName = document.getElementById('stationName').value.trim();
@@ -745,6 +875,15 @@
       const parsedCoords = parseCoords(document.getElementById('coordsInput').value);
       const stationLocation = document.getElementById('stationLocation').value.trim();
       const stationNotes = document.getElementById('stationNotes').value.trim();
+
+      const actionLabel = editingStationKey ? 'actualizar la estación' : 'dar de alta la estación';
+      const agreed = await askSaveConfirmation(
+        `Vas a ${actionLabel} "${stationId}" (${stationName}). ¿Estás de acuerdo?`
+      );
+      if (!agreed) {
+        showToast('Guardado cancelado. No se modificaron los datos.', 'info', 2200);
+        return;
+      }
 
       const key = editingStationKey || stationId.replace(/[\/\.#$\[\]]/g, '_');
 
@@ -760,9 +899,10 @@
       };
 
       db.ref('estaciones/' + key).set(payload).then(() => {
+        showToast('Estación guardada correctamente.', 'success', 2400);
         collapseStationForm(true);
       }).catch(err => {
-        alert('Error al guardar estación: ' + err.message);
+        showToast('Error al guardar estación: ' + err.message, 'error', 4500);
       });
     }
 
